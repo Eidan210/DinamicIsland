@@ -1,7 +1,7 @@
 {
   "name": "notch",
   "productName": "Notch",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Isla dinámica estilo iPhone para Windows 11, hecha con Electron.",
   "main": "main.js",
   "private": true,
@@ -10,8 +10,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "pack": "electron-builder --win --dir",
-    "dist": "electron-builder --win"
+    "build:helper": "dotnet publish helpers/MediaHelper -c Release -o helpers/MediaHelper/publish",
+    "pack": "npm run build:helper && electron-builder --win --dir",
+    "dist": "npm run build:helper && electron-builder --win"
   },
   "devDependencies": {
     "electron": "^44.10.1",
@@ -30,6 +31,13 @@
       {
         "from": "config",
         "to": "config"
+      },
+      {
+        "from": "helpers/MediaHelper/publish",
+        "to": "MediaHelper",
+        "filter": [
+          "MediaHelper.exe"
+        ]
       }
     ],
     "win": {

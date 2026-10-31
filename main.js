@@ -11,6 +11,8 @@
 //  Fase 1: ventana transparente, atajo global, abrir/cerrar y clics que atraviesan.
 //  Fase 2: Pomodoro con notificación de Windows, links de config/links.json y
 //          recarga automática de config/ cuando guardas un archivo.
+//  Fase 3: música. Lanzamos el helper en C# (helpers/MediaHelper) como proceso
+//          hijo, leemos lo que suena y se lo pasamos a la página.
 // =============================================================================
 
 'use strict';
@@ -25,10 +27,13 @@ const {
   Notification,
   powerMonitor,
   screen,
+  session,
   shell,
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const { spawn } = require('node:child_process');
+const readline = require('node:readline');
 
 // -----------------------------------------------------------------------------
 // 1. Constantes
@@ -59,14 +64,41 @@ const DEFAULT_SETTINGS = {
   shortcut: 'Control+Alt+T', // atajo global para abrir/cerrar
   locale: 'es-ES', // idioma para la fecha y la hora
   hour12: false, // true = reloj de 12 horas (a. m. / p. m.)
-  autoHide: true, // esconder el notch cuando no lo usas (así no tapa pestañas)
-  revealOnHover: true, // con autoHide: aparece al llevar el ratón arriba al centro
+  autoHide: true, // cuando no lo usas, se encoge a una mini-muesca (no tapa pestañas)
+  revealOnHover: true, // pasar el ratón por la mini-muesca la despierta
   pomodoroMinutes: 25, // duración del Pomodoro
+  musicActivity: true, // mostrar la música en la isla mientras suena (y avisar al cambiar de canción)
 };
 
 const MINUTE_MS = 60 * 1000;
 const POMODORO_MIN_MINUTES = 1;
 const POMODORO_MAX_MINUTES = 180;
+
+// Órdenes que la página puede mandar al helper de música (además de "seek").
+const MEDIA_COMMANDS = ['play', 'pause', 'toggle', 'next', 'previous'];
+// Si el helper se cierra solo, lo reiniciamos esperando cada vez más (2 s, 4 s... hasta 1 min).
+const HELPER_RESTART_MIN_MS = 2000;
+const HELPER_RESTART_MAX_MS = 60 * 1000;
+
+// Nombres bonitos para las apps más comunes. Windows identifica cada app con
+// un código raro, p. ej. "AppleInc.AppleMusicWin_nzyj5cx40ttqa!App".
+const KNOWN_MEDIA_APPS = [
+  [/applemusic/i, 'Apple Music'],
+  [/itunes/i, 'iTunes'],
+  [/spotify/i, 'Spotify'],
+  [/zunemusic|zunevideo/i, 'Reproductor multimedia'],
+  [/msedge|microsoftedge/i, 'Microsoft Edge'],
+  [/chrome/i, 'Google Chrome'],
+  [/firefox/i, 'Firefox'],
+  [/brave/i, 'Brave'],
+  [/opera/i, 'Opera'],
+  [/vlc/i, 'VLC'],
+  [/deezer/i, 'Deezer'],
+  [/tidal/i, 'TIDAL'],
+  [/amazonmusic/i, 'Amazon Music'],
+  [/foobar/i, 'foobar2000'],
+  [/musicbee/i, 'MusicBee'],
+];
 
 // Por seguridad, los links solo pueden ser páginas web o correos.
 const ALLOWED_LINK_PROTOCOLS = ['http:', 'https:', 'mailto:'];
@@ -96,6 +128,16 @@ const pomodoro = {
   timer: null, // el único setTimeout: salta justo al terminar
   completedCount: 0, // Pomodoros terminados hoy
   completedDay: '', // día al que corresponde completedCount
+};
+
+// Música: el proceso del helper y lo último que nos contó.
+const music = {
+  process: null, // proceso hijo (MediaHelper.exe)
+  restartDelay: HELPER_RESTART_MIN_MS,
+  restartTimer: null,
+  // available: 'starting' | 'ok' | 'missing' (no está compilado) | 'unsupported' (no es Windows) | 'error'
+  state: { available: 'starting', status: 'none' },
+  art: null, // carátula actual como "data URL" (o null)
 };
 
 // -----------------------------------------------------------------------------
@@ -144,6 +186,7 @@ function loadSettings() {
   result.autoHide = result.autoHide !== false;
   result.revealOnHover = result.revealOnHover !== false;
   result.pomodoroMinutes = clampMinutes(result.pomodoroMinutes);
+  result.musicActivity = result.musicActivity !== false;
   return result;
 }
 
@@ -402,11 +445,18 @@ function setMouseInteractive(interactive) {
 
 function showContextMenu() {
   const pomodoroRunning = pomodoro.status === 'running';
+  const musicPlaying = music.state.status === 'playing';
+  const hasMusic = musicPlaying || music.state.status === 'paused';
   const menu = Menu.buildFromTemplate([
     { label: isExpanded ? 'Cerrar panel' : 'Abrir panel', click: toggleExpanded },
     {
       label: pomodoroRunning ? 'Pausar Pomodoro' : 'Iniciar Pomodoro',
       click: () => (pomodoroRunning ? pausePomodoro() : startPomodoro()),
+    },
+    {
+      label: musicPlaying ? 'Pausar música' : 'Reanudar música',
+      enabled: hasMusic && music.state.canPlayPause,
+      click: () => sendMediaCommand('toggle'),
     },
     { type: 'separator' },
     { label: 'Salir de Notch', click: () => app.quit() },
@@ -652,7 +702,156 @@ function isLightColor(hex) {
 }
 
 // -----------------------------------------------------------------------------
-// 11. IPC: mensajes que llegan desde la página (a través de preload.js)
+// 11. Música: el helper en C# (helpers/MediaHelper)
+// -----------------------------------------------------------------------------
+// El helper lee la sesión multimedia de Windows y nos escribe una línea JSON
+// por cada cambio (ver el comentario de arriba de Program.cs). Nosotros le
+// mandamos órdenes (play, pause, next...) escribiendo en su stdin.
+
+/** Dónde está MediaHelper.exe (se puede cambiar con la variable NOTCH_MEDIA_HELPER). */
+function getMediaHelperPath() {
+  if (process.env.NOTCH_MEDIA_HELPER) return process.env.NOTCH_MEDIA_HELPER;
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'MediaHelper', 'MediaHelper.exe')
+    : path.join(__dirname, 'helpers', 'MediaHelper', 'publish', 'MediaHelper.exe');
+}
+
+function startMediaHelper() {
+  music.restartTimer = null;
+  const helperPath = getMediaHelperPath();
+
+  if (process.platform !== 'win32' && !process.env.NOTCH_MEDIA_HELPER) {
+    setMusicAvailability('unsupported');
+    return;
+  }
+  if (!fs.existsSync(helperPath)) {
+    console.warn(`[música] No encuentro ${helperPath}. Compílalo con: npm run build:helper`);
+    setMusicAvailability('missing');
+    return;
+  }
+
+  // windowsHide: que no aparezca una ventana de consola negra.
+  const child = spawn(helperPath, [], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  music.process = child;
+
+  // readline corta la salida en líneas: cada línea es un JSON completo.
+  readline.createInterface({ input: child.stdout }).on('line', handleHelperLine);
+
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', (text) => console.warn(`[música] ${text.trim()}`));
+  child.stdin.on('error', () => {}); // si el helper muere, escribirle falla: lo ignoramos
+  child.on('error', (error) => {
+    console.warn(`[música] No se pudo arrancar el helper: ${error.message}`);
+    onHelperGone(child);
+  });
+  child.on('exit', (code) => {
+    if (!isQuitting) console.warn(`[música] El helper se cerró (código ${code}).`);
+    onHelperGone(child);
+  });
+}
+
+/** El helper se cerró o no pudo arrancar: lo reiniciamos un poco más tarde. */
+function onHelperGone(child) {
+  if (music.process !== child) return; // ya lo habíamos gestionado
+  music.process = null;
+  if (isQuitting || music.restartTimer) return;
+  setMusicAvailability('error');
+  console.warn(`[música] Lo reinicio en ${music.restartDelay / 1000} s.`);
+  music.restartTimer = setTimeout(startMediaHelper, music.restartDelay);
+  music.restartDelay = Math.min(music.restartDelay * 2, HELPER_RESTART_MAX_MS);
+}
+
+function stopMediaHelper() {
+  clearTimeout(music.restartTimer);
+  music.restartTimer = null;
+  if (music.process) {
+    music.process.kill();
+    music.process = null;
+  }
+}
+
+function handleHelperLine(line) {
+  let message;
+  try {
+    message = JSON.parse(line);
+  } catch {
+    console.warn(`[música] El helper mandó algo que no es JSON: ${line.slice(0, 120)}`);
+    return;
+  }
+
+  if (message.type === 'media') {
+    updateMusic(message);
+  } else if (message.type === 'ready') {
+    music.restartDelay = HELPER_RESTART_MIN_MS; // arrancó bien: la próxima espera vuelve a ser corta
+    console.log('[música] Helper listo.');
+  } else if (message.type === 'error') {
+    console.warn(`[música] ${message.message}`);
+  }
+}
+
+/** Guarda lo que mandó el helper y se lo pasa a la página. */
+function updateMusic(message) {
+  // "art" solo viene cuando la carátula cambia ("" = sin carátula).
+  const artChanged = typeof message.art === 'string';
+  if (artChanged) music.art = message.art ? `data:image/jpeg;base64,${message.art}` : null;
+
+  // timestamp = cuándo midió el helper la posición. Si viniera raro, usamos "ahora".
+  const timestamp = Number(message.timestamp);
+  music.state = {
+    available: 'ok',
+    status: String(message.status || 'none'),
+    title: String(message.title || ''),
+    artist: String(message.artist || ''),
+    album: String(message.album || ''),
+    appName: friendlyAppName(String(message.app || '')),
+    position: Number(message.position) || 0, // segundos
+    duration: Number(message.duration) || 0, // segundos (0 = la app no lo dice)
+    rate: Number(message.rate) || 1,
+    timestamp: Number.isFinite(timestamp) && Math.abs(timestamp - Date.now()) < 5000 ? timestamp : Date.now(),
+    canPlayPause: message.canPlayPause === true,
+    canNext: message.canNext === true,
+    canPrevious: message.canPrevious === true,
+    canSeek: message.canSeek === true,
+  };
+
+  // La carátula (decenas de KB) solo viaja a la página cuando cambia.
+  sendToRenderer('media:state', artChanged ? { ...music.state, art: music.art } : music.state);
+}
+
+function setMusicAvailability(available) {
+  music.state = { available, status: 'none' };
+  music.art = null;
+  sendToRenderer('media:state', { ...music.state, art: null });
+}
+
+/** Manda una orden al helper (solo las de la lista; "seek" con un número de segundos). */
+function sendMediaCommand(command, value) {
+  const stdin = music.process?.stdin;
+  if (!stdin || !stdin.writable) return;
+  if (MEDIA_COMMANDS.includes(command)) {
+    stdin.write(`${command}\n`);
+  } else if (command === 'seek' && Number.isFinite(value) && value >= 0) {
+    stdin.write(`seek ${value.toFixed(2)}\n`);
+  }
+}
+
+/** "AppleInc.AppleMusicWin_nzyj5cx40ttqa!App" → "Apple Music" */
+function friendlyAppName(appId) {
+  if (!appId) return '';
+  const known = KNOWN_MEDIA_APPS.find(([pattern]) => pattern.test(appId));
+  if (known) return known[1];
+  // Para el resto, limpiamos el código: quitamos ".exe", "!App", el editor...
+  const base = appId
+    .split('!')[0]
+    .split('\\')
+    .pop()
+    .replace(/\.exe$/i, '')
+    .replace(/_[a-z0-9]{13}$/i, '');
+  return base.split('.').pop() || base;
+}
+
+// -----------------------------------------------------------------------------
+// 12. IPC: mensajes que llegan desde la página (a través de preload.js)
 // -----------------------------------------------------------------------------
 
 /** Solo aceptamos mensajes que vengan de nuestra propia ventana. */
@@ -690,10 +889,14 @@ function registerIpcHandlers() {
   // Links
   onRendererRequest('links:get', () => getLinksForRenderer());
   onRendererMessage('links:open', (index) => openLink(index));
+
+  // Música
+  onRendererRequest('media:get', () => ({ ...music.state, art: music.art }));
+  onRendererMessage('media:command', (command, value) => sendMediaCommand(String(command), Number(value)));
 }
 
 // -----------------------------------------------------------------------------
-// 12. Arranque
+// 13. Arranque
 // -----------------------------------------------------------------------------
 
 // Solo puede haber un Notch a la vez. Si lo abres otra vez, la copia nueva se
@@ -701,6 +904,9 @@ function registerIpcHandlers() {
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 if (!hasSingleInstanceLock) {
+  // Chromium puede escribir antes algún error de "cache" (Acceso denegado):
+  // es esta copia intentando usar la caché de la que ya está abierta. Es inofensivo.
+  console.log('[notch] Notch ya estaba abierto: le pido que abra su panel y cierro esta copia.');
   app.quit();
 } else {
   // Windows agrupa las notificaciones por este identificador.
@@ -709,6 +915,13 @@ if (!hasSingleInstanceLock) {
   app.on('second-instance', () => setExpanded(true));
 
   app.whenReady().then(() => {
+    // Electron trae un corrector ortográfico que, al arrancar, descarga
+    // diccionarios de servidores de Google (aunque esté desactivado). Notch no
+    // tiene campos de texto: lo apagamos y mandamos esa descarga a tu propio
+    // PC (127.0.0.1), donde falla sin salir a internet. Solo se permite LRCLIB.
+    session.defaultSession.setSpellCheckerDictionaryDownloadURL('http://127.0.0.1:9/');
+    session.defaultSession.setSpellCheckerEnabled(false);
+
     // Sin menú de aplicación: evita atajos por defecto como Ctrl+W (cerrar) o Ctrl+R.
     Menu.setApplicationMenu(null);
 
@@ -720,6 +933,7 @@ if (!hasSingleInstanceLock) {
     createWindow();
     registerShortcut();
     watchConfigFolder();
+    startMediaHelper();
 
     // Si conectas/desconectas un monitor o cambias resolución/escala, recolocamos el notch.
     // (Son eventos del sistema: no hay ningún temporizador comprobando nada.)
@@ -737,5 +951,6 @@ if (!hasSingleInstanceLock) {
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();
+    stopMediaHelper(); // el helper se cierra con nosotros
   });
 }

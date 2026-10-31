@@ -71,4 +71,23 @@ contextBridge.exposeInMainWorld('notch', {
     /** Avisa cuando guardas config/links.json: callback(links). */
     onChange: (callback) => subscribe('links:changed', callback),
   },
+
+  // ---------- Música (Fase 3) ----------
+  media: {
+    /** Devuelve (Promise) lo que suena ahora, con la carátula. */
+    getState: () => ipcRenderer.invoke('media:get'),
+    /** Órdenes para la app que suena. */
+    play: () => ipcRenderer.send('media:command', 'play'),
+    pause: () => ipcRenderer.send('media:command', 'pause'),
+    toggle: () => ipcRenderer.send('media:command', 'toggle'),
+    next: () => ipcRenderer.send('media:command', 'next'),
+    previous: () => ipcRenderer.send('media:command', 'previous'),
+    /** Salta al segundo indicado (si la app lo permite). */
+    seek: (seconds) => ipcRenderer.send('media:command', 'seek', Number(seconds)),
+    /**
+     * Avisa de cada cambio: callback(state). Si la carátula cambió, state.art
+     * trae la nueva (o null); si no viene "art", es la misma de antes.
+     */
+    onChange: (callback) => subscribe('media:state', callback),
+  },
 });

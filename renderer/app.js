@@ -9,14 +9,15 @@
 //    0. Utilidades
 //    1. Elementos y estado
 //    2. Clics que atraviesan la ventana
-//    3. Auto-ocultar: aparecer al acercar el ratón, esconderse al alejarlo
+//    3. Forma de la isla (mini, píldora, actividad, aviso, panel)
 //    4. Abrir y cerrar el panel
 //    5. Reloj
 //    6. Pestañas (indicador deslizante y transición entre vistas)
 //    7. Ojos (parpadeo, mirar alrededor, seguir al ratón y emociones)
 //    8. Pomodoro
-//    9. Links
-//   10. Arranque
+//    9. Música
+//   10. Links
+//   11. Arranque
 // =============================================================================
 
 'use strict';
@@ -47,12 +48,21 @@ function setText(element, text) {
   if (element.textContent !== text) element.textContent = text;
 }
 
-/** 1499000 ms → "24:59" */
+/** 1499000 ms → "24:59" (cuenta atrás del Pomodoro) */
 function formatCountdown(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+/** 83.4 s → "1:23"; 3725 s → "1:02:05" (tiempos de canciones) */
+function formatTime(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = String(seconds % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
 }
 
 /** plural(1, 'sesión', 'sesiones') → "1 sesión" */
@@ -84,6 +94,16 @@ const tabIndicator = $('tab-indicator');
 const tabButtons = document.querySelectorAll('.tab');
 const views = document.querySelectorAll('.view');
 
+// Actividad en vivo (píldora ancha) y aviso de canción
+const activityEl = $('activity');
+const activityProgress = $('activity-progress');
+const activityText = $('activity-text');
+const activityArt = $('activity-art');
+const bannerArt = $('banner-art');
+const bannerLabel = $('banner-label');
+const bannerTitle = $('banner-title');
+const bannerArtist = $('banner-artist');
+
 // Pomodoro: pestaña Focus...
 const pomodoroEl = $('pomodoro');
 const pomoRingWrap = $('pomo-ring-wrap');
@@ -97,15 +117,33 @@ const pomoToggle = $('pomo-toggle');
 const pomoToggleText = $('pomo-toggle-text');
 const pomoReset = $('pomo-reset');
 const pomoCount = $('pomo-count');
-// ...tarjeta de Home...
+// ...y su tarjeta de Home
 const homePomoProgress = $('home-pomo-progress');
 const homePomoTime = $('home-pomo-time');
 const homePomoLabel = $('home-pomo-label');
 const homePomoToggle = $('home-pomo-toggle');
-// ...y la píldora.
-const activityEl = $('activity');
-const activityProgress = $('activity-progress');
-const activityText = $('activity-text');
+
+// Música: pestaña...
+const playerEl = $('player');
+const playerArtWrap = $('player-art-wrap');
+const playerArt = $('player-art');
+const playerArtGlow = $('player-art-glow');
+const playerApp = $('player-app');
+const playerTitle = $('player-title');
+const playerArtist = $('player-artist');
+const playerBar = $('player-bar');
+const playerElapsed = $('player-elapsed');
+const playerRemaining = $('player-remaining');
+const mediaPrev = $('media-prev');
+const mediaToggle = $('media-toggle');
+const mediaNext = $('media-next');
+// ...y su tarjeta de Home
+const homeMusicCard = $('home-music');
+const homeMusicArtWrap = $('home-music-art-wrap');
+const homeMusicArt = $('home-music-art');
+const homeMusicTitle = $('home-music-title');
+const homeMusicArtist = $('home-music-artist');
+const homeMusicToggle = $('home-music-toggle');
 
 // Links
 const linksGrid = $('links-grid');
@@ -121,18 +159,21 @@ let settings = {
   autoHide: true,
   revealOnHover: true,
   pomodoroMinutes: 25,
+  musicActivity: true,
 };
 let isExpanded = false; // ¿el panel está abierto?
 let mouseInteractive = false; // ¿le hemos pedido a main que la ventana reciba clics?
 let pointerInside = false; // ¿el ratón está dentro de la zona de la ventana?
 let lastPointer = { x: 0, y: 0 }; // última posición conocida del ratón
+let initialized = false; // init() terminó
 
 // =============================================================================
 // 2. Clics que atraviesan la ventana
 // -----------------------------------------------------------------------------
-// La ventana es mucho más grande que la píldora. Cuando el ratón NO está sobre
-// la isla, main.js deja pasar los clics a las ventanas de abajo. Para eso le
+// La ventana es mucho más grande que la isla. Cuando el ratón NO está sobre la
+// isla, main.js deja pasar los clics a las ventanas de abajo. Para eso le
 // avisamos cada vez que el ratón entra o sale de la isla.
+// (La mini-muesca tiene pointer-events: none, así que nunca "atrapa" el ratón.)
 // =============================================================================
 
 function setMouseInteractive(interactive) {
@@ -143,99 +184,143 @@ function setMouseInteractive(interactive) {
 
 island.addEventListener('mouseenter', () => {
   setMouseInteractive(true);
-  cancelHide();
+  cancelSleep();
 });
-island.addEventListener('mouseleave', () => setMouseInteractive(false));
 
-// Cuando la isla termina de crecer, encoger, aparecer o esconderse, puede que
-// el cursor (quieto) haya quedado dentro o fuera: lo comprobamos de nuevo.
+island.addEventListener('mouseleave', () => {
+  setMouseInteractive(false);
+  if (shape === 'banner') updateShape(); // si el aviso ya caducó, ahora sí se va
+});
+
+// Cuando la isla termina de cambiar de forma, puede que el cursor (quieto) haya
+// quedado dentro o fuera: lo comprobamos de nuevo.
 island.addEventListener('transitionend', (event) => {
   if (event.target !== island) return;
   if (['height', 'width', 'translate'].includes(event.propertyName)) {
-    setMouseInteractive(island.matches(':hover'));
+    setMouseInteractive(shape !== 'mini' && island.matches(':hover'));
   }
 });
 
 // =============================================================================
-// 3. Auto-ocultar
+// 3. Forma de la isla
 // -----------------------------------------------------------------------------
-// Con "autoHide" el notch está escondido por encima del borde de la pantalla
-// (así no tapa las pestañas del navegador). Aparece:
-//   • al dejar el ratón en el borde de arriba, en el centro (zona caliente),
-//   • con el atajo (abre el panel directamente),
-//   • un momento al arrancar y cuando termina un Pomodoro.
-// Se esconde sola cuando el ratón se aleja.
+//   mini      → muesca pequeña pegada arriba: no hay nada que contar
+//   pill      → píldora normal: al pasar el ratón por la mini (o al arrancar)
+//   activity  → píldora ancha con información en vivo (Pomodoro, música)
+//   banner    → aviso grande unos segundos (canción nueva)
+//   expanded  → el panel abierto
+// computeShape() decide la forma a partir del estado; updateShape() la aplica.
 // =============================================================================
 
-const HOT_ZONE_HEIGHT = 3; // px desde el borde de arriba de la pantalla
-const HOT_ZONE_HALF_WIDTH = 130; // px a cada lado del centro
+const SHAPE_ORDER = ['mini', 'pill', 'activity', 'banner', 'expanded']; // de menor a mayor
+const WAKE_DELAY = 200; // ms con el ratón sobre la mini-muesca para que se despierte
+const SLEEP_DELAY = 800; // ms que espera antes de volver a encogerse cuando te alejas
+const WAKE_MARGIN = 8; // px alrededor de la mini-muesca que también cuentan
 const NEAR_DISTANCE = 28; // px alrededor de la píldora que cuentan como "cerca"
-const REVEAL_DELAY = 180; // ms con el ratón en la zona caliente para que aparezca
-const HIDE_DELAY = 700; // ms que espera antes de esconderse cuando te alejas
+const HELLO_MS = 2400; // al arrancar se ve como píldora este tiempo
+const BANNER_MS = 4000; // duración del aviso de canción nueva
 
-let isShown = false; // ¿la píldora está a la vista?
-let revealTimer = null;
-let hideTimer = null;
-let keepVisibleUntil = 0; // no esconder antes de este momento (saludo, avisos...)
+let shape = 'mini';
+let awake = false; // ¿la despertaste pasando el ratón?
+let keepAwakeUntil = 0; // saludo al arrancar
+let bannerUntil = 0; // aviso de canción nueva
+let wakeTimer = null;
+let sleepTimer = null;
+let shapeTimer = null;
 
-function canAutoHide() {
-  return settings.autoHide && !isExpanded;
+/** ¿Qué actividad en vivo hay ahora? (por prioridad) */
+function getActivity() {
+  if (Date.now() < celebrateUntil) return 'pomodoro';
+  if (pomodoro.status === 'running' || pomodoro.status === 'paused') return 'pomodoro';
+  // Al cambiar de canción, algunas apps pasan un instante por "changing": la
+  // actividad aguanta 1,5 s para no parpadear.
+  const musicOn = isPlaying() || Date.now() < musicGraceUntil;
+  if (settings.musicActivity && musicOn && media.title) return 'music';
+  return null;
 }
 
-function showIsland() {
-  cancelHide();
-  if (isShown) return;
-  isShown = true;
-  island.classList.remove('is-hidden'); // ← CSS: baja con un pequeño rebote
-  // Al aparecer, los ojos miran hacia donde está el ratón (o al frente).
-  if (pointerInside) lookAt(lastPointer.x, lastPointer.y);
-  else resetLook();
-  wakeEyes();
-  updatePomodoroTicker();
+function computeShape() {
+  const now = Date.now();
+  if (isExpanded) return 'expanded';
+  if (now < bannerUntil || (shape === 'banner' && mouseInteractive)) return 'banner';
+  if (getActivity()) return 'activity';
+  if (awake || now < keepAwakeUntil || !settings.autoHide) return 'pill';
+  return 'mini';
 }
 
-function hideIsland() {
-  hideTimer = null;
-  if (!isShown || !canAutoHide() || mouseInteractive) return;
-  const waitMore = keepVisibleUntil - Date.now();
-  if (waitMore > 0) {
-    scheduleHide(waitMore);
-    return;
+function updateShape() {
+  const next = computeShape();
+  const activity = getActivity();
+  activityEl.dataset.kind = activity || '';
+  activityEl.dataset.status = Date.now() < celebrateUntil ? 'finished' : pomodoro.status;
+
+  if (next !== shape) {
+    const previous = shape;
+    shape = next;
+    // Al crecer usamos una curva con rebote; al encoger, una suave (ver styles.css).
+    island.dataset.motion = SHAPE_ORDER.indexOf(next) > SHAPE_ORDER.indexOf(previous) ? 'grow' : 'shrink';
+    island.dataset.shape = next; // ← esto dispara la animación CSS
+    if (previous === 'mini') {
+      if (pointerInside) lookAt(lastPointer.x, lastPointer.y);
+      wakeEyes();
+    }
+    if (next === 'mini') {
+      setMouseInteractive(false); // la mini deja pasar los clics
+      resetLook();
+    }
   }
-  isShown = false;
-  island.classList.add('is-hidden'); // ← CSS: coge impulso y sube
+
+  updateMood();
+  scheduleShapeTimer();
   updatePomodoroTicker();
+  updateMediaTicker();
 }
 
-function scheduleHide(delay = HIDE_DELAY) {
-  if (!canAutoHide()) return;
-  clearTimeout(hideTimer);
-  hideTimer = setTimeout(hideIsland, delay);
+/** Revisa la forma justo cuando caduque el saludo, el aviso o la celebración. */
+function scheduleShapeTimer() {
+  clearTimeout(shapeTimer);
+  const now = Date.now();
+  const upcoming = [keepAwakeUntil, bannerUntil, celebrateUntil, musicGraceUntil].filter((time) => time > now);
+  if (upcoming.length) shapeTimer = setTimeout(updateShape, Math.min(...upcoming) - now + 20);
 }
 
-function cancelHide() {
-  clearTimeout(hideTimer);
-  hideTimer = null;
+function wake() {
+  cancelWake();
+  cancelSleep();
+  awake = true;
+  updateShape();
 }
 
-function cancelReveal() {
-  clearTimeout(revealTimer);
-  revealTimer = null;
+function scheduleSleep(delay = SLEEP_DELAY) {
+  if (!awake) return;
+  clearTimeout(sleepTimer);
+  sleepTimer = setTimeout(goToSleep, delay);
 }
 
-/** Muestra la píldora durante `ms` milisegundos (o más, si le pones el ratón encima). */
-function peekFor(ms) {
-  keepVisibleUntil = Date.now() + ms;
-  showIsland();
-  scheduleHide(ms);
+function goToSleep() {
+  sleepTimer = null;
+  if (mouseInteractive) return; // tienes el ratón encima: espera
+  awake = false;
+  updateShape();
 }
 
-/** ¿Está el ratón en el borde de arriba, en el centro? */
-function isInHotZone(x, y) {
-  return y <= HOT_ZONE_HEIGHT && Math.abs(x - window.innerWidth / 2) <= HOT_ZONE_HALF_WIDTH;
+function cancelSleep() {
+  clearTimeout(sleepTimer);
+  sleepTimer = null;
 }
 
-/** ¿Está el ratón encima de la píldora o muy cerca? */
+function cancelWake() {
+  clearTimeout(wakeTimer);
+  wakeTimer = null;
+}
+
+/** ¿Está el ratón sobre la mini-muesca (o justo al lado)? */
+function isOverMini(x, y) {
+  const rect = island.getBoundingClientRect();
+  return x >= rect.left - WAKE_MARGIN && x <= rect.right + WAKE_MARGIN && y <= rect.bottom + WAKE_MARGIN / 2;
+}
+
+/** ¿Está el ratón encima de la isla o muy cerca? */
 function isNearIsland(x, y) {
   const rect = island.getBoundingClientRect();
   return x >= rect.left - NEAR_DISTANCE && x <= rect.right + NEAR_DISTANCE && y <= rect.bottom + NEAR_DISTANCE;
@@ -248,25 +333,18 @@ document.addEventListener('mousemove', (event) => {
   const x = event.clientX;
   const y = event.clientY;
   lastPointer = { x, y };
-  if (isShown || isExpanded) lookAt(x, y);
-  if (!canAutoHide()) return;
+  if (shape !== 'mini') lookAt(x, y);
 
-  if (!isShown) {
-    // Escondida: si el ratón se queda un instante en la zona caliente, aparece.
-    if (settings.revealOnHover && isInHotZone(x, y)) {
-      if (!revealTimer) {
-        revealTimer = setTimeout(() => {
-          revealTimer = null;
-          showIsland();
-        }, REVEAL_DELAY);
-      }
+  if (shape === 'mini') {
+    // Si el ratón se queda un instante sobre la mini-muesca, se despierta.
+    if (settings.revealOnHover && isOverMini(x, y)) {
+      if (!wakeTimer) wakeTimer = setTimeout(wake, WAKE_DELAY);
     } else {
-      cancelReveal();
+      cancelWake();
     }
-  } else if (isInHotZone(x, y) || isNearIsland(x, y)) {
-    cancelHide(); // sigues cerca: que no se vaya
-  } else if (!hideTimer) {
-    scheduleHide(); // te alejaste: se esconde en un momento
+  } else if (awake) {
+    if (isNearIsland(x, y)) cancelSleep(); // sigues cerca: que no se encoja
+    else if (!sleepTimer) scheduleSleep(); // te alejaste: se encoge en un momento
   }
 });
 
@@ -274,9 +352,9 @@ document.addEventListener('mousemove', (event) => {
 document.addEventListener('mouseout', (event) => {
   if (event.relatedTarget) return;
   pointerInside = false;
-  cancelReveal();
+  cancelWake();
   resetLook();
-  if (isShown) scheduleHide();
+  scheduleSleep();
 });
 
 // =============================================================================
@@ -286,12 +364,16 @@ document.addEventListener('mouseout', (event) => {
 // "clic fuera" ocurren allí). Nosotros solo pedimos cambios y animamos.
 // =============================================================================
 
-// Clic en la píldora → abrir.
+// Clic en la isla → abrir. Si muestra una actividad, se abre en su pestaña.
 island.addEventListener('click', () => {
-  if (!isExpanded) window.notch.expand();
+  if (isExpanded) return;
+  const activity = getActivity();
+  if (shape === 'banner' || (shape === 'activity' && activity === 'music')) showTab('music');
+  else if (shape === 'activity' && activity === 'pomodoro') showTab('focus');
+  window.notch.expand();
 });
 
-// Clic derecho → menú con Pomodoro y "Salir de Notch".
+// Clic derecho → menú con Pomodoro, música y "Salir de Notch".
 island.addEventListener('contextmenu', (event) => {
   event.preventDefault();
   window.notch.showContextMenu();
@@ -305,30 +387,28 @@ document.addEventListener('keydown', (event) => {
   else if (event.key === 'ArrowLeft') showTabByOffset(-1);
 });
 
-// main.js nos avisa de cada cambio (atajo, Esc, clic fuera, clic en la píldora...).
+// main.js nos avisa de cada cambio (atajo, Esc, clic fuera, clic en la isla...).
 window.notch.onExpandedChange((expanded) => {
   isExpanded = expanded;
-  cancelReveal();
-  island.classList.toggle('is-expanded', expanded); // ← esto dispara la animación CSS
+  cancelWake();
 
   if (expanded) {
-    cancelHide();
-    isShown = true;
-    island.classList.remove('is-hidden'); // si estaba escondida, baja y crece a la vez
+    cancelSleep();
+    bannerUntil = 0; // si había un aviso, el panel lo sustituye
     moveTabIndicator(false);
     renderPomodoro();
+    renderMediaProgress();
     startClock();
     popEyes();
   } else {
     stopClock(); // con el panel cerrado el reloj no se ve: no gastamos nada
     // Quitamos el foco del botón pulsado, para que no quede marcado al reabrir.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    // Con auto-ocultar, la píldora se esconde después de encogerse
-    // (si el ratón sigue cerca, espera a que te alejes).
-    scheduleHide(pointerInside ? HIDE_DELAY : 250);
+    // Si el ratón sigue cerca, se queda como píldora hasta que te alejes.
+    awake = pointerInside;
+    scheduleSleep();
   }
-  updateActivity();
-  updatePomodoroTicker();
+  updateShape();
 });
 
 // =============================================================================
@@ -406,7 +486,7 @@ function showTab(name) {
     button.classList.toggle('is-active', isActive);
     button.setAttribute('aria-selected', String(isActive));
   });
-  moveTabIndicator(true);
+  moveTabIndicator(isExpanded);
   if (name === currentTab) return;
 
   const previousTab = currentTab;
@@ -415,6 +495,7 @@ function showTab(name) {
   const newView = getView(name);
   oldView.classList.remove('is-active');
   newView.classList.add('is-active');
+  if (!isExpanded) return; // con el panel cerrado no hace falta animar
 
   // La vista nueva entra por el lado hacia el que avanzas y la vieja sale por
   // el contrario (como pasar páginas).
@@ -484,12 +565,12 @@ function blink() {
 function scheduleBlink() {
   const delay = 2500 + Math.random() * 3500; // entre 2,5 y 6 segundos
   setTimeout(() => {
-    if (isShown || isExpanded) blink(); // escondida no hace falta parpadear
+    if (shape !== 'banner') blink(); // en el aviso los ojos no se ven
     scheduleBlink();
   }, delay);
 }
 
-/** Al aparecer, los ojos se abren como si el notch se despertara. */
+/** Al despertar, los ojos se abren como si el notch se levantara. */
 function wakeEyes() {
   eyeEls.forEach((eye) => {
     animate(
@@ -540,7 +621,7 @@ function glance() {
 
 function scheduleGlance() {
   setTimeout(() => {
-    if ((isShown || isExpanded) && !pointerInside) glance();
+    if (shape !== 'mini' && shape !== 'banner' && !pointerInside) glance();
     scheduleGlance();
   }, 8000 + Math.random() * 7000); // entre 8 y 15 segundos
 }
@@ -596,10 +677,8 @@ function onPomodoroState(state) {
   // Si el progreso salta (reinicio, cambio de duración...), el anillo se anima.
   const jumped = Math.abs(getProgress(previous) - getProgress(state)) > 0.02;
   renderPomodoro({ animateRings: jumped });
-  updatePomodoroTicker();
   if (previous.status === 'running' && state.status === 'finished') celebrate();
-  updateMood();
-  updateActivity();
+  updateShape();
 }
 
 /** Dibuja el Pomodoro completo (textos, botones y anillos). */
@@ -675,38 +754,34 @@ function setRing(circle, progress, withAnimation) {
 
 /**
  * Cuenta atrás en pantalla. Solo funciona si el Pomodoro está en marcha Y se
- * ve (panel abierto o píldora asomada): escondido no gasta nada.
+ * ve (panel abierto o píldora con la actividad): si no se ve, no gasta nada.
  */
 function updatePomodoroTicker() {
-  clearTimeout(pomodoroTicker);
-  pomodoroTicker = null;
-  if (pomodoro.status !== 'running' || !(isExpanded || isShown)) return;
+  const visible = isExpanded || (shape === 'activity' && getActivity() === 'pomodoro');
+  if (pomodoro.status !== 'running' || !visible) {
+    clearTimeout(pomodoroTicker);
+    pomodoroTicker = null;
+    return;
+  }
+  if (pomodoroTicker) return; // ya está en marcha
 
   const tick = () => {
     renderPomodoroTick();
     const remaining = getRemainingMs();
-    if (remaining <= 0) return; // main.js nos avisará de que terminó
+    if (remaining <= 0) {
+      pomodoroTicker = null; // main.js nos avisará de que terminó
+      return;
+    }
     // Esperamos justo hasta que cambie el segundo de la cuenta atrás (+20 ms de margen).
     pomodoroTicker = setTimeout(tick, (remaining % 1000 || 1000) + 20);
   };
   tick();
 }
 
-/** Píldora ancha con anillo y cuenta atrás mientras hay un Pomodoro en marcha. */
-function updateActivity() {
-  const celebrating = Date.now() < celebrateUntil;
-  const status = celebrating ? 'finished' : pomodoro.status;
-  const active = !isExpanded && (celebrating || status === 'running' || status === 'paused');
-  island.classList.toggle('has-activity', active);
-  activityEl.dataset.status = status;
-}
-
 /** ¡Pomodoro terminado! Ojos felices, rebote y destello verde. */
 function celebrate() {
   celebrateUntil = Date.now() + CELEBRATION_MS;
-  if (!isExpanded) peekFor(CELEBRATION_MS); // aunque estuviera escondida, se asoma
-  updateMood();
-  updateActivity();
+  updateShape(); // la isla muestra "¡Listo!" aunque estuviera encogida
 
   animate(island, [{ scale: '1' }, { scale: '1.12' }, { scale: '0.97' }, { scale: '1' }], {
     duration: 650,
@@ -721,12 +796,6 @@ function celebrate() {
   if (isExpanded) {
     animate(pomoRingWrap, [{ scale: '1' }, { scale: '1.08' }, { scale: '1' }], { duration: 600, easing: SPRING_POP });
   }
-
-  // Pasada la celebración, la cara y la píldora vuelven a la normalidad.
-  setTimeout(() => {
-    updateMood();
-    updateActivity();
-  }, CELEBRATION_MS + 50);
 }
 
 function togglePomodoro() {
@@ -763,7 +832,286 @@ homePomoToggle.addEventListener('click', (event) => {
 });
 
 // =============================================================================
-// 9. Links
+// 9. Música
+// -----------------------------------------------------------------------------
+// main.js nos pasa lo que cuenta el helper en C#: título, artista, estado,
+// posición, duración y (solo cuando cambia) la carátula.
+//
+// La posición llega "a saltos" (las apps solo la actualizan de vez en cuando),
+// así que guardamos la última posición y el momento en que se midió
+// (timestamp) y, mientras suena, calculamos nosotros la actual:
+//     posición ahora = posición + (ahora - timestamp) × velocidad
+// =============================================================================
+
+const MEDIA_MESSAGES = {
+  starting: ['Conectando…', 'Buscando qué suena en Windows'],
+  missing: ['Falta el helper de música', 'Compílalo con: npm run build:helper'],
+  unsupported: ['Solo en Windows', 'La música se lee de la sesión multimedia de Windows'],
+  error: ['El helper de música se cerró', 'Reintentando…'],
+  empty: ['Nada sonando', 'Reproduce algo en Apple Music o en cualquier app'],
+};
+
+let media = {
+  available: 'starting',
+  status: 'none',
+  title: '',
+  artist: '',
+  album: '',
+  appName: '',
+  position: 0,
+  duration: 0,
+  rate: 1,
+  timestamp: 0,
+  canPlayPause: false,
+  canNext: false,
+  canPrevious: false,
+  canSeek: false,
+};
+let mediaArt = null; // carátula actual ("data URL") o null
+let mediaTicker = null;
+let skipDirection = 0; // +1 siguiente / -1 anterior: para animar la carátula hacia ese lado
+let skipUntil = 0;
+let musicGraceUntil = 0; // la actividad de música aguanta un momento al dejar de sonar
+let lastBannerKey = ''; // última canción anunciada con el aviso "Ahora suena"
+const MUSIC_GRACE_MS = 1500;
+
+function isPlaying() {
+  return media.status === 'playing';
+}
+
+/** ¿Hay algo cargado en alguna app (sonando o en pausa)? */
+function hasTrack() {
+  return media.available === 'ok' && Boolean(media.title) && !['none', 'closed'].includes(media.status);
+}
+
+/** "Título|Artista|Álbum": para saber si cambió la canción. */
+function trackKey(state) {
+  return state.title ? `${state.title}|${state.artist}|${state.album}` : '';
+}
+
+/** Posición actual en segundos, interpolada mientras suena. */
+function getMediaPosition() {
+  let position = media.position;
+  if (isPlaying()) position += ((Date.now() - media.timestamp) / 1000) * (media.rate || 1);
+  return media.duration > 0 ? Math.min(Math.max(position, 0), media.duration) : Math.max(position, 0);
+}
+
+/** main.js nos manda el estado nuevo cada vez que algo cambia. */
+function onMediaState(state) {
+  const previousKey = trackKey(media);
+  const wasPlaying = isPlaying();
+  const { art, ...rest } = state;
+  media = { ...media, ...rest };
+  if ('art' in state) setMediaArt(art);
+  if (wasPlaying && !isPlaying()) musicGraceUntil = Date.now() + MUSIC_GRACE_MS;
+
+  const key = trackKey(media);
+  renderMedia({ trackChanged: key !== previousKey });
+
+  // Suena una canción que aún no hemos anunciado → aviso "Ahora suena", como
+  // la isla dinámica. (Comparamos con la última anunciada y no con el estado
+  // anterior porque entre canciones algunas apps pasan por "changing".)
+  if (key && isPlaying() && key !== lastBannerKey) {
+    lastBannerKey = key;
+    if (initialized && settings.musicActivity && !isExpanded) bannerUntil = Date.now() + BANNER_MS;
+  }
+  updateShape();
+}
+
+function setMediaArt(dataUrl) {
+  mediaArt = dataUrl || null;
+  for (const img of [playerArt, playerArtGlow, homeMusicArt, activityArt, bannerArt]) {
+    if (mediaArt) img.src = mediaArt;
+    else img.removeAttribute('src');
+  }
+  playerEl.dataset.hasArt = String(Boolean(mediaArt));
+  homeMusicCard.dataset.hasArt = String(Boolean(mediaArt));
+  updateMusicAccent();
+}
+
+/** Dibuja la música en la pestaña, la tarjeta de Home y el aviso. */
+function renderMedia({ trackChanged = false } = {}) {
+  const track = hasTrack();
+  const playing = isPlaying();
+  const state = media.available !== 'ok' ? media.available : track ? 'ok' : 'empty';
+  const [emptyTitle, emptyHint] = MEDIA_MESSAGES[state] || MEDIA_MESSAGES.empty;
+  const subtitle = [media.artist, media.album].filter(Boolean).join(' — ');
+
+  // Pestaña Música
+  playerEl.dataset.state = state;
+  playerEl.dataset.playing = String(playing);
+  playerEl.dataset.canSeek = String(media.canSeek && media.duration > 0);
+  setText(playerApp, media.appName || 'Música');
+  setText(playerTitle, track ? media.title : emptyTitle);
+  setText(playerArtist, track ? subtitle : emptyHint);
+  mediaToggle.dataset.running = String(playing);
+  mediaToggle.setAttribute('aria-label', playing ? 'Pausar' : 'Reproducir');
+  mediaToggle.disabled = !media.canPlayPause;
+  mediaPrev.disabled = !media.canPrevious;
+  mediaNext.disabled = !media.canNext;
+
+  // Tarjeta de Home
+  homeMusicCard.dataset.playing = String(playing);
+  setText(homeMusicTitle, track ? media.title : 'Nada sonando');
+  setText(homeMusicArtist, track ? media.artist || media.appName : 'Apple Music o cualquier app');
+  homeMusicToggle.hidden = !track || !media.canPlayPause;
+  homeMusicToggle.dataset.running = String(playing);
+
+  // Aviso "Ahora suena"
+  setText(bannerLabel, media.appName ? `Ahora suena · ${media.appName}` : 'Ahora suena');
+  setText(bannerTitle, media.title);
+  setText(bannerArtist, media.artist);
+
+  renderMediaProgress();
+  if (trackChanged && track) animateTrackChange();
+}
+
+/** Barra de progreso y tiempos (lo único que cambia cada segundo). */
+function renderMediaProgress() {
+  const duration = media.duration;
+  const position = getMediaPosition();
+  playerBar.style.setProperty('--progress', duration > 0 ? (position / duration).toFixed(4) : '0');
+  setText(playerElapsed, formatTime(position));
+  setText(playerRemaining, duration > 0 ? `-${formatTime(duration - position)}` : '');
+}
+
+/** La barra avanza una vez por segundo, solo con el panel abierto y mientras suena. */
+function updateMediaTicker() {
+  if (!isPlaying() || !isExpanded) {
+    clearTimeout(mediaTicker);
+    mediaTicker = null;
+    return;
+  }
+  if (mediaTicker) return; // ya está en marcha
+
+  const tick = () => {
+    renderMediaProgress();
+    // Esperamos justo hasta que cambie el segundo de la canción (+20 ms de margen).
+    const msToNextSecond = ((1 - (getMediaPosition() % 1)) * 1000) / (media.rate || 1);
+    mediaTicker = setTimeout(tick, msToNextSecond + 20);
+  };
+  tick();
+}
+
+/** Canción nueva: la carátula llega desde el lado del botón que pulsaste. */
+function animateTrackChange() {
+  const direction = Date.now() < skipUntil ? skipDirection : 0;
+  skipDirection = 0;
+  const from = direction ? `translateX(${direction * 28}px) scale(0.92)` : 'scale(0.86)';
+  animate(playerArtWrap, [{ opacity: 0, transform: from }, { opacity: 1, transform: 'none' }], {
+    duration: 560,
+    easing: SPRING_POP,
+  });
+  animate(playerTitle, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], {
+    duration: 400,
+    delay: 60,
+    easing: SPRING,
+  });
+  animate(playerArtist, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], {
+    duration: 400,
+    delay: 110,
+    easing: SPRING,
+  });
+  animate(homeMusicArtWrap, [{ opacity: 0, scale: '0.7' }, { opacity: 1, scale: '1' }], {
+    duration: 480,
+    easing: SPRING_POP,
+  });
+}
+
+/**
+ * Saca el color "protagonista" de la carátula: la dibujamos en un canvas de
+ * 16x16 y promediamos sus píxeles, dando más peso a los colores vivos que a
+ * los grises. Ese color tiñe las barras, la barra de progreso y el brillo.
+ */
+function updateMusicAccent() {
+  const root = document.documentElement;
+  if (!mediaArt) {
+    root.style.removeProperty('--music-accent');
+    return;
+  }
+  const image = new Image();
+  image.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(image, 0, 0, 16, 16);
+    const pixels = context.getImageData(0, 0, 16, 16).data;
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let total = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const max = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
+      const min = Math.min(pixels[i], pixels[i + 1], pixels[i + 2]);
+      const weight = (max - min) / 255 + 0.05; // cuanto más vivo el color, más cuenta
+      r += pixels[i] * weight;
+      g += pixels[i + 1] * weight;
+      b += pixels[i + 2] * weight;
+      total += weight;
+    }
+    root.style.setProperty('--music-accent', vividColor(r / total, g / total, b / total));
+  };
+  image.src = mediaArt;
+}
+
+/** Convierte un color RGB en una versión viva y clara (para que se vea sobre negro). */
+function vividColor(r, g, b) {
+  const max = Math.max(r, g, b) / 255;
+  const min = Math.min(r, g, b) / 255;
+  const delta = max - min;
+  let hue = 0;
+  if (delta > 0) {
+    if (max === r / 255) hue = ((g - b) / 255 / delta) % 6;
+    else if (max === g / 255) hue = (b - r) / 255 / delta + 2;
+    else hue = (r - g) / 255 / delta + 4;
+  }
+  hue = Math.round(hue * 60 + 360) % 360;
+  // Carátulas casi grises (blanco y negro) → el verde de siempre.
+  if (delta < 0.08) return '#3dff8f';
+  return `hsl(${hue} 85% 66%)`;
+}
+
+/** Al pulsar play/pausa cambiamos el botón al momento; el helper lo confirma enseguida. */
+function toggleMediaOptimistic() {
+  if (!media.canPlayPause) return;
+  media.position = getMediaPosition();
+  media.timestamp = Date.now();
+  media.status = isPlaying() ? 'paused' : 'playing';
+  window.notch.media.toggle();
+  renderMedia();
+  updateShape();
+}
+
+function skipTrack(direction) {
+  skipDirection = direction;
+  skipUntil = Date.now() + 4000;
+  if (direction > 0) window.notch.media.next();
+  else window.notch.media.previous();
+}
+
+mediaToggle.addEventListener('click', toggleMediaOptimistic);
+mediaNext.addEventListener('click', () => skipTrack(1));
+mediaPrev.addEventListener('click', () => skipTrack(-1));
+homeMusicToggle.addEventListener('click', (event) => {
+  event.stopPropagation(); // que no cuente también como clic en la tarjeta
+  toggleMediaOptimistic();
+});
+
+// Clic en la barra de progreso → saltar a ese punto (si la app lo permite).
+playerBar.addEventListener('click', (event) => {
+  if (!media.canSeek || media.duration <= 0) return;
+  const rect = playerBar.getBoundingClientRect();
+  const fraction = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+  media.position = fraction * media.duration;
+  media.timestamp = Date.now();
+  renderMediaProgress();
+  window.notch.media.seek(media.position);
+});
+
+// =============================================================================
+// 10. Links
 // -----------------------------------------------------------------------------
 // main.js nos manda nombre, inicial y color de cada link (no las urls): para
 // abrir uno le decimos su número y main.js lo abre en tu navegador.
@@ -845,15 +1193,14 @@ function openLink(index, circle) {
 }
 
 // =============================================================================
-// 10. Arranque
+// 11. Arranque
 // =============================================================================
 
 /** Aplica la configuración (al arrancar y cada vez que guardas settings.json). */
 function applySettings() {
   createFormatters();
   if (isExpanded) renderClock();
-  if (!settings.autoHide) showIsland(); // siempre visible
-  else if (!isExpanded) scheduleHide();
+  updateShape();
 }
 
 // Avisos de main.js (se registran ya, antes de que termine init()).
@@ -862,6 +1209,7 @@ window.notch.onSettingsChange((newSettings) => {
   applySettings();
 });
 window.notch.pomodoro.onChange(onPomodoroState);
+window.notch.media.onChange(onMediaState);
 window.notch.links.onChange((newLinks) => {
   links = Array.isArray(newLinks) ? newLinks : [];
   renderLinks();
@@ -870,30 +1218,37 @@ window.notch.onShowTab((name) => showTab(name));
 
 async function init() {
   try {
-    const [savedSettings, pomodoroState, savedLinks] = await Promise.all([
+    const [savedSettings, pomodoroState, savedLinks, mediaState] = await Promise.all([
       window.notch.getSettings(),
       window.notch.pomodoro.getState(),
       window.notch.links.getAll(),
+      window.notch.media.getState(),
     ]);
     if (savedSettings) settings = { ...settings, ...savedSettings };
     if (pomodoroState) pomodoro = pomodoroState;
     if (Array.isArray(savedLinks)) links = savedLinks;
+    if (mediaState) {
+      const { art, ...rest } = mediaState;
+      media = { ...media, ...rest };
+      setMediaArt(art);
+      lastBannerKey = trackKey(media); // lo que ya sonaba no se anuncia otra vez
+    }
   } catch (error) {
     console.warn('No se pudo cargar el estado inicial, uso valores por defecto:', error);
   }
 
-  applySettings();
+  createFormatters();
   renderPomodoro();
+  renderMedia();
   renderLinks();
-  updateMood();
-  updateActivity();
   moveTabIndicator(false);
   scheduleBlink();
   scheduleGlance();
 
-  // Al arrancar se asoma un momento, para que sepas que está funcionando.
-  if (settings.autoHide) peekFor(2400);
-  else showIsland();
+  // Al arrancar se ve como píldora un momento, para que sepas que está funcionando.
+  keepAwakeUntil = Date.now() + HELLO_MS;
+  initialized = true;
+  updateShape();
 }
 
 init();

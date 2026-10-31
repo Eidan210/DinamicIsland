@@ -2,24 +2,30 @@
    styles.css — Aspecto y animaciones del notch
    -----------------------------------------------------------------------------
    La ventana es transparente y siempre mide 820 x 318 px. Dentro, la .island
-   es lo único visible: una píldora negra que se esconde arriba, se asoma y
-   crece hasta ser el panel, todo con transiciones CSS (más suaves y baratas
-   que mover o redimensionar la ventana).
+   es lo único visible. Cambia de forma según su atributo data-shape (lo pone
+   app.js) y todos los cambios son transiciones CSS:
+
+     mini → pill → activity → banner → expanded   (de menor a mayor)
 
    ÍNDICE
-     1. Variables          6. Contenido del panel (entrada en cascada)
-     2. Base               7. Home: tarjetas
-     3. La isla            8. Focus: Pomodoro y links
-     4. Los ojos           9. Pestañas
-     5. Actividad en vivo 10. Accesibilidad
+     1. Variables           7. Home: tarjetas
+     2. Base                8. Música
+     3. La isla y sus formas 9. Focus: Pomodoro y links
+     4. Los ojos           10. Pestañas
+     5. Actividad y aviso  11. Barras de ecualizador
+     6. Contenido del panel 12. Accesibilidad
    ============================================================================= */
 
 /* ---------- 1. Variables: cambia aquí tamaños, colores y tiempos ---------- */
 :root {
-  /* Tamaños. ⚠️ --panel-* y --top-gap deben coincidir con las constantes de main.js */
+  /* Tamaños de cada forma. ⚠️ --panel-* y --top-gap deben coincidir con main.js */
+  --mini-width: 124px; /* muesca en reposo */
+  --mini-height: 13px;
   --pill-width: 200px;
-  --pill-activity-width: 272px; /* píldora con la cuenta atrás del Pomodoro */
   --pill-height: 40px;
+  --activity-width: 280px; /* con información en vivo */
+  --banner-width: 430px; /* aviso de canción nueva */
+  --banner-height: 76px;
   --panel-width: 720px;
   --panel-height: 260px;
   --top-gap: 8px;
@@ -48,9 +54,18 @@
   --spring: cubic-bezier(0.32, 0.72, 0, 1); /* suave, sin rebote (tipo iOS) */
   --spring-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* rebote ligero (se pasa un 4 %) */
   --spring-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* rebote marcado (se pasa un 9 %) */
-  --ease-in-back: cubic-bezier(0.36, 0, 0.66, -0.56); /* coge impulso antes de irse */
   --open-duration: 560ms;
-  --close-duration: 380ms;
+  --close-duration: 420ms;
+
+  /* Color de la música: app.js lo saca de la carátula y cambia con suavidad */
+  transition: --music-accent 800ms ease;
+}
+
+/* Registrar la variable permite animarla como un color (si no, cambiaría de golpe) */
+@property --music-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #3dff8f;
 }
 
 /* ---------- 2. Base ---------- */
@@ -94,6 +109,10 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+img:not([src]) {
+  visibility: hidden; /* sin carátula, que no se vea el icono de imagen rota */
+}
+
 /* Iconos de reproducir/pausar: se cambia uno por otro con data-running */
 .icon-play {
   fill: currentColor;
@@ -113,14 +132,16 @@ button:focus-visible {
   display: block;
 }
 
-/* ---------- 3. La isla: escondida ↔ píldora ↔ panel ---------- */
+.icon-fill {
+  fill: currentColor;
+  stroke-width: 1.2;
+}
+
+/* ---------- 3. La isla y sus formas ---------- */
 .island {
-  /* Duración y curva cambian según abras o cierres (ver .is-expanded / .is-hidden) */
+  /* app.js pone data-motion="grow" o "shrink": al crecer rebota un poco, al encoger no */
   --size-duration: var(--close-duration);
   --size-easing: var(--spring);
-  --move-duration: 560ms;
-  --move-easing: var(--spring-pop);
-  --fade-delay: 0ms;
 
   position: relative;
   margin-top: var(--top-gap);
@@ -128,7 +149,7 @@ button:focus-visible {
   height: var(--pill-height);
   border-radius: var(--pill-radius);
   background-color: #000;
-  overflow: hidden; /* el panel queda "recortado" mientras la isla crece */
+  overflow: hidden; /* el contenido queda "recortado" mientras la isla crece */
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.35),
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -138,38 +159,45 @@ button:focus-visible {
     width var(--size-duration) var(--size-easing),
     height var(--size-duration) var(--size-easing),
     border-radius var(--size-duration) var(--size-easing),
+    translate var(--size-duration) var(--size-easing),
     background-color var(--size-duration) ease,
     box-shadow var(--size-duration) ease,
-    translate var(--move-duration) var(--move-easing),
-    opacity 220ms ease var(--fade-delay),
     scale 260ms var(--spring-bounce);
 }
 
-/* Escondida (auto-ocultar): sube por encima del borde de la pantalla */
-.island.is-hidden {
-  --move-duration: 380ms;
-  --move-easing: var(--ease-in-back);
-  --fade-delay: 150ms;
+.island[data-motion="grow"] {
+  --size-duration: 540ms;
+  --size-easing: var(--spring-bounce);
+}
 
-  translate: 0 calc(-1 * (var(--pill-height) + var(--top-gap) + 14px));
-  opacity: 0;
+/* Mini: una muesca pegada al borde de arriba, como el notch de un portátil.
+   Deja pasar los clics (pointer-events: none): no molesta a las pestañas. */
+.island[data-shape="mini"] {
+  width: var(--mini-width);
+  height: var(--mini-height);
+  border-radius: 0 0 10px 10px;
+  translate: 0 calc(-1 * var(--top-gap));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
 }
 
-/* Pequeño "zoom" al pasar el ratón por la píldora: indica que se puede pulsar */
-.island:not(.is-expanded):hover {
-  scale: 1.05;
+/* Con información en vivo, la píldora se ensancha */
+.island[data-shape="activity"] {
+  width: var(--activity-width);
 }
 
-/* Píldora más ancha cuando hay un Pomodoro en marcha */
-.island.has-activity:not(.is-expanded) {
-  width: var(--pill-activity-width);
+.island[data-shape="banner"] {
+  width: var(--banner-width);
+  height: var(--banner-height);
+  border-radius: 28px;
 }
 
-.island.is-expanded {
-  --size-duration: var(--open-duration);
-  --size-easing: var(--spring-bounce); /* al abrir, se pasa un poquito y vuelve */
+/* Pequeño "zoom" al pasar el ratón: indica que se puede pulsar */
+.island:is([data-shape="pill"], [data-shape="activity"], [data-shape="banner"]):hover {
+  scale: 1.04;
+}
 
+.island[data-shape="expanded"] {
   width: var(--panel-width);
   height: var(--panel-height);
   border-radius: var(--panel-radius);
@@ -193,22 +221,24 @@ button:focus-visible {
   pointer-events: none;
 }
 
-.island.is-expanded::before {
+.island[data-shape="expanded"]::before {
   opacity: 1;
 }
 
 /* ---------- 4. Los ojos ---------- */
-/* Siempre arriba al centro, en la misma franja de 40 px que la píldora */
+/* Siempre arriba al centro: ocupan toda la altura de la isla, hasta 40 px */
 .face {
   position: absolute;
   top: 0;
   left: 50%;
   z-index: 2;
-  height: var(--pill-height);
+  height: 100%;
+  max-height: var(--pill-height);
   display: flex;
   align-items: center;
   translate: -50% 0;
   pointer-events: none;
+  transition: opacity 200ms ease;
 }
 
 /* --look-x / --look-y los pone app.js para que los ojos miren hacia el ratón */
@@ -217,7 +247,9 @@ button:focus-visible {
   align-items: center;
   gap: 18px;
   translate: var(--look-x, 0px) var(--look-y, 0px);
-  transition: translate 260ms var(--spring);
+  transition:
+    translate 260ms var(--spring),
+    gap 380ms var(--spring);
 }
 
 .eye {
@@ -233,6 +265,22 @@ button:focus-visible {
     border-radius 320ms ease,
     background-color 200ms ease;
   /* El parpadeo y el "despertar" se lanzan desde app.js */
+}
+
+/* En la mini-muesca, ojos pequeñitos */
+.island[data-shape="mini"] .eyes {
+  gap: 11px;
+}
+
+.island[data-shape="mini"] .eye {
+  width: 5px;
+  height: 6px;
+  box-shadow: 0 0 5px var(--eye-glow);
+}
+
+/* En el aviso, los ojos dejan sitio al contenido */
+.island[data-shape="banner"] .face {
+  opacity: 0;
 }
 
 /* Pomodoro en marcha: ojos entrecerrados, "concentrados" */
@@ -252,10 +300,10 @@ button:focus-visible {
   filter: drop-shadow(0 0 4px var(--eye-glow));
 }
 
-/* ---------- 5. Actividad en vivo (píldora con la cuenta atrás) ---------- */
+/* ---------- 5. Actividad en vivo y aviso de canción ---------- */
 .activity {
   position: absolute;
-  inset: 0 15px 0 12px;
+  inset: 0 14px 0 9px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -264,39 +312,71 @@ button:focus-visible {
   transition: opacity 140ms ease;
 }
 
-.island.has-activity:not(.is-expanded) .activity {
+.island[data-shape="activity"] .activity {
   opacity: 1;
   transition: opacity 260ms ease 120ms;
 }
 
-/* El anillo y el texto salen desde el centro hacia los lados */
-.activity-ring,
-.activity-text {
-  transition: translate 460ms var(--spring-pop);
+/* Lo de la izquierda y lo de la derecha salen desde el centro hacia los lados */
+.activity-leading,
+.activity-trailing {
+  display: flex;
+  align-items: center;
+  transition: translate 480ms var(--spring-pop);
+}
+
+.activity-leading {
+  translate: 16px 0;
+}
+
+.activity-trailing {
+  translate: -16px 0;
+}
+
+.island[data-shape="activity"] :is(.activity-leading, .activity-trailing) {
+  translate: 0 0;
 }
 
 .activity-ring {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  margin-left: 3px;
   rotate: -90deg; /* que el progreso empiece arriba, como un reloj */
-  translate: 14px 0;
+}
+
+.activity-ring .ring-track,
+.activity-ring .ring-progress {
+  stroke-width: 3;
+}
+
+.activity-art {
+  display: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .activity-text {
-  translate: -14px 0;
   color: var(--accent);
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.island.has-activity:not(.is-expanded) :is(.activity-ring, .activity-text) {
-  translate: 0 0;
+.activity .eq {
+  display: none;
 }
 
-.activity-ring .ring-track,
-.activity-ring .ring-progress {
-  stroke-width: 3;
+/* Según qué actividad sea, se ve una cosa u otra */
+.activity[data-kind="music"] .activity-ring,
+.activity[data-kind="music"] .activity-text {
+  display: none;
+}
+
+.activity[data-kind="music"] .activity-art,
+.activity[data-kind="music"] .eq {
+  display: flex;
 }
 
 .activity[data-status="paused"] .activity-text {
@@ -305,6 +385,100 @@ button:focus-visible {
 
 .activity[data-status="paused"] .ring-progress {
   stroke: var(--warning);
+}
+
+/* Aviso "Ahora suena" */
+.banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 20px 0 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.island[data-shape="banner"] .banner {
+  opacity: 1;
+  transition: opacity 260ms ease 150ms;
+}
+
+.banner-art-wrap {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.banner-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.banner-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.banner-label {
+  color: var(--music-accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.banner-title,
+.banner-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.banner-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.banner-artist {
+  color: var(--text-dim);
+  font-size: 12.5px;
+}
+
+/* Entrada del aviso: la carátula "salta" y los textos suben uno tras otro */
+.island[data-shape="banner"] .banner-art-wrap {
+  animation: pop-in 560ms var(--spring-pop) 120ms backwards;
+}
+
+.island[data-shape="banner"] .banner-text > * {
+  animation: rise-in 420ms var(--spring) backwards;
+}
+
+.island[data-shape="banner"] .banner-text > :nth-child(1) {
+  animation-delay: 200ms;
+}
+
+.island[data-shape="banner"] .banner-text > :nth-child(2) {
+  animation-delay: 250ms;
+}
+
+.island[data-shape="banner"] .banner-text > :nth-child(3) {
+  animation-delay: 300ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
 }
 
 /* ---------- 6. Contenido del panel ---------- */
@@ -323,7 +497,7 @@ button:focus-visible {
   transition: visibility 0s linear 200ms;
 }
 
-.island.is-expanded .panel {
+.island[data-shape="expanded"] .panel {
   visibility: visible;
   transition: visibility 0s;
 }
@@ -353,7 +527,7 @@ button:focus-visible {
   translate: 0 12px;
 }
 
-.island.is-expanded :is(.topbar, .views, .tabbar) {
+.island[data-shape="expanded"] :is(.topbar, .views, .tabbar) {
   opacity: 1;
   translate: 0 0;
   filter: none;
@@ -361,15 +535,15 @@ button:focus-visible {
   transition-timing-function: ease, var(--spring-bounce), ease;
 }
 
-.island.is-expanded .topbar {
+.island[data-shape="expanded"] .topbar {
   transition-delay: 90ms;
 }
 
-.island.is-expanded .views {
+.island[data-shape="expanded"] .views {
   transition-delay: 140ms;
 }
 
-.island.is-expanded .tabbar {
+.island[data-shape="expanded"] .tabbar {
   transition-delay: 200ms;
 }
 
@@ -435,7 +609,7 @@ code {
   font-size: 11px;
 }
 
-/* Contenido provisional (Música y Claude llegan en las próximas fases) */
+/* Contenido provisional (Claude llega en la Fase 5) */
 .placeholder {
   max-width: 520px;
   text-align: center;
@@ -471,6 +645,14 @@ code {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+/* Animaciones de entrada que se reutilizan */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
 }
 
 /* ---------- 7. Home: tarjetas resumen ---------- */
@@ -541,8 +723,13 @@ code {
   --card-accent: var(--claude-color);
 }
 
+/* La tarjeta de música toma el color de la carátula mientras suena */
 .card-music {
   --card-accent: var(--music-color);
+}
+
+.card-music[data-has-art="true"] {
+  --card-accent: var(--music-accent);
 }
 
 .card-links {
@@ -550,19 +737,19 @@ code {
 }
 
 /* Las tarjetas entran en cascada cada vez que se ve Home */
-.island.is-expanded .view.is-active .card {
+.island[data-shape="expanded"] .view.is-active .card {
   animation: card-in 520ms var(--spring-bounce) backwards;
 }
 
-.island.is-expanded .view.is-active .card:nth-child(2) {
+.island[data-shape="expanded"] .view.is-active .card:nth-child(2) {
   animation-delay: 50ms;
 }
 
-.island.is-expanded .view.is-active .card:nth-child(3) {
+.island[data-shape="expanded"] .view.is-active .card:nth-child(3) {
   animation-delay: 100ms;
 }
 
-.island.is-expanded .view.is-active .card:nth-child(4) {
+.island[data-shape="expanded"] .view.is-active .card:nth-child(4) {
   animation-delay: 150ms;
 }
 
@@ -619,8 +806,9 @@ code {
   white-space: nowrap;
 }
 
-/* Tarjeta Focus: anillo pequeño + botón play/pausa */
-.card-focus-body {
+/* Tarjetas Focus y Música: un dibujo a la izquierda y un botón a la derecha */
+.card-focus-body,
+.card-music-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -635,6 +823,46 @@ code {
 .mini-ring .ring-track,
 .mini-ring .ring-progress {
   stroke-width: 5;
+}
+
+.card-art-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.card-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.art-placeholder {
+  width: 20px;
+  height: 20px;
+  color: var(--text-faint);
+}
+
+[data-has-art="true"] .art-placeholder {
+  display: none;
+}
+
+.eq-card {
+  margin-left: auto;
+  height: 11px;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.card-music[data-playing="true"] .eq-card {
+  opacity: 1;
 }
 
 .mini-btn {
@@ -653,6 +881,10 @@ code {
     box-shadow 200ms ease,
     background-color 200ms ease,
     color 200ms ease;
+}
+
+.mini-btn[hidden] {
+  display: none;
 }
 
 .mini-btn svg {
@@ -717,7 +949,261 @@ code {
   white-space: normal;
 }
 
-/* ---------- 8. Focus: Pomodoro y links ---------- */
+/* ---------- 8. Música ---------- */
+.player {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px 6px 12px;
+}
+
+.player-art-wrap {
+  position: relative;
+  flex: none;
+  width: 118px;
+  height: 118px;
+}
+
+.player-art,
+.player-art-glow,
+.player-art-empty {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+}
+
+.player-art {
+  object-fit: cover;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+/* La copia borrosa de la carátula: un resplandor del color del disco */
+.player-art-glow {
+  object-fit: cover;
+  filter: blur(22px) saturate(1.7);
+  opacity: 0.6;
+  scale: 1.08;
+  translate: 0 6px;
+}
+
+.player-art-empty {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-faint);
+}
+
+.player-art-empty svg {
+  width: 40px;
+  height: 40px;
+}
+
+.player[data-has-art="true"] .player-art-empty {
+  display: none;
+}
+
+.player-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.player-source {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 14px;
+  color: var(--music-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.player-title {
+  overflow: hidden;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-artist {
+  overflow: hidden;
+  color: var(--text-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.time {
+  min-width: 36px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-end {
+  text-align: right;
+}
+
+/* Barra de progreso: --progress (de 0 a 1) lo pone app.js */
+.bar {
+  position: relative;
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: height 200ms var(--spring);
+}
+
+.bar::before {
+  content: ""; /* zona de clic más alta que la barra, para acertar fácil */
+  position: absolute;
+  inset: -8px 0;
+}
+
+.bar-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--music-accent);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: 0 50%;
+}
+
+.bar-knob {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--progress, 0) * 100%);
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  scale: 0;
+  transition: scale 220ms var(--spring-pop);
+}
+
+.player[data-can-seek="true"] .bar:hover {
+  height: 7px;
+}
+
+.player[data-can-seek="true"] .bar:hover .bar-knob {
+  scale: 1;
+}
+
+.player[data-can-seek="false"] .bar {
+  cursor: default;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.ctrl {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 240ms var(--spring-pop),
+    background-color 150ms ease,
+    box-shadow 200ms ease;
+}
+
+.ctrl svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ctrl:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ctrl:active {
+  transform: scale(0.86);
+}
+
+.ctrl-main {
+  width: 44px;
+  height: 44px;
+  background: #fff;
+  color: #000;
+}
+
+.ctrl-main:hover {
+  background: #fff;
+  transform: scale(1.07);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.08);
+}
+
+.ctrl:disabled {
+  opacity: 0.3;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Sin música (o sin helper), solo el mensaje: fuera barra y botones */
+.player:not([data-state="ok"]) :is(.player-progress, .player-controls, .player-source) {
+  display: none;
+}
+
+.player:not([data-state="ok"]) .player-title {
+  font-size: 17px;
+}
+
+/* Al entrar en la pestaña: carátula y textos llegan en cascada */
+.island[data-shape="expanded"] .view.is-active .player-art-wrap {
+  animation: pop-in 560ms var(--spring-pop) backwards 60ms;
+}
+
+.island[data-shape="expanded"] .view.is-active .player-info > * {
+  animation: rise-in 420ms var(--spring) backwards;
+}
+
+.island[data-shape="expanded"] .view.is-active .player-info > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.island[data-shape="expanded"] .view.is-active .player-info > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.island[data-shape="expanded"] .view.is-active .player-info > :nth-child(4) {
+  animation-delay: 140ms;
+}
+
+.island[data-shape="expanded"] .view.is-active .player-info > :nth-child(5) {
+  animation-delay: 180ms;
+}
+
+/* ---------- 9. Focus: Pomodoro y links ---------- */
 .focus {
   display: flex;
   align-items: center;
@@ -1043,19 +1529,12 @@ code {
 }
 
 /* Los links aparecen uno a uno (--i = su posición, lo pone app.js) */
-.island.is-expanded .view.is-active :is(.link-btn, .mini-link) {
+.island[data-shape="expanded"] .view.is-active :is(.link-btn, .mini-link) {
   animation: pop-in 460ms var(--spring-pop) backwards;
   animation-delay: calc(80ms + var(--i, 0) * 40ms);
 }
 
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    scale: 0.4;
-  }
-}
-
-/* ---------- 9. Pestañas ---------- */
+/* ---------- 10. Pestañas ---------- */
 .tabbar {
   position: relative;
   flex: none;
@@ -1128,7 +1607,80 @@ code {
   scale: 1.12; /* el icono "salta" un poco al activarse */
 }
 
-/* ---------- 10. Accesibilidad ---------- */
+/* ---------- 11. Barras de ecualizador ---------- */
+/* Cuatro barritas que bailan mientras suena la música. Es la ÚNICA animación
+   continua del notch: solo corre cuando suena música y las barras se ven. */
+.eq {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+}
+
+.eq i {
+  display: block;
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--music-accent);
+  transform: scaleY(0.35);
+}
+
+.eq-small {
+  height: 11px;
+}
+
+.eq-small i,
+.eq-card i {
+  width: 2px;
+}
+
+.eq-banner {
+  flex: none;
+  height: 20px;
+}
+
+/* Cada barra con su ritmo, para que no se muevan todas a la vez */
+.eq i:nth-child(1) {
+  animation-duration: 0.9s;
+  animation-delay: -0.4s;
+}
+
+.eq i:nth-child(2) {
+  animation-duration: 0.62s;
+  animation-delay: -0.2s;
+}
+
+.eq i:nth-child(3) {
+  animation-duration: 0.78s;
+  animation-delay: -0.55s;
+}
+
+.eq i:nth-child(4) {
+  animation-duration: 0.7s;
+  animation-delay: -0.1s;
+}
+
+/* Solo bailan cuando se ven: en la píldora, en el aviso, o en el panel abierto mientras suena */
+.island[data-shape="activity"] .activity[data-kind="music"] .eq i,
+.island[data-shape="banner"] .eq i,
+.island[data-shape="expanded"] .view.is-active [data-playing="true"] .eq i {
+  animation-name: eq-bounce;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+@keyframes eq-bounce {
+  from {
+    transform: scaleY(0.25);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* ---------- 12. Accesibilidad ---------- */
 /* Si en Windows desactivas "Efectos de animación", el notch no anima */
 @media (prefers-reduced-motion: reduce) {
   *,
