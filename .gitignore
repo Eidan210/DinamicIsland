@@ -1,0 +1,33 @@
+# ---------------------------------------------------------------------------
+#  .gitignore de Notch
+# ---------------------------------------------------------------------------
+
+# Dependencias de Node (se reinstalan con `npm install`)
+node_modules/
+
+# Salida de electron-builder (`npm run pack` / `npm run dist`)
+dist/
+out/
+
+# Helper en C# (.NET): binarios, objetos de compilación y archivos de Visual Studio
+helpers/**/bin/
+helpers/**/obj/
+helpers/**/publish/
+*.user
+*.suo
+.vs/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Variables de entorno y secretos
+.env
+.env.*
+
+# Archivos del sistema y de editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

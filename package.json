@@ -1,0 +1,42 @@
+{
+  "name": "notch",
+  "productName": "Notch",
+  "version": "0.1.0",
+  "description": "Isla dinámica estilo iPhone para Windows 11, hecha con Electron.",
+  "main": "main.js",
+  "private": true,
+  "author": "Eidan Cuadros",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^44.10.1",
+    "electron-builder": "^26.17.0"
+  },
+  "build": {
+    "appId": "com.eidancuadros.notch",
+    "productName": "Notch",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "config",
+        "to": "config"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
+  }
+}

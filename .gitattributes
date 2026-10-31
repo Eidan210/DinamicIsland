@@ -1,0 +1,3 @@
+# Git normaliza los saltos de línea de los archivos de texto (LF en el repo,
+# lo que corresponda en tu equipo). Evita diffs enormes por CRLF/LF en Windows.
+* text=auto
