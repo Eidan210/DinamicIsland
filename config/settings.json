@@ -1,5 +1,8 @@
 {
   "shortcut": "Control+Alt+T",
   "locale": "es-ES",
-  "hour12": false
+  "hour12": false,
+  "autoHide": true,
+  "revealOnHover": true,
+  "pomodoroMinutes": 25
 }

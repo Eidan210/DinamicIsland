@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <!--
     Content-Security-Policy: la página solo puede cargar NUESTROS archivos.
-    Nada de scripts externos ni peticiones de red desde aquí (si algún día hace
-    falta internet, lo hará main.js). img-src data: servirá para las carátulas.
+    Nada de scripts externos ni peticiones de red desde aquí (si hace falta
+    internet, lo hace main.js). img-src data: servirá para las carátulas.
   -->
   <meta
     http-equiv="Content-Security-Policy"
@@ -16,18 +16,31 @@
 </head>
 <body>
   <!--
-    La "isla" es lo único visible de la ventana. Cerrada es una píldora negra;
-    con la clase .is-expanded crece hasta ser el panel (la animación es CSS).
+    La "isla" es lo único visible de la ventana. Clases que le pone app.js:
+      .is-hidden    → escondida arriba (auto-ocultar)
+      .is-expanded  → convertida en el panel
+      .has-activity → píldora ancha con la cuenta atrás del Pomodoro
   -->
-  <div id="island" class="island">
+  <div id="island" class="island is-hidden">
 
-    <!-- Los dos ojos verdes. Se quedan arriba en el centro también con el panel abierto. -->
-    <div class="face" aria-hidden="true">
-      <span class="eye"></span>
-      <span class="eye"></span>
+    <!-- Los dos ojos verdes: siempre arriba en el centro -->
+    <div class="face" id="face" aria-hidden="true">
+      <div class="eyes" id="eyes">
+        <span class="eye"></span>
+        <span class="eye"></span>
+      </div>
     </div>
 
-    <!-- Contenido del panel abierto (invisible mientras es píldora) -->
+    <!-- "Actividad en vivo" de la píldora: anillo pequeño + cuenta atrás -->
+    <div class="activity" id="activity" aria-hidden="true">
+      <svg class="activity-ring" viewBox="0 0 20 20">
+        <circle class="ring-track" cx="10" cy="10" r="7" />
+        <circle class="ring-progress" id="activity-progress" cx="10" cy="10" r="7" pathLength="100" />
+      </svg>
+      <span class="activity-text" id="activity-text">25:00</span>
+    </div>
+
+    <!-- Contenido del panel abierto -->
     <div class="panel">
 
       <!-- Barra superior: fecha y hora en vivo -->
@@ -41,18 +54,75 @@
       <!-- Una vista por pestaña. Solo se ve la que tiene .is-active -->
       <main class="views">
 
+        <!-- ===================== HOME: tarjetas resumen ===================== -->
         <section class="view is-active" data-view="home" role="tabpanel" aria-label="Home">
-          <div class="placeholder">
-            <h2 id="greeting">Hola</h2>
-            <p class="hints">
-              <kbd data-shortcut>Ctrl + Alt + T</kbd> abre y cierra
-              <span class="sep">·</span> <kbd>Esc</kbd> cierra
-              <span class="sep">·</span> clic derecho en el notch para salir
-            </p>
-            <span class="badge">Resumen de Claude, Música, Focus y Links · Fase 2</span>
+          <div class="cards">
+
+            <article class="card card-claude" data-goto="claude">
+              <header class="card-head">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="3" /><path d="m7.5 9.5 3 2.5-3 2.5" /><path d="M13 15h3.5" />
+                </svg>
+                <span>Claude</span>
+              </header>
+              <div class="card-main">
+                <span class="card-value is-dim">Sin sesión</span>
+                <span class="card-note">En vivo en la Fase 5</span>
+              </div>
+            </article>
+
+            <article class="card card-music" data-goto="music">
+              <header class="card-head">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+                </svg>
+                <span>Música</span>
+              </header>
+              <div class="card-main">
+                <span class="card-value is-dim">Nada sonando</span>
+                <span class="card-note">Llega en la Fase 3</span>
+              </div>
+            </article>
+
+            <article class="card card-focus" data-goto="focus">
+              <header class="card-head">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5" /><path d="M9 2h6" />
+                </svg>
+                <span>Focus</span>
+              </header>
+              <div class="card-focus-body">
+                <svg class="mini-ring" viewBox="0 0 48 48" aria-hidden="true">
+                  <circle class="ring-track" cx="24" cy="24" r="19" />
+                  <circle class="ring-progress" id="home-pomo-progress" cx="24" cy="24" r="19" pathLength="100" />
+                </svg>
+                <button class="mini-btn" id="home-pomo-toggle" type="button" aria-label="Iniciar Pomodoro">
+                  <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+                  <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.5v13M15.5 5.5v13" /></svg>
+                </button>
+              </div>
+              <div class="card-main">
+                <span class="card-value" id="home-pomo-time">25:00</span>
+                <span class="card-note" id="home-pomo-label">Listo</span>
+              </div>
+            </article>
+
+            <article class="card card-links" data-goto="focus">
+              <header class="card-head">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
+                  <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
+                </svg>
+                <span>Links</span>
+              </header>
+              <div class="mini-links" id="home-links"></div>
+              <span class="card-note links-hint" id="home-links-empty" hidden>Añádelos en config/links.json</span>
+            </article>
+
           </div>
         </section>
 
+        <!-- ===================== MÚSICA (Fase 3) ===================== -->
         <section class="view" data-view="music" role="tabpanel" aria-label="Música">
           <div class="placeholder">
             <svg class="placeholder-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -64,17 +134,58 @@
           </div>
         </section>
 
+        <!-- ===================== FOCUS: Pomodoro + links ===================== -->
         <section class="view" data-view="focus" role="tabpanel" aria-label="Focus">
-          <div class="placeholder">
-            <svg class="placeholder-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5" /><path d="M9 2h6" />
-            </svg>
-            <h2>Focus</h2>
-            <p>Temporizador Pomodoro y tus links favoritos.</p>
-            <span class="badge">Fase 2</span>
+          <div class="focus">
+
+            <div class="pomodoro" id="pomodoro" data-status="idle">
+              <div class="ring-wrap" id="pomo-ring-wrap">
+                <svg class="big-ring" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="ring-track" cx="60" cy="60" r="52" />
+                  <circle class="ring-progress" id="pomo-progress" cx="60" cy="60" r="52" pathLength="100" />
+                </svg>
+                <div class="ring-center">
+                  <span class="ring-time" id="pomo-time">25:00</span>
+                  <span class="ring-label" id="pomo-label">Listo</span>
+                </div>
+              </div>
+
+              <div class="pomo-side">
+                <span class="section-title">Pomodoro</span>
+
+                <div class="stepper" aria-label="Duración">
+                  <button class="step-btn" id="pomo-minus" type="button" aria-label="Quitar 5 minutos">−</button>
+                  <span class="stepper-value" id="pomo-minutes">25 min</span>
+                  <button class="step-btn" id="pomo-plus" type="button" aria-label="Añadir 5 minutos">+</button>
+                </div>
+
+                <div class="pomo-actions">
+                  <button class="btn btn-primary" id="pomo-toggle" type="button">
+                    <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+                    <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.5v13M15.5 5.5v13" /></svg>
+                    <span id="pomo-toggle-text">Iniciar</span>
+                  </button>
+                  <button class="btn btn-icon" id="pomo-reset" type="button" aria-label="Reiniciar" title="Reiniciar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7" /><path d="M4 4v4.5h4.5" /></svg>
+                  </button>
+                </div>
+
+                <span class="pomo-count" id="pomo-count">0 sesiones hoy</span>
+              </div>
+            </div>
+
+            <div class="divider" aria-hidden="true"></div>
+
+            <div class="links">
+              <span class="section-title">Links</span>
+              <div class="links-grid" id="links-grid"></div>
+              <p class="links-empty" id="links-empty" hidden>Añade tus links en <code>config/links.json</code></p>
+            </div>
+
           </div>
         </section>
 
+        <!-- ===================== CLAUDE (Fase 5) ===================== -->
         <section class="view" data-view="claude" role="tabpanel" aria-label="Claude">
           <div class="placeholder">
             <svg class="placeholder-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -88,8 +199,9 @@
 
       </main>
 
-      <!-- Barra inferior con las pestañas -->
-      <nav class="tabbar" role="tablist" aria-label="Secciones">
+      <!-- Barra inferior con las pestañas. El indicador se desliza a la activa. -->
+      <nav class="tabbar" id="tabbar" role="tablist" aria-label="Secciones">
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
         <button class="tab is-active" type="button" role="tab" aria-selected="true" data-tab="home">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M3.5 10.5 12 3.5l8.5 7" /><path d="M5.5 9v10.5a1 1 0 0 0 1 1h3.5v-6h4v6h3.5a1 1 0 0 0 1-1V9" />
