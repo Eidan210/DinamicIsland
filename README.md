@@ -2,23 +2,37 @@
 
 Isla dinámica estilo iPhone para **Windows 11**. En reposo es una mini-muesca negra con dos ojos verdes, pegada al borde superior de la pantalla. Cuando pasa algo (un Pomodoro, una canción), se convierte en una píldora con información en vivo, como la isla dinámica de Apple. Con **Ctrl + Alt + T** se despliega en un panel con fecha, hora, música, Pomodoro y tus links.
 
-Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en **C#** para leer la música de Windows. Código comentado en español.
+Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en **C#** (WinHelper) que habla con Windows; hoy, para leer la música. Código comentado en español.
 
 ## Estado
+
+**Versión 1** (hecha):
 
 | Fase | Contenido | Estado |
 | --- | --- | --- |
 | 1 | El notch: ventana, animación, reloj, pestañas, clics que atraviesan | ✅ Hecha |
 | 2 | Focus (Pomodoro) y links, tarjetas de Home y animaciones | ✅ Hecha |
 | 3 | Música (sesión multimedia de Windows, helper en C#), mini-muesca y actividades en vivo | ✅ Hecha |
-| 4 | Letras sincronizadas (LRCLIB) | ⏳ Pendiente |
-| 5 | Claude Code en vivo (hooks → servidor local) | ⏳ Pendiente |
+
+**Versión 2** (en marcha):
+
+| Fase | Contenido | Estado |
+| --- | --- | --- |
+| 0 | Cimientos: código repartido en módulos y helper renombrado a WinHelper | ✅ Hecha |
+| 1 | Base: 6 páginas, atajos Ctrl+Alt+1…6, varias actividades, tema, volumen, batería, avisos y nota rápida | ⏳ Pendiente |
+| 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ⏳ Pendiente |
+| 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ⏳ Pendiente |
+| 4 | Glow: colores que avisan de lo que pasa | ⏳ Pendiente |
+| 5 | Clawd, la mascota, en la isla | ⏳ Pendiente |
+| 6 | Home con widgets editables | ⏳ Pendiente |
+| 7 | Portapapeles y bandeja de archivos | ⏳ Pendiente |
+| 8 | «Casa de Clawd»: ventana de ajustes e historial | ⏳ Pendiente |
 
 ## Requisitos
 
 - **Windows 11** (en Windows 10 también debería funcionar).
 - **Node.js 22.12 o superior.** Electron 44 no arranca con versiones más antiguas. Descárgalo en <https://nodejs.org> (la versión LTS) y comprueba con `node --version`.
-- **.NET 8 SDK**, para compilar el helper de música. Descárgalo en <https://dotnet.microsoft.com/download/dotnet/8.0> y comprueba con `dotnet --list-sdks` (debe aparecer una versión 8.x).
+- **.NET 8 SDK**, para compilar el helper de Windows (WinHelper). Descárgalo en <https://dotnet.microsoft.com/download/dotnet/8.0> y comprueba con `dotnet --list-sdks` (debe aparecer una versión 8.x).
 - **Git.**
 
 ## Instalar
@@ -30,7 +44,7 @@ npm install
 npm run build:helper
 ```
 
-`npm run build:helper` compila el helper de música y deja `MediaHelper.exe` en `helpers/MediaHelper/publish/`. Solo hay que repetirlo si cambias el código C#.
+`npm run build:helper` compila el helper de Windows y deja `WinHelper.exe` en `helpers/WinHelper/publish/`. Solo hay que repetirlo si cambias el código C#.
 
 > La **primera vez** que arranques, Electron descarga su ejecutable (unos 100 MB), así que tarda un poco más. Las siguientes veces arranca enseguida.
 
@@ -154,17 +168,31 @@ El helper usa el .NET 8 instalado en el PC. En tu equipo ya lo tienes (viene con
 ## Estructura del proyecto
 
 ```text
-main.js                  Proceso principal: ventana, atajo, clics, foco, configuración,
-                         Pomodoro, links y el helper de música
+main.js                  Punto de entrada: arranca la app y conecta los módulos de main/
+main/                    Proceso principal (Node.js), un archivo por tema:
+  state.js               estado compartido (la ventana, la configuración...)
+  bridge.js              hablar con la página (IPC)
+  config.js              config/settings.json y su recarga automática
+  window.js              la ventana: posición, abrir/cerrar, foco, clics, menú
+  shortcuts.js           atajos de teclado globales
+  pomodoro.js            el temporizador Pomodoro y su notificación
+  links.js               config/links.json
+  helper.js              lanza WinHelper.exe y reparte sus mensajes
+  music.js               la música que suena en Windows
+  ipc.js                 TODO lo que la página puede pedir (una lista)
 preload.js               Puente seguro (contextBridge) entre main y la página
 renderer/
   index.html             Estructura: isla, actividad, aviso, panel, tarjetas y pestañas
   styles.css             Aspecto y animaciones (aquí se cambian colores, tamaños y tiempos)
-  app.js                 Lógica de la interfaz: formas de la isla, reloj, pestañas, ojos,
-                         Pomodoro, música y links
-helpers/MediaHelper/
-  MediaHelper.csproj     Proyecto C# (.NET 8, Windows 10 2004 o superior)
-  Program.cs             Lee la sesión multimedia de Windows y habla con Notch
+  modules/               La lógica de la interfaz, en módulos ES:
+    main.js              arranque: pone en marcha los demás módulos
+    state.js             estado compartido de la interfaz
+    island.js            formas de la isla, clics que atraviesan, despertar/dormir
+    panel.js             abrir y cerrar el panel
+    tabs.js, clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
+helpers/WinHelper/
+  WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
+  Program.cs             Habla con Windows (hoy, la sesión multimedia) y con Notch
 config/
   settings.json          Tu configuración
   links.json             Tus links
@@ -178,8 +206,8 @@ assets/
 - **Siempre encima, pero discreta.** No tiene marco, está siempre por encima del resto, no aparece en la barra de tareas ni en `Alt + Tab` y se coloca centrada arriba del **monitor principal**. Si cambias de monitor, de resolución o de escala, se recoloca sola.
 - **Clics que atraviesan.** La ventana ignora el ratón con `setIgnoreMouseEvents(true, { forward: true })`, así que los clics pasan a lo que hay debajo. Gracias a `forward`, la página sigue recibiendo los movimientos del ratón dentro de su zona. Así sabe cuándo dejas el ratón sobre la mini-muesca, para despertarla, y cuándo entras en la isla, para que `main.js` vuelva a aceptar clics. La mini-muesca nunca atrapa clics.
 - **Foco.** Al abrirse, el notch toma el foco para recibir `Esc` y para saber, con el evento `blur`, cuándo haces clic fuera. Al cerrarse con `Esc` o con el atajo, devuelve el foco a la app que estabas usando.
-- **Música con un helper en C#.** `MediaHelper.exe` usa `GlobalSystemMediaTransportControlsSessionManager` de Windows: la misma sesión que ves en el panel de volumen. Por eso funciona con cualquier app, sin conectarse a ninguna en concreto.
-  - Electron lo lanza como proceso hijo. El helper escribe en su salida estándar (stdout) **una línea JSON por cada cambio**: título, artista, álbum, estado, posición, duración, app y carátula. Recibe órdenes por su entrada estándar (stdin): `play`, `pause`, `toggle`, `next`, `previous`, `seek` y `refresh`.
+- **Música con un helper en C#.** `WinHelper.exe` usa `GlobalSystemMediaTransportControlsSessionManager` de Windows: la misma sesión que ves en el panel de volumen. Por eso funciona con cualquier app, sin conectarse a ninguna en concreto.
+  - Electron lo lanza como proceso hijo. El helper escribe en su salida estándar (stdout) **una línea JSON por cada cambio**, con un campo `type` que dice de qué trata (hoy, `media`), y `main/helper.js` la reparte al módulo que corresponde. Para la música trae título, artista, álbum, estado, posición, duración, app y carátula. Recibe órdenes por su entrada estándar (stdin): `play`, `pause`, `toggle`, `next`, `previous`, `seek` y `refresh`.
   - Funciona solo por avisos de Windows: no comprueba nada periódicamente.
   - La carátula se reduce a 300 px en JPEG y **solo viaja cuando cambia**.
   - Si el helper se cierra, Electron lo reinicia esperando cada vez más (2 s, 4 s… hasta 1 minuto). Al salir de Notch, el helper se cierra con él.
@@ -200,7 +228,7 @@ Sin telemetría ni analíticas, y Notch no se conecta a **ningún** servidor. El
 ## Solución de problemas
 
 - **Al arrancar salen errores `Unable to move the cache: Acceso denegado`.** Ya tenías Notch abierto. La copia nueva no puede usar la caché de la que ya está funcionando, le pide que abra su panel y se cierra sola (en la terminal aparece `[notch] Notch ya estaba abierto…`). Es inofensivo.
-- **La pestaña Música dice «Falta el helper de música».** Ejecuta `npm run build:helper` (necesitas el .NET 8 SDK) y reinicia Notch.
+- **La pestaña Música dice «Falta el helper de Windows».** Ejecuta `npm run build:helper` (necesitas el .NET 8 SDK) y reinicia Notch.
 - **`npm run build:helper` dice que `dotnet` no se reconoce.** Instala el .NET 8 SDK y abre una terminal nueva.
 - **La terminal dice «You must install or update .NET to run this application».** Falta el .NET 8 Runtime en ese PC: instálalo desde <https://dotnet.microsoft.com/download/dotnet/8.0>.
 - **No aparece la música.** La app tiene que integrarse con los controles multimedia de Windows (si al subir el volumen ves la canción en el panel de Windows, Notch también la ve). Si suenan varias apps, Notch muestra la que Windows considera actual: la última que empezó a sonar.

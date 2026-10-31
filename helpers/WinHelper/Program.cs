@@ -1,5 +1,5 @@
 // =============================================================================
-//  MediaHelper — lee la música que suena en Windows y se la cuenta a Notch
+//  WinHelper — habla con Windows por Notch (hoy: la música que suena)
 // -----------------------------------------------------------------------------
 //  Usa la sesión multimedia de Windows: la misma que ves en el panel de volumen
 //  y que controlan las teclas multimedia del teclado
@@ -39,7 +39,7 @@ using PlaybackStatus = Windows.Media.Control.GlobalSystemMediaTransportControlsS
 using Session = Windows.Media.Control.GlobalSystemMediaTransportControlsSession;
 using SessionManager = Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager;
 
-namespace MediaHelper;
+namespace WinHelper;
 
 /// <summary>Qué hay que volver a leer cuando llega un aviso de Windows.</summary>
 [Flags]
@@ -507,7 +507,7 @@ internal static class Program
     {
         try
         {
-            Console.Error.WriteLine("[MediaHelper] " + text);
+            Console.Error.WriteLine("[WinHelper] " + text);
         }
         catch (IOException)
         {

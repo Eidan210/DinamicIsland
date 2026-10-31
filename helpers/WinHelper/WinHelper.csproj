@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    MediaHelper: programa de consola que lee la sesión multimedia de Windows
-    (lo que suena en Apple Music, Spotify, el navegador...) y se lo cuenta a
-    Notch por stdout, una línea JSON por cambio.
+    WinHelper: programa de consola que habla con Windows por Notch. Hoy lee la
+    sesión multimedia (lo que suena en Apple Music, Spotify, el navegador...);
+    en próximas fases también el volumen y el portapapeles. Escribe una línea
+    JSON por novedad en stdout y recibe órdenes por stdin.
 
     Compilar (desde la raíz del proyecto):
       npm run build:helper
     que equivale a:
-      dotnet publish helpers/MediaHelper -c Release -o helpers/MediaHelper/publish
+      dotnet publish helpers/WinHelper -c Release -o helpers/WinHelper/publish
   -->
 
   <PropertyGroup>
@@ -20,10 +21,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- No necesitamos datos de idiomas/culturas: el .exe es más ligero -->
     <InvariantGlobalization>true</InvariantGlobalization>
-    <AssemblyName>MediaHelper</AssemblyName>
-    <RootNamespace>MediaHelper</RootNamespace>
+    <AssemblyName>WinHelper</AssemblyName>
+    <RootNamespace>WinHelper</RootNamespace>
 
-    <!-- Publicación: un único MediaHelper.exe para Windows x64 que usa el .NET 8 instalado -->
+    <!-- Publicación: un único WinHelper.exe para Windows x64 que usa el .NET 8 instalado -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>

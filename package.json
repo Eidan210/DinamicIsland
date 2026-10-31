@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "build:helper": "dotnet publish helpers/MediaHelper -c Release -o helpers/MediaHelper/publish",
+    "build:helper": "dotnet publish helpers/WinHelper -c Release -o helpers/WinHelper/publish",
     "pack": "npm run build:helper && electron-builder --win --dir",
     "dist": "npm run build:helper && electron-builder --win"
   },
@@ -23,6 +23,7 @@
     "productName": "Notch",
     "files": [
       "main.js",
+      "main/**/*",
       "preload.js",
       "renderer/**/*",
       "assets/**/*"
@@ -33,10 +34,10 @@
         "to": "config"
       },
       {
-        "from": "helpers/MediaHelper/publish",
-        "to": "MediaHelper",
+        "from": "helpers/WinHelper/publish",
+        "to": "WinHelper",
         "filter": [
-          "MediaHelper.exe"
+          "WinHelper.exe"
         ]
       }
     ],
