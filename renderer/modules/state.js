@@ -20,6 +20,7 @@ export const state = {
     pomodoroMinutes: 25,
     musicActivity: true,
     volumeIndicator: true,
+    glow: true,
   },
   isExpanded: false, // ¿el panel está abierto?
   initialized: false, // ¿terminó el arranque?

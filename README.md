@@ -22,7 +22,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 1 | Base: 6 páginas, atajos Ctrl+Alt+1…6, varias actividades, tema, volumen, batería, avisos y nota rápida | ✅ Hecha |
 | 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ✅ Hecha |
 | 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ✅ Hecha (Antigravity, en prueba) |
-| 4 | Glow: colores que avisan de lo que pasa | ⏳ Pendiente |
+| 4 | Glow: colores que avisan de lo que pasa | ✅ Hecha |
 | 5 | Clawd, la mascota, en la isla | ⏳ Pendiente |
 | 6 | Home con widgets editables | ⏳ Pendiente |
 | 7 | Portapapeles y bandeja de archivos | ⏳ Pendiente |
@@ -90,6 +90,20 @@ La isla cambia de forma según lo que pasa:
 | Clic derecho en la isla | Menú: abrir/cerrar, Pomodoro, pausar/reanudar música, **Música en la isla** (sí/no) y **Salir de Notch** |
 | Clic derecho en la nota | Cortar, copiar, pegar… |
 | `Alt + F4` con el panel abierto | Solo cierra el panel (no sale de la app) |
+
+### El brillo (glow)
+
+Un brillo de color alrededor de la isla te cuenta lo que pasa sin tener que abrirla:
+
+| Color | Cuándo |
+| --- | --- |
+| **Azul, latiendo** | Claude te espera: un permiso, una pregunta, un plan, la terminal te pregunta algo, o acaba de terminar. También en la mini-muesca, por si no estabas mirando. |
+| **Naranja** | Claude (o Antigravity) está trabajando. |
+| **Blanco** | Estás cambiando el volumen. |
+| **El color de la carátula** | Suena música (con la música en la isla). |
+| **Verde** | Ya lo viste: al pasar el ratón por la isla, el azul se pone verde un momento y se desvanece despacio. |
+
+Si hay varios a la vez, gana el azul. El azul se queda hasta que pasas el ratón por la isla o la abres (al abrirla ya cuenta como visto). Con el panel abierto no hay brillo. Los colores están todos juntos en `renderer/styles.css` (sección **1b. Glow**): cámbialos a tu gusto. Para quitarlo, `"glow": false`.
 
 Con el teclado latinoamericano (Colombia), `AltGr` equivale a `Ctrl + Alt`, pero `AltGr` + número no escribe ningún símbolo, así que estos atajos no te quitan nada. Si alguno choca con otra app, cámbialo en `settings.json` (ver `pageShortcuts`).
 
@@ -196,6 +210,7 @@ Todo está en la carpeta `config/`. **Al guardar un archivo, Notch lo aplica al 
   "musicActivity": true,
   "lyrics": true,
   "volumeIndicator": true,
+  "glow": true,
   "ai": true,
   "aiPort": 47823,
   "chatProvider": "gemini",
@@ -221,6 +236,7 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `musicActivity` | `true` | `true`: mientras suena música, la isla la muestra y avisa al cambiar de canción. `false`: la música solo aparece en el panel. También lo cambia el botón de la píldora de la página Música. |
 | `lyrics` | `true` | `true`: busca las letras en LRCLIB (la única conexión a internet de Notch). `false`: sin letras y sin ninguna conexión. |
 | `volumeIndicator` | `true` | `true`: al cambiar el volumen, la isla enseña una barra 1,5 s. `false`: solo se ve el indicador de Windows. |
+| `glow` | `true` | `true`: brillo de color alrededor de la isla (ver [El brillo](#el-brillo-glow)). `false`: sin brillo. Los colores se cambian en `renderer/styles.css`, sección 1b. |
 | `ai` | `true` | `true`: Notch escucha a Claude Code y Antigravity (servidor solo en tu PC, `127.0.0.1`). `false`: sin servidor. |
 | `aiPort` | `47823` | Puerto de ese servidor (de 1024 a 65535). Si lo cambias, cambia también las URLs de tu configuración de Claude Code. |
 | `chatProvider` | `"gemini"` | Con quién habla el chat al abrirlo: `"gemini"`, `"claude"` o `"both"` (los dos). También lo cambia el selector de la página IA. |
@@ -316,6 +332,7 @@ renderer/
     wave.js              la ola de la barra de progreso
     ai.js                Claude Code y Antigravity: isla, decisiones, página IA y Home
     chat.js              el chat de la página IA
+    glow.js              el brillo de color alrededor de la isla
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
@@ -350,6 +367,7 @@ assets/
 - **Salida de audio.** El helper lista las salidas con Core Audio (`IMMDeviceEnumerator`) y se entera de los cambios por avisos de Windows. Para cambiar la predeterminada usa `IPolicyConfig`, la interfaz que usa la propia configuración de sonido de Windows. ⚠️ Microsoft no la documenta: funciona de Windows 7 a Windows 11, pero si algún día cambia, Notch solo mostrará el aviso «No se pudo cambiar la salida de audio».
 - **Muelles de verdad.** La isla cambia de forma con curvas de muelle amortiguado (escritas con `linear()` en `styles.css`): al crecer se pasa un poco y se asienta, como en el iPhone; al encoger, se asienta sin rebotar. Al pulsarla se hunde un poco. Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca; el contenido del panel entra igual, en cascada.
 - **Iconos dibujados a mano.** Son SVG propios al estilo de los de Apple (rellenos y con las puntas redondeadas), definidos una sola vez en `index.html` y reutilizados con `<use>`: no se descarga ninguna fuente de iconos. La ola de la barra la dibuja `wave.js` en dos `<path>` de SVG (lo que ya sonó y lo que falta): para cada punto, altura = envolvente × amplitud × seno; la envolvente la hace nacer y morir plana. Mientras suena, un único `requestAnimationFrame` la hace fluir y avanza la barra, como mucho unas 60-80 veces por segundo, solo con la página Música a la vista; en pausa, en cuanto se calma, se para.
+- **El brillo.** Es un `filter: drop-shadow(...)` sobre la propia isla: sigue su forma (mini, píldora, tarjeta) y no lo recorta el `overflow: hidden`. `glow.js` solo decide el estado (`data-glow`) cuando la isla revisa su forma, al pasar el ratón o al abrir el panel; un único temporizador apaga el verde. El latido es una animación CSS del filtro, que Chromium puede hacer en la tarjeta gráfica. Sin brillo, las sombras son transparentes, y con el panel abierto no hay filtro.
 - **Servidor de la IA.** `main/ai-server.js` escucha solo en `127.0.0.1` y exige el token (`Authorization: Bearer …`, comparado en tiempo constante). Rechaza las peticiones de navegadores (con cabecera `Origin`) y las que no van dirigidas a `127.0.0.1` o `localhost` (así una web no puede hablarle), y como mucho acepta 1 MB por petición. Responde al momento salvo cuando algo espera tu respuesta.
 - **Decisiones.** Un permiso, una pregunta o un plan dejan la petición de Claude Code abierta: la isla enseña la tarjeta y, cuando eliges, Notch contesta con el JSON que dice la documentación de Claude Code (`decision.behavior` en los permisos; `permissionDecision` con `updatedInput` en las preguntas y los planes). Si Claude Code cuelga antes (respondiste en la terminal o se agotó su tiempo), la tarjeta se va sola. Un temporizador por decisión (590 s) y otro por sesión (se olvida a los 45 minutos sin señales): nada de sondeos.
 - **Chat.** `main/ai-chat.js` busca los programas con `where.exe`, prefiere el `.exe` y, si solo hay un `.cmd` (instalado con npm), lo lanza con `cmd.exe` pasándole solo argumentos de Notch: tu texto va por la entrada estándar. Lee su salida línea a línea (`stream-json`) y se la manda a la página a trozos (cada 50 ms). «Parar» cierra el programa con todo lo que haya abierto (`taskkill /T`).
@@ -410,3 +428,5 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **El chat dice «No encuentro Claude Code».** Abre una terminal nueva y prueba `claude --version`. Si no funciona, instálalo o añade su carpeta al PATH, y reinicia Notch. Si dice que no has iniciado sesión, ejecuta `claude` en una terminal e inicia sesión.
 - **Gemini no responde o tarda mucho.** Si Antigravity falla, Notch prueba solo con Gemini CLI (lo pone en la respuesta). Para usar siempre Gemini CLI, pon `"geminiCli": "gemini"`. Si ninguno está instalado, el chat te lo dice.
 - **Quiero apagar la IA.** Pon `"ai": false` en `settings.json` (se aplica al guardar). Puedes dejar los hooks pegados: si Notch no escucha, Claude Code sigue como siempre.
+- **El brillo me molesta o quiero otros colores.** Pon `"glow": false` para quitarlo. Para cambiar los colores, edita las variables `--glow-…` de la sección 1b de `renderer/styles.css` y recarga Notch.
+- **La isla sigue brillando en azul.** Claude te espera o acaba de terminar: pasa el ratón por la isla (o ábrela) y el brillo se va.

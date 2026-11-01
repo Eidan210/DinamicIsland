@@ -39,6 +39,7 @@ const DEFAULT_SETTINGS = {
   musicActivity: true, // mostrar la música en la isla mientras suena (y avisar al cambiar de canción)
   lyrics: true, // buscar las letras en LRCLIB (la única conexión a internet de Notch)
   volumeIndicator: true, // al cambiar el volumen, la isla enseña una barra 1,5 s
+  glow: true, // brillo de color alrededor de la isla (colores en renderer/styles.css, sección 1b)
   // IA (Fase 3)
   ai: true, // escuchar a Claude Code y Antigravity (servidor solo en tu PC, 127.0.0.1)
   aiPort: 47823, // su puerto (si lo cambias, cambia también la URL en la configuración de Claude Code)
@@ -144,6 +145,7 @@ function loadSettings() {
   result.musicActivity = result.musicActivity !== false;
   result.lyrics = result.lyrics !== false;
   result.volumeIndicator = result.volumeIndicator !== false;
+  result.glow = result.glow !== false;
   result.ai = result.ai !== false;
   const port = Math.round(Number(result.aiPort));
   result.aiPort = Number.isFinite(port) && port >= 1024 && port <= 65535 ? port : DEFAULT_SETTINGS.aiPort;

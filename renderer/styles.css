@@ -10,7 +10,7 @@
      (de menor a mayor)
 
    ÍNDICE
-      1. Variables                     9. Música
+      1. Variables (y 1b. Glow)        9. Música
       2. Base                         10. Focus: Pomodoro y links
       3. La isla y sus formas         11. Nota rápida
       4. Los ojos                     12. Pestañas
@@ -137,6 +137,21 @@
   syntax: "<color>";
   inherits: false;
   initial-value: transparent;
+}
+
+/* ---------- 1b. Glow: el brillo alrededor de la isla ----------
+   TODOS sus colores están aquí: cámbialos a tu gusto. glow.js decide cuál
+   toca (pone data-glow en la isla) y, si hay varios a la vez, gana el que
+   pide atención. La atención se queda hasta que pasas el ratón por la isla
+   (entonces se pone verde un momento y se desvanece despacio) o la abres.
+   Con el panel abierto no hay brillo: su fondo es translúcido y se teñiría.
+   Con "glow": false en settings.json no hay brillo. */
+:root {
+  --glow-attention: #4dabf7; /* azul: Claude te espera (permiso, pregunta, plan) o acaba de terminar */
+  --glow-working: #ff8a4c; /* naranja: Claude está trabajando */
+  --glow-volume: #ffffff; /* blanco: estás cambiando el volumen */
+  --glow-seen: #3dff8f; /* verde: ya lo viste (se desvanece despacio) */
+  --glow-music: var(--music-accent); /* música: el color de la carátula */
 }
 
 /* ---------- 2. Base ---------- */
@@ -287,8 +302,84 @@ img {
     background-color var(--size-duration) ease,
     box-shadow var(--size-duration) ease,
     scale 420ms var(--spring-bouncy),
+    filter var(--glow-duration) ease,
     --island-tint-1 600ms ease,
     --island-tint-2 600ms ease;
+
+  /* El glow (sección 1b): dos sombras de luz que siguen la forma de la isla.
+     --glow es el color; --glow-near y --glow-far, cuánto brilla cerca y lejos.
+     Sin brillo son transparentes (y no "none": desde "none" el color entraría
+     pasando por gris). */
+  --glow: transparent;
+  --glow-near: 0%;
+  --glow-far: 0%;
+  --glow-size: 12px;
+  --glow-duration: 500ms;
+  filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--glow) var(--glow-near), transparent))
+    drop-shadow(0 0 var(--glow-size) color-mix(in srgb, var(--glow) var(--glow-far), transparent));
+}
+
+/* El panel abierto nunca brilla: sin filtro (así no gasta nada mientras está abierto) */
+.island[data-shape="expanded"] {
+  filter: none;
+}
+
+/* ---------- Glow: cada estado con su color e intensidad ---------- */
+.island[data-glow="working"] {
+  --glow: var(--glow-working);
+  --glow-near: 70%;
+  --glow-far: 45%;
+}
+
+.island[data-glow="volume"] {
+  --glow: var(--glow-volume);
+  --glow-near: 55%;
+  --glow-far: 30%;
+  --glow-size: 10px;
+}
+
+.island[data-glow="music"] {
+  --glow: var(--glow-music);
+  --glow-near: 55%;
+  --glow-far: 40%;
+}
+
+/* Atención: más fuerte y late despacio */
+.island[data-glow="attention"] {
+  --glow: var(--glow-attention);
+  --glow-near: 95%;
+  --glow-far: 75%;
+  --glow-size: 16px;
+  animation: glow-pulse 2.2s ease-in-out infinite;
+}
+
+/* Ya lo viste: verde un momento... */
+.island[data-glow="seen"] {
+  --glow: var(--glow-seen);
+  --glow-near: 85%;
+  --glow-far: 60%;
+  --glow-size: 14px;
+  --glow-duration: 260ms;
+}
+
+/* ...y se desvanece despacio */
+.island[data-glow-fade="slow"] {
+  --glow-duration: 1600ms;
+}
+
+/* La mini-muesca es muy pequeña: su brillo, algo más intenso para que se note */
+.island[data-shape="mini"]:is([data-glow="attention"], [data-glow="seen"]) {
+  --glow-near: 100%;
+  --glow-far: 95%;
+  --glow-size: 11px;
+}
+
+/* El latido: a mitad baja a algo menos de la mitad del brillo de ese estado */
+@keyframes glow-pulse {
+  50% {
+    filter: drop-shadow(0 0 1px color-mix(in srgb, var(--glow) calc(var(--glow-near) * 0.6), transparent))
+      drop-shadow(0 0 calc(var(--glow-size) * 0.55) color-mix(in srgb, var(--glow) calc(var(--glow-far) * 0.4), transparent));
+  }
 }
 
 /* Con música (en la isla o en el aviso de canción nueva), un tinte suave con

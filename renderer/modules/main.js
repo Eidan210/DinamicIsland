@@ -28,6 +28,7 @@
 //    wave.js      la ola de la barra de progreso de la música
 //    ai.js        Claude Code y Antigravity: isla, decisiones, página IA y Home
 //    chat.js      el chat con Claude y Gemini (página IA)
+//    glow.js      el brillo de color alrededor de la isla
 //  Este archivo solo los pone en marcha, en orden.
 // =============================================================================
 
@@ -50,6 +51,7 @@ import { initTheme, setTheme } from './theme.js';
 import { initMotion, applyMotionSetting } from './motion.js';
 import { initAi, setAiState } from './ai.js';
 import { initChat, loadChat, applyChatSettings } from './chat.js';
+import { initGlow } from './glow.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -101,6 +103,7 @@ async function init() {
   initNote();
   initChat();
   initAi();
+  initGlow();
 
   // Al guardar config/settings.json, se aplica al momento.
   window.notch.onSettingsChange((newSettings) => {
@@ -110,7 +113,7 @@ async function init() {
     applyTabShortcuts();
     renderIslandToggle();
     applyChatSettings();
-    updateShape();
+    updateShape(); // (también revisa el glow: "glow" puede haber cambiado)
   });
 
   // 2. Pedimos a main.js el estado actual de todo.
