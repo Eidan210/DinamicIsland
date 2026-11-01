@@ -13,6 +13,7 @@
 import { $, setRollingText } from './utils.js';
 import { state } from './state.js';
 import { addLocalNotice } from './notices.js';
+import { updateShape } from './island.js';
 
 const LOW_LEVEL = 0.2; // 20 %
 const CRITICAL_LEVEL = 0.1; // 10 %
@@ -93,6 +94,7 @@ function onBatteryChange() {
   state.battery = { level: battery.level, charging: battery.charging };
   renderBattery();
   checkWarnings();
+  updateShape(); // con poca batería, Clawd se ve cansado
 }
 
 export async function initBattery() {

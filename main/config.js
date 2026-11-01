@@ -40,6 +40,11 @@ const DEFAULT_SETTINGS = {
   lyrics: true, // buscar las letras en LRCLIB (la única conexión a internet de Notch)
   volumeIndicator: true, // al cambiar el volumen, la isla enseña una barra 1,5 s
   glow: true, // brillo de color alrededor de la isla (colores en renderer/styles.css, sección 1b)
+  // Clawd (Fase 5)
+  clawd: true, // Clawd vive en la isla en lugar de los ojos (false = los ojos de siempre)
+  clawdSleepMinutes: 5, // se duerme tras estos minutos sin tocar el PC (o al bloquearlo)
+  clawdByeTime: '18:00', // a esta hora se despide hasta mañana ("" = nunca)
+  clawdCostume: 'auto', // disfraz: "auto" (según la fecha), "none", "halloween" o "christmas"
   // IA (Fase 3)
   ai: true, // escuchar a Claude Code y Antigravity (servidor solo en tu PC, 127.0.0.1)
   aiPort: 47823, // su puerto (si lo cambias, cambia también la URL en la configuración de Claude Code)
@@ -53,6 +58,7 @@ const THEMES = ['auto', 'light', 'dark'];
 const CHAT_PROVIDERS = ['gemini', 'claude', 'both'];
 const CLAUDE_MODELS = ['opus', 'sonnet', 'haiku', 'fable'];
 const GEMINI_CLIS = ['auto', 'agy', 'gemini'];
+const CLAWD_COSTUMES = ['auto', 'none', 'halloween', 'christmas'];
 const ANIMATION_MODES = ['always', 'system', 'off'];
 const POMODORO_MIN_MINUTES = 1;
 const POMODORO_MAX_MINUTES = 180;
@@ -146,6 +152,16 @@ function loadSettings() {
   result.lyrics = result.lyrics !== false;
   result.volumeIndicator = result.volumeIndicator !== false;
   result.glow = result.glow !== false;
+  result.clawd = result.clawd !== false;
+  const sleepMinutes = Math.round(Number(result.clawdSleepMinutes));
+  result.clawdSleepMinutes =
+    Number.isFinite(sleepMinutes) && sleepMinutes >= 1 && sleepMinutes <= 240 ? sleepMinutes : DEFAULT_SETTINGS.clawdSleepMinutes;
+  // "HH:MM" (de 00:00 a 23:59) o "" para que no se despida
+  if (typeof result.clawdByeTime !== 'string' || !/^(([01]?\d|2[0-3]):[0-5]\d)?$/.test(result.clawdByeTime.trim())) {
+    result.clawdByeTime = DEFAULT_SETTINGS.clawdByeTime;
+  }
+  result.clawdByeTime = result.clawdByeTime.trim();
+  if (!CLAWD_COSTUMES.includes(result.clawdCostume)) result.clawdCostume = DEFAULT_SETTINGS.clawdCostume;
   result.ai = result.ai !== false;
   const port = Math.round(Number(result.aiPort));
   result.aiPort = Number.isFinite(port) && port >= 1024 && port <= 65535 ? port : DEFAULT_SETTINGS.aiPort;

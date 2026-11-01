@@ -1,14 +1,17 @@
 // =============================================================================
-//  renderer/modules/eyes.js — Los ojos de la isla
+//  renderer/modules/eyes.js — La cara de la isla (los ojos o Clawd)
 // -----------------------------------------------------------------------------
-//  Parpadean, miran alrededor, siguen al ratón y cambian de expresión.
+//  Parpadea, mira alrededor, sigue al ratón y cambia de expresión.
 //  Todo son animaciones cortas lanzadas de vez en cuando: nada se anima en
 //  bucle infinito (eso tendría a la GPU dibujando todo el rato).
-//  (En la Fase 5, Clawd ocupará su lugar reutilizando esta misma lógica.)
+//  Desde la Fase 5 la cara es Clawd (clawd.js): cada gesto se hace en los
+//  dos (los ojos de siempre y Clawd); solo se ve el que toca ("clawd" en
+//  settings.json).
 // =============================================================================
 
 import { $, animate, SPRING_POP } from './utils.js';
 import { state } from './state.js';
+import { blinkClawd, glanceClawd, popClawd, updateClawd, wakeClawd } from './clawd.js';
 
 const faceEl = $('face');
 const eyesEl = $('eyes');
@@ -24,6 +27,7 @@ function blink() {
       easing: 'ease-in-out',
     });
   });
+  blinkClawd(times);
 }
 
 function scheduleBlink() {
@@ -43,27 +47,32 @@ export function wakeEyes() {
       { duration: 520, easing: SPRING_POP }
     );
   });
+  wakeClawd();
 }
 
 /** Al abrir el panel, los ojos dan un pequeño salto de alegría. */
 export function popEyes() {
   animate(eyesEl, [{ scale: '1' }, { scale: '1.3' }, { scale: '1' }], { duration: 420, easing: 'ease-out' });
+  popClawd();
 }
 
-/** Los ojos miran hacia el ratón (como mucho 3,5 px a los lados y 2,5 px arriba/abajo). */
+/**
+ * Los ojos miran hacia el ratón (como mucho 3,5 px a los lados y 2,5 px
+ * arriba/abajo). Las variables van en la cara: las usan los ojos y Clawd.
+ */
 export function lookAt(x, y) {
   const rect = faceEl.getBoundingClientRect();
   const dx = x - (rect.left + rect.width / 2);
   const dy = y - (rect.top + rect.height / 2);
   const distance = Math.hypot(dx, dy) || 1;
   const strength = Math.min(1, distance / 140); // cerca del centro se mueven menos
-  eyesEl.style.setProperty('--look-x', `${((dx / distance) * strength * 3.5).toFixed(2)}px`);
-  eyesEl.style.setProperty('--look-y', `${((dy / distance) * strength * 2.5).toFixed(2)}px`);
+  faceEl.style.setProperty('--look-x', `${((dx / distance) * strength * 3.5).toFixed(2)}px`);
+  faceEl.style.setProperty('--look-y', `${((dy / distance) * strength * 2.5).toFixed(2)}px`);
 }
 
 export function resetLook() {
-  eyesEl.style.setProperty('--look-x', '0px');
-  eyesEl.style.setProperty('--look-y', '0px');
+  faceEl.style.setProperty('--look-x', '0px');
+  faceEl.style.setProperty('--look-y', '0px');
 }
 
 /** De vez en cuando, si no tienes el ratón cerca, mira a un lado y a otro. */
@@ -81,6 +90,7 @@ function glance() {
     ],
     { duration: 2200, easing: 'ease-in-out' }
   );
+  glanceClawd(side);
 }
 
 function scheduleGlance() {
@@ -95,6 +105,7 @@ export function updateMood() {
   const celebrating = Date.now() < state.celebrateUntil;
   faceEl.classList.toggle('is-happy', celebrating);
   faceEl.classList.toggle('is-focused', !celebrating && state.pomodoro.status === 'running');
+  updateClawd(); // Clawd decide lo suyo (trabajar, bailar, dormir...)
 }
 
 /** Empieza a parpadear y a mirar alrededor. */

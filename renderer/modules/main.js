@@ -29,6 +29,7 @@
 //    ai.js        Claude Code y Antigravity: isla, decisiones, página IA y Home
 //    chat.js      el chat con Claude y Gemini (página IA)
 //    glow.js      el brillo de color alrededor de la isla
+//    clawd.js     Clawd, la mascota (en lugar de los ojos)
 //  Este archivo solo los pone en marcha, en orden.
 // =============================================================================
 
@@ -52,6 +53,7 @@ import { initMotion, applyMotionSetting } from './motion.js';
 import { initAi, setAiState } from './ai.js';
 import { initChat, loadChat, applyChatSettings } from './chat.js';
 import { initGlow } from './glow.js';
+import { initClawd, scheduleBye, setClawdSleeping } from './clawd.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -70,6 +72,7 @@ async function loadInitialState() {
     note: window.notch.note.get(),
     ai: window.notch.ai.getState(),
     chat: window.notch.chat.getState(),
+    clawd: window.notch.clawd.getState(),
   };
   const names = Object.keys(requests);
   const results = await Promise.allSettled(Object.values(requests));
@@ -104,6 +107,7 @@ async function init() {
   initChat();
   initAi();
   initGlow();
+  initClawd({ keepAwakeFor });
 
   // Al guardar config/settings.json, se aplica al momento.
   window.notch.onSettingsChange((newSettings) => {
@@ -113,7 +117,8 @@ async function init() {
     applyTabShortcuts();
     renderIslandToggle();
     applyChatSettings();
-    updateShape(); // (también revisa el glow: "glow" puede haber cambiado)
+    scheduleBye(); // "clawdByeTime" puede haber cambiado
+    updateShape(); // (también revisa el glow y a Clawd)
   });
 
   // 2. Pedimos a main.js el estado actual de todo.
@@ -130,6 +135,8 @@ async function init() {
   loadNote(loaded.note); // si no se pudo leer, la nota queda en solo lectura
   loadChat(loaded.chat);
   if (loaded.ai) setAiState(loaded.ai);
+  if (loaded.clawd) setClawdSleeping(loaded.clawd.sleeping);
+  scheduleBye();
 
   // 3. Lo dibujamos todo.
   applyClockSettings();

@@ -21,6 +21,10 @@ export const state = {
     musicActivity: true,
     volumeIndicator: true,
     glow: true,
+    clawd: true,
+    clawdSleepMinutes: 5,
+    clawdByeTime: '18:00',
+    clawdCostume: 'auto',
   },
   isExpanded: false, // ¿el panel está abierto?
   initialized: false, // ¿terminó el arranque?
@@ -74,6 +78,9 @@ export const state = {
   ai: { server: { listening: false, port: 0, error: '' }, lastEventAt: 0, sessions: [], pending: [] },
   aiDoneUntil: 0, // al terminar una sesión, la isla enseña "Hecho" hasta entonces
   aiDoneId: '', // ...de esta sesión
+
+  // Clawd: ¿llevas un rato sin tocar el PC (o está bloqueado)? (lo cuenta main.js)
+  clawdSleeping: false,
 
   // Chat (chat.js)
   chat: { messages: [], busy: false, provider: 'gemini', claudeModel: 'sonnet' },

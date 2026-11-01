@@ -23,6 +23,7 @@ const theme = require('./theme');
 const aiSessions = require('./ai-sessions');
 const aiServer = require('./ai-server');
 const aiChat = require('./ai-chat');
+const idle = require('./idle');
 const { clipboard } = require('electron');
 
 function registerIpcHandlers() {
@@ -75,6 +76,9 @@ function registerIpcHandlers() {
     clipboard.writeText(aiServer.getSetupText(kind === 'agy' ? 'agy' : 'claude'));
     return true;
   });
+
+  // Clawd: ¿está dormido? (llevas un rato sin tocar el PC o está bloqueado)
+  onRendererRequest('clawd:get', () => ({ sleeping: idle.isSleeping() }));
 
   // Chat
   onRendererRequest('chat:get', () => aiChat.getChatState());

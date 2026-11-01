@@ -29,6 +29,7 @@
 //    ai-sessions.js las sesiones de Claude Code y Antigravity, y sus decisiones
 //    ai-server.js  el servidor local (127.0.0.1) que recibe sus eventos
 //    ai-chat-parse.js / ai-chat.js  el chat con Claude y Gemini (sus CLI)
+//    idle.js       ¿estás delante del PC? (para que Clawd se duerma)
 //    ipc.js        todo lo que la página puede pedir
 // =============================================================================
 
@@ -48,6 +49,7 @@ const lyrics = require('./main/lyrics');
 const aiServer = require('./main/ai-server');
 const aiSessions = require('./main/ai-sessions');
 const aiChat = require('./main/ai-chat');
+const idle = require('./main/idle');
 const { registerIpcHandlers } = require('./main/ipc');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
@@ -65,6 +67,7 @@ function onConfigChanged(changedFiles) {
     applyTheme();
     lyrics.onSettingsChanged(); // "lyrics": encender o apagar las letras al momento
     aiServer.onSettingsChanged(previous); // "ai" / "aiPort": encender, apagar o cambiar de puerto
+    idle.onSettingsChanged(); // "clawd" / "clawdSleepMinutes"
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();
@@ -122,6 +125,9 @@ if (!hasSingleInstanceLock) {
     // vengan de la carpeta del chat de Notch no son sesiones tuyas: se ignoran.
     aiSessions.setIgnoredDirs([aiChat.getChatDir()]);
     aiServer.startAiServer();
+
+    // Clawd se duerme si llevas un rato sin tocar el PC (o lo bloqueas).
+    idle.startIdleWatch();
 
     // Si conectas/desconectas un monitor o cambias resolución/escala, recolocamos el notch.
     // (Son eventos del sistema: no hay ningún temporizador comprobando nada.)

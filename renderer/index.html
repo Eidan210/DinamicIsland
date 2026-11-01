@@ -103,11 +103,86 @@
     -->
     <div id="island" class="island" data-shape="mini">
 
-      <!-- Los dos ojos verdes: siempre arriba en el centro -->
+      <!-- La cara, siempre arriba en el centro: Clawd (o los dos ojos verdes de
+           siempre, con "clawd": false). clawd.js y eyes.js le dan vida. -->
       <div class="face" id="face" aria-hidden="true">
         <div class="eyes" id="eyes">
           <span class="eye"></span>
           <span class="eye"></span>
+        </div>
+
+        <!-- Clawd en pixel art: 18 x 10 "píxeles" (cada unidad del viewBox es un píxel).
+             Inspirado en la mascota de Claude Code (Anthropic): para uso personal. -->
+        <div class="clawd" id="clawd" data-mode="idle" data-eyes="open" data-costume="none">
+          <svg class="clawd-svg" viewBox="0 0 18 10">
+            <g class="clawd-all">
+              <g class="clawd-legs">
+                <rect class="clawd-leg leg-a" x="4" y="8" width="1" height="2" />
+                <rect class="clawd-leg leg-b" x="6" y="8" width="1" height="2" />
+                <rect class="clawd-leg leg-b" x="11" y="8" width="1" height="2" />
+                <rect class="clawd-leg leg-a" x="13" y="8" width="1" height="2" />
+              </g>
+              <g class="clawd-body">
+                <rect class="clawd-arm clawd-arm-l" x="1" y="4" width="2" height="2" />
+                <rect class="clawd-arm clawd-arm-r" x="15" y="4" width="2" height="2" />
+                <rect class="clawd-torso" x="3" y="0" width="12" height="8" />
+                <rect class="clawd-light" x="3" y="0" width="12" height="1" />
+                <rect class="clawd-shade" x="3" y="7" width="12" height="1" />
+
+                <!-- Los ojos: una expresión visible a la vez (data-eyes) -->
+                <g class="clawd-eyes eyes-open">
+                  <rect x="5" y="2" width="1" height="2" /><rect x="12" y="2" width="1" height="2" />
+                </g>
+                <g class="clawd-eyes eyes-happy">
+                  <rect x="4" y="3" width="1" height="1" /><rect x="5" y="2" width="1" height="1" /><rect x="6" y="3" width="1" height="1" />
+                  <rect x="11" y="3" width="1" height="1" /><rect x="12" y="2" width="1" height="1" /><rect x="13" y="3" width="1" height="1" />
+                </g>
+                <g class="clawd-eyes eyes-closed">
+                  <rect x="4" y="3" width="2" height="1" /><rect x="12" y="3" width="2" height="1" />
+                </g>
+                <g class="clawd-eyes eyes-angry">
+                  <rect x="4" y="2" width="1" height="1" /><rect x="5" y="3" width="1" height="1" />
+                  <rect x="13" y="2" width="1" height="1" /><rect x="12" y="3" width="1" height="1" />
+                </g>
+                <g class="clawd-eyes eyes-dizzy">
+                  <rect x="4" y="1" width="1" height="1" /><rect x="6" y="1" width="1" height="1" /><rect x="5" y="2" width="1" height="1" />
+                  <rect x="4" y="3" width="1" height="1" /><rect x="6" y="3" width="1" height="1" />
+                  <rect x="11" y="1" width="1" height="1" /><rect x="13" y="1" width="1" height="1" /><rect x="12" y="2" width="1" height="1" />
+                  <rect x="11" y="3" width="1" height="1" /><rect x="13" y="3" width="1" height="1" />
+                </g>
+                <g class="clawd-eyes eyes-tired">
+                  <rect x="5" y="3" width="1" height="1" /><rect x="12" y="3" width="1" height="1" />
+                </g>
+
+                <!-- Disfraces por fecha (data-costume) -->
+                <g class="clawd-hat hat-halloween">
+                  <rect class="hat-main" x="10" y="-5" width="1" height="1" />
+                  <rect class="hat-main" x="8" y="-4" width="2" height="1" />
+                  <rect class="hat-main" x="7" y="-3" width="4" height="1" />
+                  <rect class="hat-band" x="6" y="-2" width="6" height="1" />
+                  <rect class="hat-main" x="2" y="-1" width="14" height="1" />
+                </g>
+                <g class="clawd-hat hat-christmas">
+                  <rect class="hat-white" x="13" y="-5" width="2" height="2" />
+                  <rect class="hat-red" x="10" y="-4" width="3" height="1" />
+                  <rect class="hat-red" x="7" y="-3" width="6" height="1" />
+                  <rect class="hat-red" x="5" y="-2" width="8" height="1" />
+                  <rect class="hat-white" x="2" y="-1" width="14" height="1" />
+                </g>
+              </g>
+
+              <!-- Durmiendo: unas "z" que suben -->
+              <g class="clawd-zzz">
+                <g class="clawd-z"><rect x="14" y="-4" width="4" height="1" /><rect x="16" y="-3" width="1" height="1" /><rect x="15" y="-2" width="1" height="1" /><rect x="14" y="-1" width="4" height="1" /></g>
+                <g class="clawd-z clawd-z2"><rect x="14" y="-4" width="4" height="1" /><rect x="16" y="-3" width="1" height="1" /><rect x="15" y="-2" width="1" height="1" /><rect x="14" y="-1" width="4" height="1" /></g>
+              </g>
+              <!-- Celebrando: destellos alrededor -->
+              <g class="clawd-sparkles">
+                <rect x="0" y="-1" width="1" height="1" /><rect x="17" y="-2" width="1" height="1" />
+                <rect x="-1" y="6" width="1" height="1" /><rect x="18" y="7" width="1" height="1" />
+              </g>
+            </g>
+          </svg>
         </div>
       </div>
 

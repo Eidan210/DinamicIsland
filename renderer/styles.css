@@ -13,7 +13,7 @@
       1. Variables (y 1b. Glow)        9. Música
       2. Base                         10. Focus: Pomodoro y links
       3. La isla y sus formas         11. Nota rápida
-      4. Los ojos                     12. Pestañas
+      4. Los ojos (y 4b. Clawd)       12. Pestañas
       5. Actividad, volumen y avisos  13. Barras de ecualizador
       6. Burbujas                     14. Tema claro
       7. Contenido del panel          15. Accesibilidad
@@ -562,6 +562,307 @@ img {
   background-color: transparent;
   box-shadow: none;
   filter: drop-shadow(0 0 4px var(--eye-glow));
+}
+
+/* ---------- 4b. Clawd ----------
+   Clawd en pixel art (index.html): cada unidad de su SVG es un "píxel" y
+   --clawd-px es lo que mide en pantalla (1 px en la mini-muesca, 2 en la
+   píldora). clawd.js pone:
+     data-mode    lo que hace: idle, working, waiting, dancing, sleeping, tired, focused
+     data-eyes    la expresión: open, happy, closed, angry, dizzy, tired
+     data-dance   cuál de los 4 bailes (según la canción)
+     data-costume none, halloween o christmas
+   y clases para las acciones cortas (is-walking, is-celebrating, is-error).
+   Las animaciones van a saltos de píxel (steps), como un juego retro, y solo
+   mientras Clawd se ve. */
+@property --clawd-px {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 2px;
+}
+
+.clawd {
+  --clawd-body: #d97757;
+  --clawd-light: #ec9b7e;
+  --clawd-shade: #b45a3c;
+  --clawd-eye: var(--eye-color); /* verde: en reposo o al terminar */
+  --clawd-px: 2px;
+
+  display: none;
+  width: calc(18 * var(--clawd-px));
+  height: calc(10 * var(--clawd-px));
+  transition: --clawd-px 420ms var(--spring-bouncy);
+}
+
+:root[data-face="clawd"] .clawd {
+  display: block;
+}
+
+:root[data-face="clawd"] .eyes {
+  display: none;
+}
+
+.island[data-shape="mini"] .clawd {
+  --clawd-px: 1px;
+}
+
+.island[data-shape="expanded"] .clawd {
+  pointer-events: auto; /* con el panel abierto se le puede tocar (se enfada) */
+  cursor: pointer;
+}
+
+.clawd-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: var(--clawd-body);
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+
+.clawd-all,
+.clawd-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.clawd-light {
+  fill: var(--clawd-light);
+}
+
+.clawd-shade,
+.clawd-leg {
+  fill: var(--clawd-shade);
+}
+
+/* Los ojos: brillan con el color del estado y miran hacia el ratón (1 píxel) */
+.clawd-eyes {
+  display: none;
+  fill: var(--clawd-eye);
+  filter: drop-shadow(0 0 0.8px var(--clawd-eye));
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  translate: clamp(-1px, calc(var(--look-x, 0px) / 3), 1px) clamp(-1px, calc(var(--look-y, 0px) / 2.5), 1px);
+  transition:
+    fill 300ms ease,
+    translate 200ms steps(1, end);
+}
+
+.clawd[data-eyes="open"] .eyes-open,
+.clawd[data-eyes="happy"] .eyes-happy,
+.clawd[data-eyes="closed"] .eyes-closed,
+.clawd[data-eyes="angry"] .eyes-angry,
+.clawd[data-eyes="dizzy"] .eyes-dizzy,
+.clawd[data-eyes="tired"] .eyes-tired {
+  display: inline;
+}
+
+/* Cerrados (durmiendo) y mareado: sin brillo */
+.eyes-closed,
+.eyes-dizzy {
+  fill: #5a2516;
+  filter: none;
+}
+
+/* El color de los ojos según lo que pasa */
+.clawd[data-mode="working"] {
+  --clawd-eye: #ffd25e; /* trabajando: ámbar */
+}
+
+.clawd[data-mode="waiting"] {
+  --clawd-eye: var(--glow-attention); /* te espera: azul */
+}
+
+.clawd[data-mode="tired"] {
+  --clawd-eye: #9fdcb0; /* cansado (poca batería): verde apagado */
+}
+
+.clawd:is([data-eyes="angry"], .is-error) {
+  --clawd-eye: #ff453a; /* error o enfadado: rojo */
+}
+
+/* Disfraces */
+.clawd-hat,
+.clawd-zzz,
+.clawd-sparkles {
+  display: none;
+}
+
+.clawd[data-costume="halloween"] .hat-halloween,
+.clawd[data-costume="christmas"] .hat-christmas {
+  display: inline;
+}
+
+/* Con gorro, Clawd baja 2 píxeles para que quepa; en la mini-muesca no cabe: sin gorro */
+.island:not([data-shape="mini"]) .clawd:is([data-costume="halloween"], [data-costume="christmas"]) .clawd-svg {
+  translate: 0 calc(2 * var(--clawd-px));
+}
+
+.island[data-shape="mini"] .clawd-hat {
+  display: none;
+}
+
+.hat-main {
+  fill: #40205f;
+}
+
+.hat-band {
+  fill: #ff9a1f;
+}
+
+.hat-red {
+  fill: #e1322e;
+}
+
+.hat-white {
+  fill: #f4f4f4;
+}
+
+/* ----- Animaciones que duran mientras dura el estado (solo si Clawd se ve) ----- */
+
+/* Trabajando: patitas y bracitos tecleando */
+.island:is([data-shape="mini"], [data-shape="pill"], [data-shape="activity"], [data-shape="expanded"])
+  .clawd[data-mode="working"]
+  :is(.leg-a, .clawd-arm-l) {
+  animation: clawd-tap 0.3s steps(1, end) infinite;
+}
+
+.island:is([data-shape="mini"], [data-shape="pill"], [data-shape="activity"], [data-shape="expanded"])
+  .clawd[data-mode="working"]
+  :is(.leg-b, .clawd-arm-r) {
+  animation: clawd-tap 0.3s steps(1, end) -0.15s infinite;
+}
+
+/* Caminando (un paseíto de vez en cuando; el desplazamiento lo hace clawd.js) */
+.clawd.is-walking .leg-a {
+  animation: clawd-tap 0.24s steps(1, end) infinite;
+}
+
+.clawd.is-walking .leg-b {
+  animation: clawd-tap 0.24s steps(1, end) -0.12s infinite;
+}
+
+/* Bailando: 4 bailes, uno por canción (a 120 pulsaciones por minuto) */
+.island:is([data-shape="pill"], [data-shape="activity"], [data-shape="expanded"]) .clawd[data-mode="dancing"] {
+  /* 1. Rebote */
+  &[data-dance="1"] .clawd-all {
+    animation: clawd-tap 0.5s steps(1, end) infinite;
+  }
+
+  &[data-dance="1"] .leg-b {
+    animation: clawd-tap 0.5s steps(1, end) -0.25s infinite;
+  }
+
+  /* 2. Balanceo de lado a lado */
+  &[data-dance="2"] .clawd-all {
+    animation: clawd-sway 1s steps(4, jump-none) infinite;
+  }
+
+  /* 3. Brazos arriba, uno y otro */
+  &[data-dance="3"] .clawd-arm-l {
+    animation: clawd-arms 0.5s steps(1, end) infinite;
+  }
+
+  &[data-dance="3"] .clawd-arm-r {
+    animation: clawd-arms 0.5s steps(1, end) -0.25s infinite;
+  }
+
+  &[data-dance="3"] .clawd-body {
+    animation: clawd-tap 0.5s steps(1, end) infinite;
+  }
+
+  /* 4. Pasitos a un lado y al otro */
+  &[data-dance="4"] .clawd-all {
+    animation: clawd-shuffle 0.5s steps(1, end) infinite;
+  }
+
+  &[data-dance="4"] :is(.leg-a, .clawd-arm-l) {
+    animation: clawd-tap 0.25s steps(1, end) infinite;
+  }
+}
+
+/* Durmiendo: se acurruca un píxel y salen "z" */
+.clawd[data-mode="sleeping"] .clawd-body {
+  translate: 0 1px;
+}
+
+.clawd[data-mode="sleeping"] .clawd-zzz {
+  display: inline;
+  fill: #bfe3ff;
+}
+
+.island:is([data-shape="mini"], [data-shape="pill"], [data-shape="activity"], [data-shape="expanded"])
+  .clawd[data-mode="sleeping"]
+  .clawd-z {
+  animation: clawd-z 2.8s steps(7, end) infinite;
+}
+
+.clawd[data-mode="sleeping"] .clawd-z2 {
+  animation-delay: -1.4s;
+}
+
+/* Celebrando (Pomodoro terminado): destellos */
+.clawd.is-celebrating .clawd-sparkles {
+  display: inline;
+  fill: #fff2a8;
+  animation: clawd-sparkle 0.4s steps(1, end) infinite;
+}
+
+@keyframes clawd-tap {
+  50% {
+    translate: 0 -1px;
+  }
+}
+
+@keyframes clawd-arms {
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+@keyframes clawd-sway {
+  0%,
+  100% {
+    rotate: -7deg;
+  }
+
+  50% {
+    rotate: 7deg;
+  }
+}
+
+@keyframes clawd-shuffle {
+  0%,
+  100% {
+    translate: -1px 0;
+  }
+
+  50% {
+    translate: 1px 0;
+  }
+}
+
+@keyframes clawd-z {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    translate: 2px -5px;
+    opacity: 0;
+  }
+}
+
+@keyframes clawd-sparkle {
+  50% {
+    opacity: 0.25;
+  }
 }
 
 /* ---------- 5. Actividad en vivo, volumen y avisos ---------- */

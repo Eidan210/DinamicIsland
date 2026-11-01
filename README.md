@@ -23,7 +23,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ✅ Hecha |
 | 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ✅ Hecha (Antigravity, en prueba) |
 | 4 | Glow: colores que avisan de lo que pasa | ✅ Hecha |
-| 5 | Clawd, la mascota, en la isla | ⏳ Pendiente |
+| 5 | Clawd, la mascota, en la isla | ✅ Hecha |
 | 6 | Home con widgets editables | ⏳ Pendiente |
 | 7 | Portapapeles y bandeja de archivos | ⏳ Pendiente |
 | 8 | «Casa de Clawd»: ventana de ajustes e historial | ⏳ Pendiente |
@@ -90,6 +90,31 @@ La isla cambia de forma según lo que pasa:
 | Clic derecho en la isla | Menú: abrir/cerrar, Pomodoro, pausar/reanudar música, **Música en la isla** (sí/no) y **Salir de Notch** |
 | Clic derecho en la nota | Cortar, copiar, pegar… |
 | `Alt + F4` con el panel abierto | Solo cierra el panel (no sale de la app) |
+
+### Clawd
+
+Clawd, el bichito naranja en pixel art, vive en la isla en lugar de los ojos (también en la mini-muesca, en pequeñito). Sus ojos se iluminan con el color de lo que pasa y hace cosas según el momento:
+
+| Qué hace | Cuándo |
+| --- | --- |
+| **Teclea con las patitas** (ojos ámbar) | Claude (o Antigravity) está trabajando. |
+| **Te mira con ojos azules** | Claude te espera. |
+| **Se concentra** (ojos entrecerrados) | Hay un Pomodoro en marcha (aunque suene música). |
+| **Baila** | Suena música: tiene 4 bailes y cada canción tiene siempre el suyo. |
+| **Duerme** (ojos cerrados y unas «z») | Llevas un rato sin tocar el PC (5 minutos; `clawdSleepMinutes`) o lo bloqueaste. Al volver se despierta contento. |
+| **Se ve cansado** | Queda poca batería (20 % o menos) y no está cargando. |
+| **Parpadea, mira al ratón y alrededor** | Siempre, como hacían los ojos. |
+
+Además, de vez en cuando:
+
+- **Salta contento** cuando Claude termina, y **se sacude enfadado** (ojos rojos) si se paró por un error: se lo toma personal.
+- **Celebra** el Pomodoro terminado, con destellos.
+- **Se enfada si lo tocas** (con el panel abierto) y, si le das 6 toques seguidos, **se marea**.
+- **Da un paseíto** cuando está tranquilo.
+- **Se despide** a las 18:00 (`clawdByeTime`): la isla se queda a la vista unos segundos y te saluda con el brazo.
+- **Se disfraza**: sombrero de bruja la última semana de octubre y gorro de Papá Noel del 20 al 26 de diciembre (`clawdCostume`).
+
+Si prefieres los ojos de siempre, pon `"clawd": false`. Clawd es la mascota de Claude Code (de Anthropic): este es un dibujo propio inspirado en ella, para tu uso personal. Si algún día publicas la app, conviene cambiarlo.
 
 ### El brillo (glow)
 
@@ -211,6 +236,10 @@ Todo está en la carpeta `config/`. **Al guardar un archivo, Notch lo aplica al 
   "lyrics": true,
   "volumeIndicator": true,
   "glow": true,
+  "clawd": true,
+  "clawdSleepMinutes": 5,
+  "clawdByeTime": "18:00",
+  "clawdCostume": "auto",
   "ai": true,
   "aiPort": 47823,
   "chatProvider": "gemini",
@@ -237,6 +266,10 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `lyrics` | `true` | `true`: busca las letras en LRCLIB (la única conexión a internet de Notch). `false`: sin letras y sin ninguna conexión. |
 | `volumeIndicator` | `true` | `true`: al cambiar el volumen, la isla enseña una barra 1,5 s. `false`: solo se ve el indicador de Windows. |
 | `glow` | `true` | `true`: brillo de color alrededor de la isla (ver [El brillo](#el-brillo-glow)). `false`: sin brillo. Los colores se cambian en `renderer/styles.css`, sección 1b. |
+| `clawd` | `true` | `true`: Clawd vive en la isla (ver [Clawd](#clawd)). `false`: los dos ojos verdes de siempre. |
+| `clawdSleepMinutes` | `5` | Minutos sin tocar el PC para que Clawd se duerma (de 1 a 240). También se duerme al bloquear el PC. |
+| `clawdByeTime` | `"18:00"` | A esta hora Clawd se despide hasta mañana (formato `"HH:MM"`). `""` = nunca. |
+| `clawdCostume` | `"auto"` | `"auto"`: disfraz según la fecha (Halloween y Navidad). `"none"`: nunca. `"halloween"` o `"christmas"`: siempre ese. |
 | `ai` | `true` | `true`: Notch escucha a Claude Code y Antigravity (servidor solo en tu PC, `127.0.0.1`). `false`: sin servidor. |
 | `aiPort` | `47823` | Puerto de ese servidor (de 1024 a 65535). Si lo cambias, cambia también las URLs de tu configuración de Claude Code. |
 | `chatProvider` | `"gemini"` | Con quién habla el chat al abrirlo: `"gemini"`, `"claude"` o `"both"` (los dos). También lo cambia el selector de la página IA. |
@@ -309,6 +342,7 @@ main/                    Proceso principal (Node.js), un archivo por tema:
   ai-server.js           el servidor local (127.0.0.1) que recibe sus eventos, y el bloque para pegar
   ai-chat-parse.js       leer lo que escriben los CLI del chat (stream-json)
   ai-chat.js             el chat: lanzar claude / agy / gemini y su conversación en memoria
+  idle.js                ¿estás delante del PC? (para que Clawd se duerma)
   ipc.js                 TODO lo que la página puede pedir (una lista)
 preload.js               Puente seguro (contextBridge) entre main y la página
 renderer/
@@ -333,6 +367,7 @@ renderer/
     ai.js                Claude Code y Antigravity: isla, decisiones, página IA y Home
     chat.js              el chat de la página IA
     glow.js              el brillo de color alrededor de la isla
+    clawd.js             Clawd: qué hace, sus acciones, bailes y disfraces
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
@@ -367,6 +402,7 @@ assets/
 - **Salida de audio.** El helper lista las salidas con Core Audio (`IMMDeviceEnumerator`) y se entera de los cambios por avisos de Windows. Para cambiar la predeterminada usa `IPolicyConfig`, la interfaz que usa la propia configuración de sonido de Windows. ⚠️ Microsoft no la documenta: funciona de Windows 7 a Windows 11, pero si algún día cambia, Notch solo mostrará el aviso «No se pudo cambiar la salida de audio».
 - **Muelles de verdad.** La isla cambia de forma con curvas de muelle amortiguado (escritas con `linear()` en `styles.css`): al crecer se pasa un poco y se asienta, como en el iPhone; al encoger, se asienta sin rebotar. Al pulsarla se hunde un poco. Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca; el contenido del panel entra igual, en cascada.
 - **Iconos dibujados a mano.** Son SVG propios al estilo de los de Apple (rellenos y con las puntas redondeadas), definidos una sola vez en `index.html` y reutilizados con `<use>`: no se descarga ninguna fuente de iconos. La ola de la barra la dibuja `wave.js` en dos `<path>` de SVG (lo que ya sonó y lo que falta): para cada punto, altura = envolvente × amplitud × seno; la envolvente la hace nacer y morir plana. Mientras suena, un único `requestAnimationFrame` la hace fluir y avanza la barra, como mucho unas 60-80 veces por segundo, solo con la página Música a la vista; en pausa, en cuanto se calma, se para.
+- **Clawd.** Es un SVG dentro de `index.html` (para poder animar sus patas, brazos, ojos y gorros con CSS): 18 × 10 «píxeles», cada uno de 1 px en la mini-muesca y de 2 px en la píldora. `clawd.js` decide qué hace (`data-mode`) y su expresión (`data-eyes`) cada vez que la isla revisa su forma; las animaciones que duran (teclear, bailar, las «z») van a saltos de píxel (`steps()`), como un juego retro, y solo corren mientras se ve. Parpadear, mirar al ratón y alrededor siguen en `eyes.js`, que mueve la cara que toque. Para saber si estás delante, `main/idle.js` pregunta cada 30 s cuánto llevas sin tocar el PC (`powerMonitor.getSystemIdleTime`), cada 3 s mientras duerme para despertarse enseguida, y escucha los avisos de bloquear, desbloquear, suspender y reanudar. La despedida es un único temporizador hasta esa hora.
 - **El brillo.** Es un `filter: drop-shadow(...)` sobre la propia isla: sigue su forma (mini, píldora, tarjeta) y no lo recorta el `overflow: hidden`. `glow.js` solo decide el estado (`data-glow`) cuando la isla revisa su forma, al pasar el ratón o al abrir el panel; un único temporizador apaga el verde. El latido es una animación CSS del filtro, que Chromium puede hacer en la tarjeta gráfica. Sin brillo, las sombras son transparentes, y con el panel abierto no hay filtro.
 - **Servidor de la IA.** `main/ai-server.js` escucha solo en `127.0.0.1` y exige el token (`Authorization: Bearer …`, comparado en tiempo constante). Rechaza las peticiones de navegadores (con cabecera `Origin`) y las que no van dirigidas a `127.0.0.1` o `localhost` (así una web no puede hablarle), y como mucho acepta 1 MB por petición. Responde al momento salvo cuando algo espera tu respuesta.
 - **Decisiones.** Un permiso, una pregunta o un plan dejan la petición de Claude Code abierta: la isla enseña la tarjeta y, cuando eliges, Notch contesta con el JSON que dice la documentación de Claude Code (`decision.behavior` en los permisos; `permissionDecision` con `updatedInput` en las preguntas y los planes). Si Claude Code cuelga antes (respondiste en la terminal o se agotó su tiempo), la tarjeta se va sola. Un temporizador por decisión (590 s) y otro por sesión (se olvida a los 45 minutos sin señales): nada de sondeos.
@@ -391,6 +427,8 @@ assets/
 ## Privacidad
 
 Sin telemetría ni analíticas. La **única** conexión a internet que hace Notch es **LRCLIB** (<https://lrclib.net>), una base de datos libre de letras: por cada canción nueva le manda el **título, el artista, el álbum y la duración** (nada más: ni quién eres ni qué más haces), y solo si no tenía ya la letra guardada. Con `"lyrics": false` en `settings.json` no hay ninguna conexión.
+
+**Clawd.** Para saber si estás delante del PC, Notch solo pregunta a Windows cuántos segundos llevas sin tocar el ratón ni el teclado (no qué haces); no se guarda ni se manda a ningún sitio.
 
 **IA.** El servidor de la IA solo escucha en tu PC (`127.0.0.1`) y solo recibe lo que Claude Code (o Antigravity) le manda. **Notch no manda nada a Anthropic ni a Google por su cuenta.** El chat no lo hace Notch: lanza tus propios programas (`claude`, `agy` o `gemini`) solo cuando escribes, y lo que escribas va solo a quien elijas (**Claude → Anthropic**, **Gemini → Google**). La conversación vive en memoria (a Claude además se le pide que no la guarde) y se olvida al cerrar Notch. Con `"ai": false` no hay servidor.
 
@@ -430,3 +468,6 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **Quiero apagar la IA.** Pon `"ai": false` en `settings.json` (se aplica al guardar). Puedes dejar los hooks pegados: si Notch no escucha, Claude Code sigue como siempre.
 - **El brillo me molesta o quiero otros colores.** Pon `"glow": false` para quitarlo. Para cambiar los colores, edita las variables `--glow-…` de la sección 1b de `renderer/styles.css` y recarga Notch.
 - **La isla sigue brillando en azul.** Claude te espera o acaba de terminar: pasa el ratón por la isla (o ábrela) y el brillo se va.
+- **Prefiero los ojos de siempre.** Pon `"clawd": false` en `settings.json`.
+- **Clawd se duerme demasiado pronto (o tarde).** Cambia `clawdSleepMinutes`. Viendo una película sin tocar el ratón también se duerme; si suena música, baila en vez de dormir.
+- **No quiero que se despida (o a otra hora).** Pon `"clawdByeTime": ""` o la hora que quieras, p. ej. `"20:30"`.

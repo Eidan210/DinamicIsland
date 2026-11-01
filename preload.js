@@ -170,6 +170,14 @@ contextBridge.exposeInMainWorld('notch', {
     onClear: (callback) => subscribe('chat:cleared', callback),
   },
 
+  // ---------- Clawd ----------
+  clawd: {
+    /** Devuelve (Promise) { sleeping }: si llevas un rato sin tocar el PC (o está bloqueado). */
+    getState: () => ipcRenderer.invoke('clawd:get'),
+    /** Avisa cuando se duerme (true) o se despierta (false): callback(sleeping). */
+    onSleepChange: (callback) => subscribe('clawd:sleep', (sleeping) => callback(sleeping === true)),
+  },
+
   /** Tras responder en la isla con el panel cerrado: devolver el foco a tu app. */
   releaseFocus: () => ipcRenderer.send('notch:release-focus'),
 
