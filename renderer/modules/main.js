@@ -12,8 +12,8 @@
 //    tabs.js      las páginas (Home, Música, IA, Focus, Portapapeles, Nota)
 //    clock.js     fecha y hora
 //    eyes.js      los ojos
-//    pomodoro.js  el Pomodoro (página, tarjeta, isla y burbuja)
-//    music.js     la música (página, tarjeta, isla, burbuja y aviso)
+//    pomodoro.js  el Pomodoro (página, isla y burbuja)
+//    music.js     la música (página, isla, burbuja y aviso)
 //    colors.js    los colores de la carátula (k-means)
 //    swipe.js     deslizar para cambiar de canción
 //    lyrics.js    la letra sincronizada
@@ -26,10 +26,13 @@
 //    theme.js     tema claro u oscuro del panel
 //    motion.js    animar siempre, como Windows o nunca (ajuste "animations")
 //    wave.js      la ola de la barra de progreso de la música
-//    ai.js        Claude Code y Antigravity: isla, decisiones, página IA y Home
+//    ai.js        Claude Code y Antigravity: isla, decisiones y página IA
 //    chat.js      el chat con Claude y Gemini (página IA)
 //    glow.js      el brillo de color alrededor de la isla
 //    clawd.js     Clawd, la mascota (en lugar de los ojos)
+//    home.js      Home: la rejilla de widgets y el modo edición
+//    home-grid.js dónde cae cada widget en la rejilla de 4×2
+//  Y en renderer/widgets/, un archivo por widget de Home (index.js es el catálogo).
 //  Este archivo solo los pone en marcha, en orden.
 // =============================================================================
 
@@ -54,6 +57,7 @@ import { initAi, setAiState } from './ai.js';
 import { initChat, loadChat, applyChatSettings } from './chat.js';
 import { initGlow } from './glow.js';
 import { initClawd, scheduleBye, setClawdSleeping } from './clawd.js';
+import { initHome, loadHome, startHome } from './home.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -73,6 +77,7 @@ async function loadInitialState() {
     ai: window.notch.ai.getState(),
     chat: window.notch.chat.getState(),
     clawd: window.notch.clawd.getState(),
+    home: window.notch.home.get(),
   };
   const names = Object.keys(requests);
   const results = await Promise.allSettled(Object.values(requests));
@@ -108,6 +113,7 @@ async function init() {
   initAi();
   initGlow();
   initClawd({ keepAwakeFor });
+  initHome(); // después de los demás: cada widget se apunta a los avisos de su módulo
 
   // Al guardar config/settings.json, se aplica al momento.
   window.notch.onSettingsChange((newSettings) => {
@@ -137,6 +143,7 @@ async function init() {
   if (loaded.ai) setAiState(loaded.ai);
   if (loaded.clawd) setClawdSleeping(loaded.clawd.sleeping);
   scheduleBye();
+  loadHome(loaded.home); // si no se pudo leer, el Home de por defecto
 
   // 3. Lo dibujamos todo.
   applyClockSettings();
@@ -149,6 +156,7 @@ async function init() {
 
   // 4. Al arrancar se ve como píldora un momento, para que sepas que está
   //    funcionando (si hay un aviso importante, se ve el aviso).
+  startHome(); // lo que ya había no brilla como novedad
   state.initialized = true;
   keepAwakeFor(HELLO_MS);
   loadInitialNotices(loaded.notices);

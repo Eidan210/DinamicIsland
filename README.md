@@ -24,7 +24,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ✅ Hecha (Antigravity, en prueba) |
 | 4 | Glow: colores que avisan de lo que pasa | ✅ Hecha |
 | 5 | Clawd, la mascota, en la isla | ✅ Hecha |
-| 6 | Home con widgets editables | ⏳ Pendiente |
+| 6 | Home con widgets editables y links con su logo | ✅ Hecha |
 | 7 | Portapapeles y bandeja de archivos | ⏳ Pendiente |
 | 8 | «Casa de Clawd»: ventana de ajustes e historial | ⏳ Pendiente |
 
@@ -46,6 +46,8 @@ npm run build:helper
 ```
 
 `npm run build:helper` compila el helper de Windows y deja `WinHelper.exe` en `helpers/WinHelper/publish/`. Hay que repetirlo cada vez que cambia el código C# (por ejemplo, al actualizar a una fase que añade algo al helper, como el volumen de la Fase 1).
+
+`npm install` también hay que repetirlo cuando una fase añade un paquete: la Fase 6 trae **Simple Icons** (los logos de los links). Si no lo haces, Notch funciona igual, pero los links salen con su inicial.
 
 > La **primera vez** que arranques, Electron descarga su ejecutable (unos 100 MB), así que tarda un poco más. Las siguientes veces arranca enseguida.
 
@@ -136,14 +138,14 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
 
 ### Páginas
 
-- **Home**: cuatro tarjetas resumen (IA, Música, Focus y Links). Cada tarjeta te lleva a su página. Desde ellas puedes pausar la música o el Pomodoro, y abrir tus links.
+- **Home**: tus widgets (Reloj, Música, Focus, IA, Links, Batería y Nota), en una rejilla que tú eliges. Ver [Home y sus widgets](#home-y-sus-widgets).
 - **Música**: lo que suena en **cualquier app** que se integre con Windows (Apple Music, Spotify, el navegador…).
   - Carátula, título, artista, app de origen, barra de progreso y controles (anterior, reproducir/pausar, siguiente).
   - Haz clic en la barra para saltar a ese punto, si la app lo permite.
   - **Letra** a la derecha, de [LRCLIB](https://lrclib.net), animada como en Apple Music: la línea que suena va en el centro y sus palabras se iluminan de izquierda a derecha mientras se canta; al cambiar de línea, las líneas suben en cascada con un pequeño rebote, y las lejanas se ven tenues y algo borrosas. En las pausas instrumentales (y en las intros largas) salen tres puntos que se van encendiendo. Pulsa una línea para saltar a ese momento. Si la letra no tiene tiempos, se ve entera; si no la hay, pone «Sin letra disponible».
   - El **fondo** se mueve despacio con los colores de la carátula y, si el título no cabe, se desplaza de lado a lado.
   - La **barra de progreso** es como la del reproductor de los móviles Samsung: lo que ya sonó es una **ola** que fluye hacia el tirador redondo y se aplana al llegar. Al darle a reproducir, la ola se levanta; al pausar, se calma hasta quedar en una línea recta. Al principio de la canción sigue un poco más allá del tirador, en gris, y se va llenando de color según suena.
-  - Los **colores** de la carátula tiñen el fondo de la página (un degradado con sus 3 colores principales), la tarjeta de Home, la isla, la barra y el ecualizador.
+  - Los **colores** de la carátula tiñen el fondo de la página (un degradado con sus 3 colores principales), el widget de Home, la isla, la barra y el ecualizador.
   - El botón de la **píldora** decide si la música se muestra en la isla (se guarda en `musicActivity`).
   - El botón de **salida** (ondas sobre un triángulo) abre la lista de **salidas de audio** (altavoces, auriculares, la tele…): la que eliges pasa a ser la predeterminada de Windows.
 - **Focus**: el **Pomodoro** y todos tus **links**.
@@ -158,6 +160,32 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
 - **Nota**: una nota rápida. Con `Ctrl + Alt + 6` se abre con el cursor listo para escribir.
   - Se guarda sola medio segundo después de que dejes de escribir (y al cerrar el panel o cambiar de página). Abajo ves «Guardado» y cuántas palabras llevas.
   - Vive en `%APPDATA%\Notch\nota.md`, un archivo de texto normal (Markdown) que puedes abrir con cualquier editor.
+
+### Home y sus widgets
+
+Home es una rejilla de **4 × 2 celdas**. Cada widget ocupa **1 celda (1×1)** o **2 seguidas (2×1)**, y en el ancho se ven más cosas:
+
+| Widget | 1×1 | 2×1 (además) | Al tocarlo |
+| --- | --- | --- | --- |
+| **Reloj** | Esfera con agujas, la hora y la fecha | La fecha completa y cuánto falta para que Clawd se despida | — |
+| **Música** | Carátula y canción (play/pausa al pasar el ratón por la carátula) | Anterior / play-pausa / siguiente y la barra de progreso | Abre Música |
+| **Focus** | El anillo del Pomodoro, el tiempo y cómo va | Las sesiones de hoy y ↺ reiniciar | **Empieza o pausa el Pomodoro** |
+| **IA** | El proyecto y qué hace Claude («Editando home.js») | Los pasos Leer → Editar → Probar → Hecho | Abre IA |
+| **Links** | Hasta 8 logos | Hasta 6 logos con su nombre | Cada logo abre su web; fuera de ellos, Focus |
+| **Batería** | El nivel, si carga y cuánto queda | (solo 1×1) | — |
+| **Nota** | El principio de tu nota | Más ancha | Abre Nota |
+
+**Modo edición: mantén pulsado 0,6 s** sobre cualquier widget (o sobre un hueco). Los widgets tiemblan y abajo, en lugar de las pestañas, aparece la barra de edición:
+
+- **Arrastra** un widget para cambiarlo de sitio (sin soltar tras mantener pulsado, ya lo puedes mover). Los demás se apartan.
+- **✕** lo quita y **⤢** cambia su tamaño (1×1 ⇄ 2×1). Si no cabe, te lo dice abajo.
+- **Añadir** abre el catálogo con los que no están (o pulsa el **+** de un hueco libre).
+- **Diseños**: 3 ya hechos, «Clásico» (el de por defecto), «Trabajo» y «Todo a la vista».
+- **Listo** (o `Esc`, cerrar el panel o cambiar de página) termina.
+
+Lo que elijas se guarda en `%APPDATA%\Notch\home.json` (no en `config/`: no hace falta tocarlo a mano).
+
+**Novedades.** Un widget brilla con un borde de luz cuando su módulo tiene algo nuevo que aún no viste: Claude te espera o terminó (IA, en azul), el Pomodoro acabó (Focus), empezó otra canción (Música, con el color de la carátula), queda poca batería (Batería, en amarillo o rojo), cambiaste `links.json` (Links) o la nota no se pudo guardar (Nota, en rojo). Al pasar el ratón por encima, tocarlo o abrir su página, se da por visto.
 
 ## Conectar Claude Code
 
@@ -279,24 +307,38 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 
 ### `config/links.json`
 
-Una lista de links. Cada uno es un botón redondo con su inicial y su color:
+Una lista de links. Cada uno es un botón redondo con el **logo de la web** (o su inicial) sobre su color:
 
 ```json
 [
   { "name": "GitHub", "url": "https://github.com", "color": "#8b5cf6" },
+  { "name": "Spotify", "url": "https://open.spotify.com" },
+  { "name": "Presupuesto", "url": "https://docs.google.com/spreadsheets/d/…" },
+  { "name": "Mi web", "url": "https://ejemplo.com", "icon": "Google Drive" },
   { "name": "Correo", "url": "mailto:yo@ejemplo.com" },
-  { "name": "Mi web", "url": "https://ejemplo.com", "color": "#ffd43b", "initial": "🌐" }
+  { "name": "Casa", "url": "https://ejemplo.com", "color": "#ffd43b", "initial": "🏠" }
 ]
 ```
+
+Los logos son de [Simple Icons](https://simpleicons.org) (más de 3000 marcas, licencia CC0) y vienen dentro de Notch: **no se descarga nada**. Notch lo busca solo:
+
+1. Por la web: `mail.google.com` → Gmail, `calendar.google.com` → Google Calendar, `docs.google.com/spreadsheets` → Google Sheets, `music.youtube.com` → YouTube Music…
+2. Por el nombre de la web: `github.com` → GitHub, `claude.ai` → Claude, `notion.so` → Notion.
+3. Por el nombre del link: «YouTube Music» → YouTube Music.
+
+Si no lo encuentra, la inicial, como siempre. Algunas marcas pidieron salir de Simple Icons (Microsoft, Outlook, LinkedIn, Slack, Amazon…): esas van con la inicial. Los correos (`mailto:`) también, porque se abren con tu programa de correo.
 
 | Campo | Obligatorio | Qué hace |
 | --- | --- | --- |
 | `name` | Sí | Nombre que se ve debajo del botón. Su primera letra es la inicial. |
 | `url` | Sí | Dirección que se abre en tu navegador. Por seguridad, solo se aceptan `http://`, `https://` y `mailto:`. |
 | `color` | No | Color del círculo en formato `#rrggbb` o `#rgb`. Si no lo pones, se elige uno automáticamente. El texto se pone blanco o negro según el color, para que siempre se lea. |
-| `initial` | No | Lo que se ve dentro del círculo en lugar de la inicial: hasta 2 caracteres, emojis incluidos. |
+| `initial` | No | Lo que se ve dentro del círculo en lugar de la inicial: hasta 2 caracteres, emojis incluidos. Si lo pones (y no pones `icon`), se usa en lugar del logo. |
+| `icon` | No | El logo que quieres, con su nombre de [simpleicons.org](https://simpleicons.org): `"spotify"`, `"Google Drive"`… Con `false` o `"none"`, sin logo (la inicial). |
 
-En Focus caben 10 links sin scroll, y en la tarjeta de Home se ven los 6 primeros. Los links con errores se ignoran y el motivo aparece en la terminal.
+Sin `color`, el círculo toma el color de la marca (el verde de Spotify, el rojo de YouTube…). El logo va en blanco o en negro según el color, para que siempre se vea.
+
+En Focus caben 10 links sin scroll; en el widget de Home, 8 (1×1) o 6 con su nombre (2×1). Los links con errores se ignoran y el motivo aparece en la terminal.
 
 ## Compilar (crear el `.exe`)
 
@@ -330,6 +372,8 @@ main/                    Proceso principal (Node.js), un archivo por tema:
   shortcuts.js           atajos de teclado globales (abrir/cerrar y uno por página)
   pomodoro.js            el temporizador Pomodoro y su notificación
   links.js               config/links.json
+  link-logos.js          los logos de los links (Simple Icons, sin conexión)
+  home.js                los widgets de Home (home.json en tu carpeta de datos)
   helper.js              lanza WinHelper.exe y reparte sus mensajes
   music.js               la música que suena en Windows
   lrc.js                 leer letras sincronizadas (formato LRC) y elegir la mejor
@@ -364,11 +408,16 @@ renderer/
     swipe.js             deslizar para cambiar de canción
     outputs.js           la lista de salidas de audio
     wave.js              la ola de la barra de progreso
-    ai.js                Claude Code y Antigravity: isla, decisiones, página IA y Home
+    ai.js                Claude Code y Antigravity: isla, decisiones y página IA
     chat.js              el chat de la página IA
     glow.js              el brillo de color alrededor de la isla
     clawd.js             Clawd: qué hace, sus acciones, bailes y disfraces
+    home.js              Home: la rejilla, el modo edición, las novedades y guardarlo
+    home-grid.js         dónde cae cada widget en la rejilla de 4×2 (funciones puras)
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
+  widgets/               Un archivo por widget de Home:
+    index.js             el catálogo (y los 3 diseños)
+    clock.js, music.js, focus.js, ai.js, links.js, battery.js, note.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
   Program.cs             Arranca los módulos y habla con Notch (stdin/stdout)
@@ -414,12 +463,15 @@ assets/
 - **Posición interpolada.** Las apps solo actualizan la posición de vez en cuando. El helper la ajusta al momento exacto en que la mide (Windows indica cuándo fue su última actualización). Notch guarda esa posición y la hora de la medición, y mientras suena calcula la posición actual por su cuenta: posición + tiempo transcurrido.
 - **Pomodoro en `main.js`.** Chromium frena los temporizadores de las páginas que no se ven, así que el temporizador vive en el proceso principal. Es un único `setTimeout` que salta justo al terminar.
 - **Links seguros.** La página nunca recibe las URLs: para abrir un link, pide su número y `main.js` lo abre con `shell.openExternal`.
+- **Logos sin conexión.** `main/link-logos.js` lee la lista de Simple Icons (`icons.json`, del paquete npm) solo al cargar `links.json` y no la guarda en memoria; de cada logo solo pasa a la página el dibujo (el `d` de su `<path>`, comprobado con la expresión regular de Simple Icons), que la página pinta con `createElementNS`: nunca `innerHTML`.
+- **Home.** Los widgets van en orden y `home-grid.js` coloca cada uno en el primer hueco donde cabe (de izquierda a derecha y de arriba abajo), así que con 8 celdas o menos siempre caben. Al arrastrar, prueba cada posición de la lista y se queda con la que deja el widget bajo el ratón; los demás se deslizan a su sitio nuevo con la técnica FLIP (medir antes, colocar, medir después y animar la diferencia). Cada widget dice sus novedades como una lista de «motivos» (como el brillo de la isla): brilla si hay alguno que no habías visto. `main/home.js` revisa lo que le llega (tipos, tamaños, sin repetir, 8 celdas como mucho) y escribe `home.json` como la nota: primero un temporal y luego lo renombra.
 - **Seguridad.** La página no tiene acceso a Node (`contextIsolation`, `sandbox`, sin `nodeIntegration`). Solo puede usar las funciones que `preload.js` expone en `window.notch`, y su Content-Security-Policy le impide cargar nada externo. Las órdenes al helper pasan por una lista blanca.
 - **Bajo consumo.** No hay sondeo periódico (polling) en ninguna parte.
   - El reloj y los tiempos de la música solo se actualizan con el panel abierto, una vez por segundo (y sus números «ruedan», como en el iPhone).
   - El fondo animado, la letra que se ilumina y la barra continua solo se mueven con la página Música a la vista y la música sonando; al cerrar el panel o cambiar de página, se paran. El fondo solo usa `translate` y `scale`, que mueve la tarjeta gráfica casi sin gastar.
   - El volumen, la batería, el tema y los atajos funcionan por avisos del sistema.
   - La cuenta atrás del Pomodoro solo se dibuja cuando se ve.
+  - Los widgets de Home no tienen temporizadores propios: el reloj se mueve con el de la barra de arriba (solo con el panel abierto) y la barra de la música avanza sola con una animación del navegador, que se para al cerrar el panel o cambiar de página.
   - Las animaciones son cortas y se lanzan por eventos.
   - Con el panel cerrado, la **única animación continua** es el ecualizador, y solo corre mientras suena música y se ve en pantalla.
   - Notch anima aunque Windows tenga apagados los «Efectos de animación» (muchos portátiles gamer vienen así). Para que le haga caso a Windows, pon `"animations": "system"`; para no animar nada, `"off"` (entonces la línea de la letra se ve entera iluminada).
@@ -432,7 +484,7 @@ Sin telemetría ni analíticas. La **única** conexión a internet que hace Notc
 
 **IA.** El servidor de la IA solo escucha en tu PC (`127.0.0.1`) y solo recibe lo que Claude Code (o Antigravity) le manda. **Notch no manda nada a Anthropic ni a Google por su cuenta.** El chat no lo hace Notch: lanza tus propios programas (`claude`, `agy` o `gemini`) solo cuando escribes, y lo que escribas va solo a quien elijas (**Claude → Anthropic**, **Gemini → Google**). La conversación vive en memoria (a Claude además se le pide que no la guarde) y se olvida al cerrar Notch. Con `"ai": false` no hay servidor.
 
-El corrector ortográfico que trae Electron descargaba diccionarios de Google al arrancar: está desactivado (la nota no lo usa) y esa descarga se redirige a tu propio PC. Tu nota, tus avisos, tu configuración y la caché de letras (`%APPDATA%\Notch\lyrics\`, se puede borrar cuando quieras) se quedan en tu PC.
+El corrector ortográfico que trae Electron descargaba diccionarios de Google al arrancar: está desactivado (la nota no lo usa) y esa descarga se redirige a tu propio PC. Tu nota, tus avisos, tu configuración, tus widgets de Home (`%APPDATA%\Notch\home.json`) y la caché de letras (`%APPDATA%\Notch\lyrics\`, se puede borrar cuando quieras) se quedan en tu PC. Los logos de los links vienen dentro de Notch (Simple Icons): no se descarga ninguno.
 
 ## Solución de problemas
 
@@ -457,6 +509,9 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **No veo la batería.** Solo sale si el equipo tiene batería y no está llena y enchufada a la vez. En la mini-muesca, solo cuando queda poca (20 % o menos) y no está cargando.
 - **No llega la notificación del Pomodoro.** Revisa que «No molestar» esté desactivado (*Configuración → Sistema → Notificaciones*). Windows también silencia las notificaciones mientras juegas a pantalla completa. Con `npm start`, la notificación aparece con un nombre técnico (`com.eidancuadros.notch`); en la versión instalada, como «Notch».
 - **Un link no aparece.** Mira la terminal: dice qué link se ignoró y por qué.
+- **Los links salen con la inicial y no con el logo.** Si es con todos, falta `npm install` (la terminal dice «No encuentro el paquete simple-icons»). Si es con uno, esa marca no está en Simple Icons (o la web no se reconoce): búscala en <https://simpleicons.org> y pon su nombre en `"icon"`. Si pusiste `"initial"`, se usa la inicial: quítala o añade `"icon"`.
+- **No entra en el modo edición de Home.** Mantén pulsado 0,6 s **sin mover** el ratón (si lo mueves, cuenta como un clic normal).
+- **Quiero el Home de siempre.** En el modo edición, «Diseños» → «Clásico». O cierra Notch y borra `%APPDATA%\Notch\home.json`.
 - **No sale encima de un juego.** Los juegos en pantalla completa exclusiva tapan todas las ventanas. En modo «ventana sin bordes», el notch sí se ve.
 - **`npm run dist` falla con «Cannot create symbolic link».** Activa el modo de desarrollador de Windows (*Configuración → Sistema → Para programadores*) o ejecuta la terminal como administrador y vuelve a intentarlo.
 - **`npm start` dice que la versión de Node no es compatible.** Actualiza Node.js a 22.12 o superior.

@@ -8,6 +8,7 @@
 //      (si no está llena y enchufada).
 //    • Mini-muesca y píldora: la pila, solo cuando queda poca y no está cargando.
 //    • Aviso en la isla al bajar del 20 % y del 10 % sin el cargador.
+//    • El widget de Home (renderer/widgets/battery.js) se entera con onBatteryUpdate.
 // =============================================================================
 
 import { $, setRollingText } from './utils.js';
@@ -28,6 +29,14 @@ const statusBatteryText = $('status-battery-text');
 
 let battery = null;
 const warned = { low: false, critical: false }; // para avisar solo una vez de cada
+const updateListeners = [];
+
+export { LOW_LEVEL, CRITICAL_LEVEL };
+
+/** Avisa a `listener()` cada vez que cambia la batería (nivel, cargador o tiempo restante). */
+export function onBatteryUpdate(listener) {
+  updateListeners.push(listener);
+}
 
 function getBatteryState({ level, charging }) {
   if (charging) return 'charging';
@@ -91,10 +100,17 @@ function checkWarnings() {
 }
 
 function onBatteryChange() {
-  state.battery = { level: battery.level, charging: battery.charging };
+  state.battery = {
+    level: battery.level,
+    charging: battery.charging,
+    // Segundos para llenarse o para vaciarse (Infinity si Windows aún no lo sabe)
+    chargingTime: battery.chargingTime,
+    dischargingTime: battery.dischargingTime,
+  };
   renderBattery();
   checkWarnings();
   updateShape(); // con poca batería, Clawd se ve cansado
+  updateListeners.forEach((listener) => listener());
 }
 
 export async function initBattery() {
@@ -106,5 +122,7 @@ export async function initBattery() {
   }
   battery.addEventListener('levelchange', onBatteryChange);
   battery.addEventListener('chargingchange', onBatteryChange);
+  battery.addEventListener('chargingtimechange', onBatteryChange);
+  battery.addEventListener('dischargingtimechange', onBatteryChange);
   onBatteryChange();
 }

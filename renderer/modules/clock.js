@@ -3,6 +3,7 @@
 // -----------------------------------------------------------------------------
 //  Solo corre con el panel abierto. Se actualiza una vez por segundo, justo
 //  cuando cambia el segundo (así nunca va "atrasado" medio segundo).
+//  El widget Reloj de Home se mueve con este mismo segundo (onClockTick).
 // =============================================================================
 
 import { $, setText, setRollingText, capitalize } from './utils.js';
@@ -16,6 +17,12 @@ const clockSecondsEl = $('clock-seconds');
 let dateFormatter = null;
 let timeFormatter = null;
 let clockTimer = null;
+const tickListeners = [];
+
+/** Avisa a `listener(ahora)` en cada segundo, mientras el panel está abierto. */
+export function onClockTick(listener) {
+  tickListeners.push(listener);
+}
 
 /** Crea los formateadores de fecha/hora con el idioma de settings.json (crearlos es lo caro). */
 function createFormatters() {
@@ -46,6 +53,7 @@ function renderClock() {
   // Los dígitos que cambian "ruedan" hacia arriba, como en el iPhone.
   setRollingText(clockMainEl, `${parts.hour}:${parts.minute}`);
   setRollingText(clockSecondsEl, `:${parts.second}` + (parts.dayPeriod ? ` ${parts.dayPeriod}` : ''));
+  tickListeners.forEach((listener) => listener(now));
 }
 
 function startClock() {

@@ -113,11 +113,6 @@ export function initTabs() {
     button.addEventListener('click', () => showTab(button.dataset.tab));
   });
 
-  // Las tarjetas de Home llevan a su página.
-  document.querySelectorAll('.card[data-goto]').forEach((card) => {
-    card.addEventListener('click', () => showTab(card.dataset.goto));
-  });
-
   // main.js puede pedir una página (atajos Ctrl+Alt+1…6, la notificación del Pomodoro...).
   window.notch.onShowTab((name) => showTab(name));
 

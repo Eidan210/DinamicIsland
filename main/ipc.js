@@ -24,6 +24,7 @@ const aiSessions = require('./ai-sessions');
 const aiServer = require('./ai-server');
 const aiChat = require('./ai-chat');
 const idle = require('./idle');
+const home = require('./home');
 const { clipboard } = require('electron');
 
 function registerIpcHandlers() {
@@ -49,6 +50,10 @@ function registerIpcHandlers() {
   // Links
   onRendererRequest('links:get', () => links.getLinksForRenderer());
   onRendererMessage('links:open', (index) => links.openLink(index));
+
+  // Home: qué widgets se ven, en qué orden y de qué tamaño (userData/home.json)
+  onRendererRequest('home:get', () => home.getHomeLayout());
+  onRendererRequest('home:save', (widgets) => home.saveHomeLayout(widgets));
 
   // Música, letras, salidas de audio y volumen
   onRendererRequest('media:get', () => music.getMusicState());

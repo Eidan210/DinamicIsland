@@ -2539,118 +2539,89 @@ code {
   }
 }
 
-/* ---------- 8. Home: tarjetas resumen ---------- */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+/* ---------- 8. Home: widgets ---------- */
+/* Rejilla de 4×2 celdas. home.js pone a cada widget su grid-column y su
+   grid-row, y data-size="1x1" (1 celda) o "2x1" (2 celdas): según el tamaño
+   se ven unas partes u otras (.only-small / .only-wide). Los widgets que no
+   elegiste llevan [hidden]. */
+.home {
+  position: relative;
   width: 100%;
   height: 100%;
-  padding: 2px 0 10px;
+  padding: 2px 0 8px;
 }
 
-.card {
-  --card-accent: var(--accent);
+.home [hidden] {
+  display: none !important;
+}
+
+.widgets {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  height: 100%;
+  touch-action: none; /* en una pantalla táctil, mantener y arrastrar es cosa nuestra */
+}
+
+.widget {
+  --widget-accent: var(--accent);
+  --widget-news: var(--widget-accent); /* el color del brillo de novedades */
 
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-  padding: 12px 13px;
-  border-radius: 18px;
-  background: rgba(var(--ink), 0.045);
+  min-height: 0;
+  padding: 10px 12px;
+  border-radius: 16px;
+  /* Un halo de su color en la esquina (en una capa aparte: el tema claro solo cambia el fondo) */
+  background-color: rgba(var(--ink), 0.045);
+  background-image: radial-gradient(130px 100px at 100% 100%, color-mix(in srgb, var(--widget-accent) 20%, transparent), transparent 72%);
   box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
-  overflow: hidden;
   cursor: pointer;
   transition:
     transform 280ms var(--spring-bounce),
     background-color 200ms ease,
-    box-shadow 200ms ease;
+    box-shadow 200ms ease,
+    scale 600ms var(--spring);
 }
 
-/* Un halo de color en la esquina de cada tarjeta */
-.card::before {
-  content: "";
-  position: absolute;
-  right: -40px;
-  bottom: -50px;
-  width: 124px;
-  height: 124px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--card-accent) 26%, transparent), transparent 70%);
-  opacity: 0.7;
-  pointer-events: none;
-  transition:
-    opacity 220ms ease,
-    scale 420ms var(--spring);
+/* Sin nada que hacer al tocarlos (solo se mueven en el modo edición) */
+.widget-clock,
+.widget-battery {
+  cursor: default;
 }
 
-.card:hover {
-  transform: translateY(-3px);
-  background: rgba(var(--ink), 0.07);
+.home:not([data-editing="true"]) .widget:hover {
+  transform: translateY(-2px);
+  background-color: rgba(var(--ink), 0.07);
   box-shadow:
     inset 0 0 0 1px rgba(var(--ink), 0.1),
-    0 10px 24px rgba(0, 0, 0, 0.3);
+    0 10px 22px rgba(0, 0, 0, 0.28);
 }
 
-.card:hover::before {
-  opacity: 1;
-  scale: 1.2;
+.home:not([data-editing="true"]) .widget:active {
+  transform: translateY(0) scale(0.98);
 }
 
-.card:active {
-  transform: translateY(-1px) scale(0.98);
+/* Mientras mantienes pulsado, se hunde un poco: va a pasar algo */
+.widget.is-pressing {
+  scale: 0.96;
 }
 
-.card-ai {
-  --card-accent: var(--ai-color);
+/* Según el tamaño, se ven unas partes u otras */
+.widgets .widget[data-size="1x1"] .only-wide,
+.widgets .widget[data-size="2x1"] .only-small {
+  display: none;
 }
 
-/* Con Claude trabajando, la tarjeta se tiñe de su color */
-.card-ai:is([data-status="working"], [data-status="waiting"]) {
-  --card-accent: var(--claude-color);
-  background-image: linear-gradient(140deg, color-mix(in srgb, var(--claude-color) 18%, transparent), transparent 70%);
-}
-
-.card-ai[data-status="waiting"] .card-note {
-  color: var(--warning);
-}
-
-/* La tarjeta de música toma el color de la carátula mientras suena */
-.card-music {
-  --card-accent: var(--music-color);
-}
-
-.card-music[data-has-art="true"] {
-  --card-accent: var(--music-accent);
-  background-image: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--art-1) 30%, transparent),
-    color-mix(in srgb, var(--art-2) 16%, transparent) 70%,
-    color-mix(in srgb, var(--art-3) 22%, transparent)
-  );
-}
-
-.card-links {
-  --card-accent: var(--links-color);
-}
-
-/* Las tarjetas entran en cascada cada vez que se ve Home */
-.island[data-shape="expanded"] .view.is-active .card {
+/* Los widgets entran en cascada cada vez que se ve Home */
+.island[data-shape="expanded"] .view.is-active .widget {
   animation: card-in 520ms var(--spring-bounce) backwards;
-}
-
-.island[data-shape="expanded"] .view.is-active .card:nth-child(2) {
-  animation-delay: 50ms;
-}
-
-.island[data-shape="expanded"] .view.is-active .card:nth-child(3) {
-  animation-delay: 100ms;
-}
-
-.island[data-shape="expanded"] .view.is-active .card:nth-child(4) {
-  animation-delay: 150ms;
+  animation-delay: calc(var(--j, 0) * 40ms);
 }
 
 @keyframes card-in {
@@ -2661,44 +2632,39 @@ code {
   }
 }
 
-.card-head {
+/* Textos comunes */
+.widget-text {
   display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.card-head svg {
-  width: 15px;
-  height: 15px;
-  color: var(--card-accent);
-}
-
-.card-main {
-  display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
-  margin-top: auto;
 }
 
-.card-value {
+.widget-title {
   overflow: hidden;
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.card-value.is-dim {
+.widget-title.is-dim {
   color: var(--text-dim);
   font-weight: 500;
 }
 
-.card-note {
+.widget-big {
+  overflow: hidden;
+  font-size: 21px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  white-space: nowrap;
+}
+
+.widget-sub {
   overflow: hidden;
   color: var(--text-faint);
   font-size: 11px;
@@ -2706,17 +2672,79 @@ code {
   white-space: nowrap;
 }
 
-/* Tarjetas Focus y Música: un dibujo a la izquierda y un botón a la derecha */
-.card-focus-body,
-.card-music-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.widget-extra {
+  color: var(--text-dim);
 }
 
-.mini-ring {
+/* Botones redondos pequeños (controles de la música, reiniciar el Pomodoro) */
+.widget-ctrl {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 240ms var(--spring-pop),
+    background-color 150ms ease,
+    opacity 150ms ease;
+}
+
+.widget-ctrl svg {
+  width: 15px;
+  height: 15px;
+}
+
+.widget-ctrl:hover:not(:disabled) {
+  background: rgba(var(--ink), 0.1);
+  transform: scale(1.1);
+}
+
+.widget-ctrl:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
+.widget-ctrl:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.widget-ctrl.is-main {
+  width: 32px;
+  height: 32px;
+  background: var(--ctrl-main-bg);
+  color: var(--ctrl-main-fg);
+}
+
+.widget-ctrl.is-main:hover:not(:disabled) {
+  background: var(--ctrl-main-bg);
+}
+
+/* El anillo de Focus y de Batería, con un icono dentro */
+.widget-ring {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
   width: 46px;
   height: 46px;
+}
+
+.widget[data-size="2x1"] .widget-ring {
+  width: 50px;
+  height: 50px;
+}
+
+.widget-ring .mini-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   rotate: -90deg;
 }
 
@@ -2725,18 +2753,118 @@ code {
   stroke-width: 5;
 }
 
-.card-art-wrap {
+.ring-icon {
   position: relative;
+  width: 16px;
+  height: 16px;
+  color: var(--text);
+}
+
+/* ----- Reloj ----- */
+.widget-clock {
+  --widget-accent: var(--info);
+}
+
+.clock-face {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  overflow: visible;
+}
+
+.widget-clock[data-size="2x1"] .clock-face {
+  width: 54px;
+  height: 54px;
+}
+
+.clock-dial {
+  fill: rgba(var(--ink), 0.06);
+  stroke: rgba(var(--ink), 0.12);
+  stroke-width: 1;
+}
+
+/* 12 marcas de las horas: un trazo grueso con guiones cortitos (pathLength="120") */
+.clock-ticks {
+  fill: none;
+  stroke: rgba(var(--ink), 0.45);
+  stroke-width: 2.6;
+  stroke-dasharray: 0.6 9.4;
+  stroke-dashoffset: 0.3;
+  stroke-linecap: butt;
+}
+
+.clock-hand {
+  stroke: var(--text-strong);
+  stroke-linecap: round;
+}
+
+.clock-hand.is-hour {
+  stroke-width: 2.8;
+}
+
+.clock-hand.is-minute {
+  stroke-width: 2;
+}
+
+.clock-hand.is-second {
+  stroke: #ff9f0a;
+  stroke-width: 1.1;
+}
+
+.clock-pin {
+  fill: #ff9f0a;
+  stroke: none;
+}
+
+.widget-clock[data-size="2x1"] .widget-big {
+  font-size: 26px;
+}
+
+.clock-period {
+  margin-left: 3px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ----- Música ----- */
+.widget-music {
+  --widget-accent: var(--music-color);
+}
+
+/* Mientras suena con carátula, toma sus colores */
+.widget-music[data-has-art="true"] {
+  --widget-accent: var(--music-accent);
+
+  background-image:
+    radial-gradient(130px 100px at 100% 100%, color-mix(in srgb, var(--widget-accent) 20%, transparent), transparent 72%),
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--art-1) 30%, transparent),
+      color-mix(in srgb, var(--art-2) 16%, transparent) 70%,
+      color-mix(in srgb, var(--art-3) 22%, transparent)
+    );
+}
+
+.widget-art-wrap {
+  position: relative;
+  flex: none;
   display: grid;
   place-items: center;
   width: 46px;
   height: 46px;
-  border-radius: 12px;
+  border-radius: 11px;
   background: rgba(var(--ink), 0.07);
   overflow: hidden;
 }
 
-.card-art {
+.widget-music[data-size="2x1"] .widget-art-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+}
+
+.widget-art {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2754,99 +2882,853 @@ code {
   display: none;
 }
 
-.eq-card {
-  margin-left: auto;
-  height: 11px;
+/* 1x1: play/pausa encima de la carátula al pasar el ratón */
+.widget-art-btn {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.widget-art-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.home:not([data-editing="true"]) .widget-music:hover .widget-art-btn {
+  opacity: 1;
+}
+
+.widget-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Sin canción, los controles sobran */
+.widget-music[data-has-track="false"] .widget-controls {
+  display: none;
+}
+
+/* 2x1: barra de progreso fina bajo la canción (music.js la anima hasta el final) */
+.widget-progress {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  left: 76px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(var(--ink), 0.12);
+  overflow: hidden;
+}
+
+.widget-progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--music-accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+.widget-music[data-has-progress="false"] .widget-progress {
+  display: none;
+}
+
+/* El ecualizador, arriba a la derecha mientras suena */
+.eq-widget {
+  position: absolute;
+  top: 9px;
+  right: 11px;
+  height: 10px;
   opacity: 0;
   transition: opacity 300ms ease;
 }
 
-.card-music[data-playing="true"] .eq-card {
+.eq-widget i {
+  width: 2px;
+}
+
+.widget-music[data-playing="true"] .eq-widget {
   opacity: 1;
 }
 
-.mini-btn {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #05240f;
-  cursor: pointer;
-  transition:
-    transform 240ms var(--spring-pop),
-    box-shadow 200ms ease,
-    background-color 200ms ease,
-    color 200ms ease;
+.widget-music[data-size="2x1"] .eq-widget {
+  display: none; /* en 2x1 ya están los controles */
 }
 
-.mini-btn[hidden] {
+/* ----- Focus ----- */
+.widget-focus .ring-icon {
   display: none;
-}
-
-.mini-btn svg {
   width: 15px;
   height: 15px;
 }
 
-.mini-btn[data-running="true"] {
-  background: rgba(var(--ink), 0.14);
-  color: var(--text);
+.widget-focus:is([data-status="idle"], [data-status="paused"]) .ring-icon.icon-play,
+.widget-focus[data-status="running"] .ring-icon.icon-pause,
+.widget-focus[data-status="finished"] .ring-icon.icon-done {
+  display: block;
 }
 
-.mini-btn:hover {
-  transform: scale(1.12);
-  box-shadow: 0 0 0 5px var(--accent-soft);
+.widget-focus .icon-done {
+  color: var(--accent);
+  stroke-width: 2.6;
 }
 
-.mini-btn:active {
-  transform: scale(0.9);
+.widget-focus[data-status="paused"] .widget-sub:not(.widget-extra) {
+  color: var(--warning);
 }
 
-/* Tarjeta Links: hasta 6 círculos pequeños */
-.mini-links {
-  display: grid;
-  grid-template-columns: repeat(3, 30px);
-  gap: 8px;
-  margin-top: auto;
+.widget-focus[data-status="finished"] .widget-sub:not(.widget-extra) {
+  color: var(--accent);
 }
 
-.mini-link {
+/* ----- IA ----- */
+.widget-ai {
+  --widget-accent: var(--ai-color);
+  --widget-news: var(--glow-attention); /* te espera o terminó: el azul de la atención */
+}
+
+.widget-icon {
+  flex: none;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--widget-accent) 22%, transparent);
+  color: var(--widget-accent);
+}
+
+.widget-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Trabajando: el icono gira despacio y todo se tiñe de su color */
+.widget-ai:is([data-status="working"], [data-status="waiting"]) {
+  --widget-accent: var(--claude-color);
+}
+
+.island[data-shape="expanded"] .view.is-active .widget-ai[data-status="working"] .widget-icon svg {
+  animation: spin 3.2s linear infinite;
+}
+
+.widget-ai[data-status="waiting"] .widget-sub {
+  color: var(--warning);
+}
+
+.widget-ai[data-status="error"] .widget-sub {
+  color: var(--danger);
+}
+
+/* 2x1: los pasos Leer → Editar → Probar → Hecho (sin sesiones, sobran) */
+.widget-ai[data-status=""] .widget-steps {
+  display: none;
+}
+
+.widget-steps {
+  display: flex;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.widget-steps li {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.06);
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.widget-steps li[data-done="true"] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.widget-steps li[data-current="true"] {
+  background: color-mix(in srgb, var(--claude-color) 24%, transparent);
+  color: var(--claude-color);
+}
+
+/* ----- Links ----- */
+.widget-links {
+  --widget-accent: var(--links-color);
+
+  justify-content: center;
+}
+
+.widget-links-list {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), 26px); /* --cols lo pone el widget: 2 filas parejas */
+  gap: 6px 12px;
+  justify-content: center;
+}
+
+.widget-links[data-size="2x1"] .widget-links-list {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+}
+
+.widget-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
   padding: 0;
   border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.widget-links[data-size="2x1"] .widget-link {
+  width: 46px;
+}
+
+.widget-link-circle {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--link-color);
   color: var(--link-text);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  cursor: pointer;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
   transition:
     transform 240ms var(--spring-pop),
     box-shadow 200ms ease;
 }
 
-.mini-link:hover {
-  transform: scale(1.15);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--link-color) 55%, transparent);
+.widget-links[data-size="2x1"] .widget-link-circle {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
 }
 
-.mini-link.more {
+.widget-link:hover .widget-link-circle {
+  transform: scale(1.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 4px 12px color-mix(in srgb, var(--link-color) 55%, transparent);
+}
+
+.widget-link.is-more {
+  cursor: default;
+}
+
+.widget-link.is-more .widget-link-circle {
   background: rgba(var(--ink), 0.1);
   color: var(--text);
-  font-size: 11px;
+  font-size: 10.5px;
+}
+
+.widget-link-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-link:hover .widget-link-name {
+  color: var(--text);
 }
 
 .links-hint {
-  margin-top: auto;
   white-space: normal;
+  text-align: center;
+}
+
+/* El logo de una web (Simple Icons): un dibujo de un solo color, en blanco
+   o en negro según el color del círculo (lo decide main/links.js) */
+.link-logo {
+  width: 56%;
+  height: 56%;
+  fill: currentColor;
+  stroke: none;
+}
+
+/* ----- Batería ----- */
+.widget-battery .ring-progress {
+  stroke: var(--accent);
+}
+
+.widget-battery[data-state="low"] {
+  --widget-accent: var(--warning);
+  --widget-news: var(--warning);
+}
+
+.widget-battery[data-state="critical"] {
+  --widget-accent: var(--danger);
+  --widget-news: var(--danger);
+}
+
+.widget-battery[data-state="low"] .ring-progress {
+  stroke: var(--warning);
+}
+
+.widget-battery[data-state="critical"] .ring-progress {
+  stroke: var(--danger);
+}
+
+.widget-battery .icon-bolt,
+.widget-battery[data-charging="true"] .icon-device {
+  display: none;
+}
+
+.widget-battery[data-charging="true"] .icon-bolt {
+  display: block;
+  color: var(--accent);
+}
+
+/* ----- Nota ----- */
+.widget-notepad {
+  --widget-accent: var(--warning);
+  --widget-news: var(--danger); /* brilla en rojo si no se pudo guardar */
+
+  align-items: flex-start;
+}
+
+.notepad-text {
+  flex: 1;
+  display: -webkit-box;
+  min-width: 0;
+  margin: 0;
+  padding-right: 14px;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  line-height: 1.35;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.widget-corner-icon {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 13px;
+  height: 13px;
+  color: var(--widget-accent);
+  opacity: 0.8;
+}
+
+.notepad-placeholder {
+  display: none;
+  align-self: center;
+}
+
+.widget-notepad[data-empty="true"] .notepad-text {
+  display: none;
+}
+
+.widget-notepad[data-empty="true"] .notepad-placeholder {
+  display: block;
+}
+
+/* ----- Novedades: un borde de luz que late hasta que lo miras ----- */
+.widget::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--widget-news) 85%, transparent),
+    0 0 16px 1px color-mix(in srgb, var(--widget-news) 45%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 900ms ease; /* al verlo, se desvanece despacio */
+}
+
+.widget[data-news="true"]::after {
+  opacity: 1;
+  transition-duration: 300ms;
+}
+
+.island[data-shape="expanded"] .view.is-active .widget[data-news="true"]::after {
+  animation: widget-news 1.8s ease-in-out infinite;
+}
+
+@keyframes widget-news {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ----- Modo edición ----- */
+/* Los widgets tiemblan (los anchos, menos), cada uno a su ritmo (--j lo pone home.js) */
+.island[data-shape="expanded"] .view.is-active .home[data-editing="true"] .widget {
+  cursor: grab;
+  animation: widget-jiggle 300ms ease-in-out infinite alternate;
+  animation-delay: calc(var(--j, 0) * -73ms);
+}
+
+.home[data-editing="true"] .widget[data-size="2x1"] {
+  --jiggle: 0.5deg;
+}
+
+@keyframes widget-jiggle {
+  from {
+    rotate: calc(var(--jiggle, 1deg) * -1);
+  }
+  to {
+    rotate: var(--jiggle, 1deg);
+  }
+}
+
+/* En edición, lo de dentro no se pulsa: solo se mueve el widget (y sus botones ✕ y ⤢) */
+.home[data-editing="true"] .widget > :not(.widget-badge) {
+  pointer-events: none;
+}
+
+/* El que arrastras: deja de temblar, crece un poco y flota por encima */
+.island[data-shape="expanded"] .view.is-active .home[data-editing="true"] .widget.is-dragging {
+  z-index: 3;
+  cursor: grabbing;
+  animation: none;
+  scale: 1.05;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--ink), 0.14),
+    0 16px 34px rgba(0, 0, 0, 0.45);
+  transition:
+    scale 220ms var(--spring-pop),
+    box-shadow 200ms ease;
+}
+
+/* ✕ (quitar) arriba a la izquierda y ⤢ (tamaño) abajo a la derecha */
+.widget-badge {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #3a3a41;
+  color: #fff;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  opacity: 0;
+  scale: 0.4;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    scale 260ms var(--spring-pop),
+    background-color 150ms ease;
+}
+
+.widget-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+.widget-remove {
+  top: -6px;
+  left: -6px;
+}
+
+.widget-resize {
+  right: -6px;
+  bottom: -6px;
+}
+
+.home[data-editing="true"] .widget-badge {
+  opacity: 1;
+  scale: 1;
+  pointer-events: auto;
+}
+
+.home[data-editing="true"] .widget-badge:hover {
+  scale: 1.15;
+  background: #4b4b54;
+}
+
+.home[data-editing="true"] .widget-remove:hover {
+  background: var(--danger);
+}
+
+.widget.is-dragging .widget-badge {
+  opacity: 0;
+}
+
+/* Los huecos libres: un "+" que abre el catálogo */
+.widget-slot {
+  display: none;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1.5px dashed rgba(var(--ink), 0.16);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.home[data-editing="true"] .widget-slot {
+  display: grid;
+  animation: pop-in 360ms var(--spring-pop) backwards;
+}
+
+.home[data-editing="true"] .widget-slot[hidden] {
+  display: none;
+}
+
+.widget-slot:hover {
+  border-color: rgba(var(--ink), 0.32);
+  background: rgba(var(--ink), 0.05);
+  color: var(--text);
+}
+
+.widget-slot svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Home vacío */
+.home-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  pointer-events: none;
+}
+
+.home[data-editing="true"] .home-empty {
+  display: none;
+}
+
+/* Barra del modo edición: ocupa el sitio de las pestañas */
+.editbar {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.05);
+  opacity: 0;
+  translate: -50% 16px;
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    translate 260ms var(--spring),
+    visibility 0s linear 260ms;
+}
+
+.island[data-shape="expanded"] .panel[data-editing="true"] .editbar {
+  opacity: 1;
+  translate: -50% 0;
+  visibility: visible;
+  transition:
+    opacity 220ms ease 60ms,
+    translate 460ms var(--spring-bounce) 60ms,
+    visibility 0s;
+}
+
+.island[data-shape="expanded"] .panel[data-editing="true"] .tabbar {
+  opacity: 0;
+  translate: 0 14px;
+  filter: blur(4px);
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    translate 260ms ease,
+    filter 160ms ease,
+    scale 200ms ease,
+    visibility 0s linear 260ms;
+  transition-delay: 0s;
+}
+
+.editbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 240ms var(--spring-pop);
+}
+
+.editbar-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.editbar-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.editbar-btn[aria-expanded="true"] {
+  background: var(--selected);
+  color: var(--text-strong);
+}
+
+.editbar-btn:active {
+  transform: scale(0.94);
+}
+
+.editbar-btn.is-done {
+  background: var(--accent);
+  color: #05240f;
+  font-weight: 600;
+}
+
+.editbar-btn.is-done:hover {
+  background: var(--accent);
+  color: #05240f;
+  filter: brightness(1.08);
+}
+
+.editbar-hint {
+  min-width: 156px;
+  padding: 0 8px;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  text-align: center;
+  white-space: nowrap;
+  transition: color 200ms ease;
+}
+
+.editbar-hint[data-tone="warning"] {
+  color: var(--warning);
+}
+
+/* Catálogo y diseños: se abren hacia arriba desde la barra de edición */
+.catalog,
+.layouts {
+  bottom: 58px;
+  left: 50%;
+  translate: 0 6px;
+  transform-origin: 50% 100%;
+}
+
+.catalog {
+  width: 380px;
+  max-height: 204px;
+  margin-left: -190px;
+}
+
+.catalog-free {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  transition: background-color 150ms ease;
+}
+
+.catalog-item:hover {
+  background: rgba(var(--ink), 0.05);
+}
+
+.catalog.is-entering .catalog-item {
+  animation: rise-in 360ms var(--spring) backwards;
+  animation-delay: calc(60ms + var(--i, 0) * 35ms);
+}
+
+.catalog-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--widget-accent) 22%, transparent);
+  color: var(--widget-accent);
+}
+
+.catalog-icon .icon-solid {
+  fill: currentColor;
+}
+
+.catalog-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.catalog-name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.catalog-desc {
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-sizes {
+  display: flex;
+  gap: 4px;
+}
+
+.catalog-size {
+  height: 24px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.08);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 240ms var(--spring-pop);
+}
+
+.catalog-size:hover:not(:disabled) {
+  background: var(--accent);
+  color: #05240f;
+}
+
+.catalog-size:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.catalog-size:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.catalog-empty {
+  margin: 2px 10px 8px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.layouts {
+  width: 384px;
+  margin-left: -192px;
+}
+
+.layouts-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 0 4px 2px;
+}
+
+.layout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 6px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 240ms var(--spring-pop);
+}
+
+.layout-option:hover {
+  background: rgba(var(--ink), 0.05);
+  color: var(--text);
+}
+
+.layout-option:active {
+  transform: scale(0.95);
+}
+
+.layout-option[aria-pressed="true"] {
+  background: rgba(var(--ink), 0.08);
+  color: var(--text-strong);
+}
+
+.layouts.is-entering .layout-option {
+  animation: rise-in 360ms var(--spring) backwards;
+  animation-delay: calc(60ms + var(--i, 0) * 50ms);
+}
+
+/* Miniatura del diseño: la misma rejilla de 4×2, en pequeño */
+.layout-preview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 3px;
+  width: 104px;
+  height: 46px;
+}
+
+.layout-block {
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--widget-accent) 28%, transparent);
+  color: var(--widget-accent);
+}
+
+.layout-block-icon {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.2;
 }
 
 /* ---------- 9. Música ---------- */
@@ -3986,7 +4868,7 @@ code {
 }
 
 /* Los links aparecen uno a uno (--i = su posición, lo pone links.js) */
-.island[data-shape="expanded"] .view.is-active :is(.link-btn, .mini-link) {
+.island[data-shape="expanded"] .view.is-active :is(.link-btn, .widget-link) {
   animation: pop-in 460ms var(--spring-pop) backwards;
   animation-delay: calc(80ms + var(--i, 0) * 40ms);
 }
@@ -4970,19 +5852,28 @@ code {
   --eye-glow: rgba(22, 184, 93, 0.35);
 }
 
-/* Tarjetas blancas con un borde finito */
-:root[data-theme="light"] .card {
-  background: rgba(255, 255, 255, 0.72);
+/* Widgets blancos con un borde finito */
+:root[data-theme="light"] .widget {
+  background-color: rgba(255, 255, 255, 0.72);
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-:root[data-theme="light"] .card:hover {
-  background: #fff;
+:root[data-theme="light"] .home:not([data-editing="true"]) .widget:hover {
+  background-color: #fff;
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.08),
     0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .widget-slot {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+/* El segundero y la aguja de las horas, sobre la esfera clara */
+:root[data-theme="light"] .clock-dial {
+  fill: #fff;
 }
 
 :root[data-theme="light"] .tab-indicator {

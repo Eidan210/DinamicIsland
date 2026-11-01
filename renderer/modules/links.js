@@ -1,41 +1,47 @@
 // =============================================================================
-//  renderer/modules/links.js — Los links (pestaña Focus y tarjeta de Home)
+//  renderer/modules/links.js — Los links (pestaña Focus y widget de Home)
 // -----------------------------------------------------------------------------
-//  main.js nos manda nombre, inicial y color de cada link (no las urls): para
-//  abrir uno le decimos su número y main.js lo abre en tu navegador.
+//  main.js nos manda nombre, inicial, color y logo de cada link (no las urls):
+//  para abrir uno le decimos su número y main.js lo abre en tu navegador.
+//  El logo (de Simple Icons) es un dibujo SVG de un solo color: va en blanco o
+//  en negro sobre el círculo de su color. Sin logo, la inicial como siempre.
+//  El widget de Home está en renderer/widgets/links.js.
 // =============================================================================
 
 import { $, animate } from './utils.js';
 
-const HOME_LINKS_MAX = 6; // círculos que caben en la tarjeta de Home
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const linksGrid = $('links-grid');
 const linksEmpty = $('links-empty');
-const homeLinks = $('home-links');
-const homeLinksEmpty = $('home-links-empty');
 
 let links = [];
+const changeListeners = [];
+
+/** Los links que hay ahora. */
+export function getLinks() {
+  return links;
+}
+
+/** Avisa a `listener()` cada vez que cambian los links (al guardar links.json). */
+export function onLinksChange(listener) {
+  changeListeners.push(listener);
+}
 
 /** Guarda la lista nueva y la dibuja. */
 export function setLinks(newLinks) {
   links = Array.isArray(newLinks) ? newLinks : [];
   renderLinks();
+  changeListeners.forEach((listener) => listener());
 }
 
+/** Pestaña Focus: todos los links. */
 function renderLinks() {
-  // Pestaña Focus: todos
   linksGrid.replaceChildren(...links.map((link, index) => createLinkButton(link, index)));
   linksEmpty.hidden = links.length > 0;
-
-  // Tarjeta de Home: hasta 6. Si hay más, el último hueco es "+N".
-  const visible = links.length > HOME_LINKS_MAX ? links.slice(0, HOME_LINKS_MAX - 1) : links;
-  const items = visible.map((link, index) => createMiniLink(link, index));
-  if (links.length > HOME_LINKS_MAX) items.push(createMoreChip(links.length - visible.length));
-  homeLinks.replaceChildren(...items);
-  homeLinksEmpty.hidden = links.length > 0;
 }
 
-/** Botón redondo grande con la inicial y el nombre debajo (pestaña Focus). */
+/** Botón redondo grande con el logo (o la inicial) y el nombre debajo (pestaña Focus). */
 function createLinkButton(link, index) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -45,7 +51,7 @@ function createLinkButton(link, index) {
 
   const circle = document.createElement('span');
   circle.className = 'link-circle';
-  circle.textContent = link.initial; // textContent (no innerHTML): nunca ejecuta nada
+  fillLinkCircle(circle, link);
   const name = document.createElement('span');
   name.className = 'link-name';
   name.textContent = link.name;
@@ -55,38 +61,37 @@ function createLinkButton(link, index) {
   return button;
 }
 
-/** Círculo pequeño (tarjeta de Home). */
-function createMiniLink(link, index) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'mini-link';
-  button.title = `${link.name} · ${link.host}`;
-  button.textContent = link.initial;
-  paintLink(button, link, index);
-  button.addEventListener('click', (event) => {
-    event.stopPropagation(); // que no cuente también como clic en la tarjeta
-    openLink(index, button);
-  });
-  return button;
+/**
+ * Pone dentro de `element` el logo del link (un <svg> con su dibujo) o, si
+ * no tiene, su inicial. Siempre con createElementNS/textContent: nunca
+ * innerHTML, así nada de links.json puede ejecutar código.
+ */
+export function fillLinkCircle(element, link) {
+  if (link.logo?.path) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('link-logo');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', link.logo.path);
+    svg.append(path);
+    element.replaceChildren(svg);
+    element.dataset.logo = 'true';
+  } else {
+    element.textContent = link.initial; // textContent (no innerHTML): nunca ejecuta nada
+    element.dataset.logo = 'false';
+  }
 }
 
-/** "+3": al pulsarlo, la tarjeta te lleva a Focus, donde están todos. */
-function createMoreChip(count) {
-  const chip = document.createElement('span');
-  chip.className = 'mini-link more';
-  chip.textContent = `+${count}`;
-  chip.style.setProperty('--i', String(HOME_LINKS_MAX - 1));
-  return chip;
-}
-
-/** Color, color del texto y posición (para la entrada en cascada) como variables CSS. */
-function paintLink(element, link, index) {
+/** Color, color del dibujo y posición (para la entrada en cascada) como variables CSS. */
+export function paintLink(element, link, index) {
   element.style.setProperty('--link-color', link.color);
   element.style.setProperty('--link-text', link.textColor);
   element.style.setProperty('--i', String(index));
 }
 
-function openLink(index, circle) {
+/** Abre el link número `index` con un pequeño rebote de `circle`. */
+export function openLink(index, circle) {
   animate(circle, [{ scale: '1' }, { scale: '0.85' }, { scale: '1.15' }, { scale: '1' }], {
     duration: 420,
     easing: 'ease-out',

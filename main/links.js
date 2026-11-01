@@ -1,14 +1,16 @@
 // =============================================================================
 //  main/links.js — Los links de config/links.json
 // -----------------------------------------------------------------------------
-//  Lee y valida los links. La página solo recibe nombre, inicial y color: para
-//  abrir uno pide su número y aquí lo abrimos con shell.openExternal.
+//  Lee y valida los links. La página solo recibe nombre, inicial, color y
+//  logo: para abrir uno pide su número y aquí lo abrimos con shell.openExternal.
+//  Los logos salen de Simple Icons, sin conexión (main/link-logos.js).
 // =============================================================================
 
 'use strict';
 
 const { shell } = require('electron');
 const { readConfigJson } = require('./config');
+const { findLogos } = require('./link-logos');
 
 // Por seguridad, los links solo pueden ser páginas web o correos.
 const ALLOWED_LINK_PROTOCOLS = ['http:', 'https:', 'mailto:'];
@@ -29,7 +31,24 @@ function loadLinks() {
   } else {
     links = data.map(normalizeLink).filter(Boolean);
   }
+  addLogos(links);
   return links.length;
+}
+
+/**
+ * Pone a cada link su logo (si lo hay). Sin "color" en links.json, el círculo
+ * toma el color de la marca (el verde de Spotify, el rojo de YouTube...).
+ */
+function addLogos(list) {
+  const logos = findLogos(list.map(({ name, url, iconRequest }) => ({ name, url, icon: iconRequest })));
+  list.forEach((link, index) => {
+    const logo = logos[index];
+    link.logo = logo ? { path: logo.path, title: logo.title } : null;
+    if (logo && !link.hasColor) {
+      link.color = logo.hex;
+      link.textColor = isLightColor(logo.hex) ? '#111111' : '#ffffff';
+    }
+  });
 }
 
 /** Revisa un link de links.json y completa lo que falte (color, inicial...). */
@@ -58,7 +77,8 @@ function normalizeLink(entry, index) {
     return null;
   }
 
-  const color = isHexColor(entry.color) ? expandHex(entry.color) : pickColor(name);
+  const hasColor = isHexColor(entry.color);
+  const color = hasColor ? expandHex(entry.color) : pickColor(name);
   // Array.from separa bien los emojis (que ocupan 2 "caracteres" en JS).
   const customInitial = typeof entry.initial === 'string' ? entry.initial.trim() : '';
   const initial = customInitial
@@ -69,15 +89,35 @@ function normalizeLink(entry, index) {
     name,
     url: url.href,
     color,
+    hasColor,
     initial,
     textColor: isLightColor(color) ? '#111111' : '#ffffff', // texto legible sobre el color
     host: url.protocol === 'mailto:' ? url.pathname : url.hostname,
+    iconRequest: readIconField(entry, name, Boolean(customInitial)),
   };
+}
+
+/**
+ * El campo "icon" de links.json:
+ *   "spotify" o "Google Drive" → ese logo de Simple Icons
+ *   false o "none"             → sin logo (la inicial)
+ *   (sin "icon")               → lo buscamos solos; si pusiste "initial", la inicial
+ * Devuelve el texto, false (sin logo) o undefined (buscarlo solos).
+ */
+function readIconField(entry, name, hasCustomInitial) {
+  const { icon } = entry;
+  if (icon === false || icon === null) return false;
+  if (typeof icon === 'string') {
+    const text = icon.trim();
+    return !text || text.toLowerCase() === 'none' ? false : text;
+  }
+  if (icon !== undefined) console.warn(`[links] "${name}": "icon" debe ser un texto ("spotify") o false. Lo ignoro.`);
+  return hasCustomInitial ? false : undefined;
 }
 
 /** Lo que ve la página: todo menos la url (para abrir un link, pide su número). */
 function getLinksForRenderer() {
-  return links.map(({ name, color, initial, textColor, host }) => ({ name, color, initial, textColor, host }));
+  return links.map(({ name, color, initial, textColor, host, logo }) => ({ name, color, initial, textColor, host, logo }));
 }
 
 function openLink(index) {

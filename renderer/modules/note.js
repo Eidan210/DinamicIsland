@@ -6,6 +6,7 @@
 //    • al cerrar el panel o al cambiar de página,
 //    • y antes de abrir el menú del clic derecho (por si eliges "Salir").
 //  Al abrir la página con su atajo, el cursor ya está listo para escribir.
+//  El widget de Home (renderer/widgets/note.js) enseña el principio de la nota.
 // =============================================================================
 
 import { $, setText, plural } from './utils.js';
@@ -28,6 +29,7 @@ const statusEl = $('note-status');
 const countEl = $('note-count');
 
 let saveTimer = null;
+const changeListeners = [];
 let dirty = false; // ¿hay cambios sin guardar?
 let editable = false; // hasta cargar la nota no se puede escribir (no la pisamos)
 let caretPlaced = false;
@@ -35,6 +37,22 @@ let caretPlaced = false;
 function setStatus(status, text = STATUS_TEXT[status] || '') {
   noteEl.dataset.state = status;
   setText(statusEl, text);
+  changeListeners.forEach((listener) => listener());
+}
+
+/** El texto de la nota. */
+export function getNoteText() {
+  return textarea.value;
+}
+
+/** Cómo va la nota: 'idle', 'typing', 'saving', 'saved', 'error' o 'readonly'. */
+export function getNoteStatus() {
+  return noteEl.dataset.state || 'idle';
+}
+
+/** Avisa a `listener()` cuando la nota cambia de estado (al cargarla, al escribir, al guardar...). */
+export function onNoteChange(listener) {
+  changeListeners.push(listener);
 }
 
 function updateCount() {

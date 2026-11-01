@@ -1,5 +1,5 @@
 // =============================================================================
-//  renderer/modules/music.js — La música (página, tarjeta de Home, isla, burbuja y aviso)
+//  renderer/modules/music.js — La música (página, isla, burbuja y aviso)
 // -----------------------------------------------------------------------------
 //  main.js nos pasa lo que cuenta el WinHelper: título, artista, estado,
 //  posición, duración y (solo cuando cambia) la carátula.
@@ -11,6 +11,7 @@
 //
 //  También: los colores de la carátula (colors.js), deslizar para cambiar de
 //  canción (swipe.js) y el botón "Mostrar en la isla".
+//  El widget de Home está en renderer/widgets/music.js (usa lo que exportamos aquí).
 // =============================================================================
 
 import { $, animate, setText, formatTime, SPRING, SPRING_POP } from './utils.js';
@@ -48,13 +49,6 @@ const mediaPrev = $('media-prev');
 const mediaToggle = $('media-toggle');
 const mediaNext = $('media-next');
 const mediaIsland = $('media-island');
-// ...tarjeta de Home...
-const homeMusicCard = $('home-music');
-const homeMusicArtWrap = $('home-music-art-wrap');
-const homeMusicArt = $('home-music-art');
-const homeMusicTitle = $('home-music-title');
-const homeMusicArtist = $('home-music-artist');
-const homeMusicToggle = $('home-music-toggle');
 // ...isla, burbuja y aviso.
 const island = $('island');
 const activityEl = $('activity');
@@ -84,18 +78,18 @@ function notifyMediaChange() {
   mediaListeners.forEach((listener) => listener());
 }
 
-function isPlaying() {
+export function isPlaying() {
   return state.media.status === 'playing';
 }
 
 /** ¿Hay algo cargado en alguna app (sonando o en pausa)? */
-function hasTrack() {
+export function hasTrack() {
   const { media } = state;
   return media.available === 'ok' && Boolean(media.title) && !['none', 'closed'].includes(media.status);
 }
 
 /** "Título|Artista|Álbum": para saber si cambió la canción. */
-function trackKey(media) {
+export function trackKey(media = state.media) {
   return media.title ? `${media.title}|${media.artist}|${media.album}` : '';
 }
 
@@ -140,15 +134,20 @@ export function loadInitialMedia(mediaState) {
 
 function setMediaArt(dataUrl) {
   mediaArt = dataUrl || null;
-  for (const img of [playerArt, playerArtGlow, homeMusicArt, activityArt, bubbleArt, bannerArt]) {
+  for (const img of [playerArt, playerArtGlow, activityArt, bubbleArt, bannerArt]) {
     if (mediaArt) img.src = mediaArt;
     else img.removeAttribute('src');
   }
-  for (const element of [playerEl, homeMusicCard, bubbleMusic]) element.dataset.hasArt = String(Boolean(mediaArt));
+  for (const element of [playerEl, bubbleMusic]) element.dataset.hasArt = String(Boolean(mediaArt));
   updateMusicColors();
 }
 
-/** Dibuja la música en la pestaña, la tarjeta de Home y el aviso. */
+/** La carátula actual ("data URL") o null. */
+export function getMediaArt() {
+  return mediaArt;
+}
+
+/** Dibuja la música en la pestaña y el aviso. */
 export function renderMedia({ trackChanged = false } = {}) {
   const { media } = state;
   const track = hasTrack();
@@ -171,13 +170,6 @@ export function renderMedia({ trackChanged = false } = {}) {
   mediaToggle.disabled = !media.canPlayPause;
   mediaPrev.disabled = !media.canPrevious;
   mediaNext.disabled = !media.canNext;
-
-  // Tarjeta de Home
-  homeMusicCard.dataset.playing = String(playing);
-  setText(homeMusicTitle, track ? media.title : 'Nada sonando');
-  setText(homeMusicArtist, track ? media.artist || media.appName : 'Apple Music o cualquier app');
-  homeMusicToggle.hidden = !track || !media.canPlayPause;
-  homeMusicToggle.dataset.running = String(playing);
 
   // Aviso "Ahora suena"
   setText(bannerLabel, media.appName ? `Ahora suena · ${media.appName}` : 'Ahora suena');
@@ -204,7 +196,7 @@ function renderMediaProgress() {
 }
 
 /** Por dónde va la canción, de 0 a 1 (para la barra); null si no se sabe cuánto dura. */
-function getMediaProgress() {
+export function getMediaProgress() {
   const { duration } = state.media;
   return duration > 0 ? getMediaPosition() / duration : null;
 }
@@ -266,10 +258,6 @@ function animateTrackChange() {
     delay: 110,
     easing: SPRING,
   });
-  animate(homeMusicArtWrap, [{ opacity: 0, scale: '0.7' }, { opacity: 1, scale: '1' }], {
-    duration: 480,
-    easing: SPRING_POP,
-  });
 }
 
 /**
@@ -298,7 +286,7 @@ function updateMusicColors() {
 }
 
 /** Al pulsar play/pausa cambiamos el botón al momento; el helper lo confirma enseguida. */
-function toggleMediaOptimistic() {
+export function toggleMedia() {
   const { media } = state;
   if (!media.canPlayPause) return;
   media.position = getMediaPosition();
@@ -310,7 +298,8 @@ function toggleMediaOptimistic() {
   notifyMediaChange();
 }
 
-function skipTrack(direction) {
+/** Siguiente (+1) o anterior (-1). */
+export function skipTrack(direction) {
   skipDirection = direction;
   skipUntil = Date.now() + 4000;
   // La flecha del botón da un pequeño salto hacia su lado.
@@ -393,13 +382,9 @@ export function renderIslandToggle() {
 }
 
 export function initMusic() {
-  mediaToggle.addEventListener('click', toggleMediaOptimistic);
+  mediaToggle.addEventListener('click', toggleMedia);
   mediaNext.addEventListener('click', () => skipTrack(1));
   mediaPrev.addEventListener('click', () => skipTrack(-1));
-  homeMusicToggle.addEventListener('click', (event) => {
-    event.stopPropagation(); // que no cuente también como clic en la tarjeta
-    toggleMediaOptimistic();
-  });
 
   // Clic en la barra de progreso → saltar a ese punto (si la app lo permite).
   playerBar.addEventListener('click', (event) => {

@@ -73,12 +73,20 @@ contextBridge.exposeInMainWorld('notch', {
 
   // ---------- Links ----------
   links: {
-    /** Devuelve (Promise) la lista de links (nombre, inicial, color...). */
+    /** Devuelve (Promise) la lista de links (nombre, inicial, color y logo). */
     getAll: () => ipcRenderer.invoke('links:get'),
     /** Abre el link número `index` de la lista (la url la pone main.js, no la página). */
     open: (index) => ipcRenderer.send('links:open', Number(index)),
     /** Avisa cuando guardas config/links.json: callback(links). */
     onChange: (callback) => subscribe('links:changed', callback),
+  },
+
+  // ---------- Home: los widgets ----------
+  home: {
+    /** Devuelve (Promise) { widgets: [{ type, size }] }: los widgets de Home, en orden. */
+    get: () => ipcRenderer.invoke('home:get'),
+    /** Guarda los widgets (en tu carpeta de datos, home.json). Devuelve (Promise) { ok, error? }. */
+    save: (widgets) => ipcRenderer.invoke('home:save', widgets),
   },
 
   // ---------- Música (Fase 3) ----------

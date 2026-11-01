@@ -10,7 +10,7 @@
 //      de todo (con el panel abierto sale como tarjeta encima del contenido).
 //    • Página IA (modo Sesiones): una tarjeta por sesión con su cronómetro y
 //      los pasos Leer → Editar → Probar → Hecho; sin sesiones, cómo conectar.
-//    • Tarjeta de Home.
+//    • El widget de Home está en renderer/widgets/ai.js (se entera con onAiChange).
 //  El cronómetro avanza una vez por segundo, solo mientras se ve.
 // =============================================================================
 
@@ -22,7 +22,7 @@ import { getCurrentTab, onTabChange } from './tabs.js';
 import { focusChatInput } from './chat.js';
 
 const DONE_MS = 6000; // al terminar, la isla enseña "Hecho" estos milisegundos
-const SOURCE = {
+export const SOURCE = {
   claude: { name: 'Claude', icon: '#i-claude' },
   agy: { name: 'Antigravity', icon: '#i-gemini' },
 };
@@ -38,7 +38,7 @@ const ACTIONS = {
   WebFetch: 'abrir una web',
   WebSearch: 'buscar en internet',
 };
-const STEPS = [
+export const STEPS = [
   ['read', 'Leer'],
   ['edit', 'Editar'],
   ['test', 'Probar'],
@@ -65,9 +65,6 @@ const setupEl = $('ai-setup');
 const setupStatus = $('ai-setup-status');
 const serverEl = $('ai-server');
 const countEl = $('ai-count');
-const homeCard = document.querySelector('.card-ai');
-const homeTitle = $('home-ai-title');
-const homeNote = $('home-ai-note');
 
 let mode = 'auto'; // 'auto' | 'sessions' | 'chat' (auto: Sesiones si hay alguna, si no Chat)
 let tickTimer = null;
@@ -76,6 +73,12 @@ let shownDecisionId = ''; // la decisión que enseña la tarjeta
 // other: { pregunta: 'texto' }, otherOpen: { pregunta: true } }
 let questionState = null;
 let deciding = false; // mientras main aplica tu respuesta, los botones se desactivan
+const changeListeners = [];
+
+/** Avisa a `listener()` cada vez que cambia algo de la IA (lo usa el widget de Home). */
+export function onAiChange(listener) {
+  changeListeners.push(listener);
+}
 
 // -----------------------------------------------------------------------------
 // Estado
@@ -120,7 +123,7 @@ function elapsedText(session, now = Date.now()) {
 }
 
 /** Qué hace, en una palabra: "Editando", "Esperando", "Hecho"... */
-function verbOf(session) {
+export function verbOf(session) {
   if (session.status === 'waiting') return 'Esperando';
   if (session.status === 'done') return 'Hecho';
   if (session.status === 'error') return 'Error';
@@ -139,7 +142,7 @@ function renderAll() {
   renderIsland();
   renderDecision();
   renderPage();
-  renderHome();
+  changeListeners.forEach((listener) => listener());
   scheduleTick();
 }
 
@@ -251,23 +254,6 @@ function renderSessions(sessions) {
     return card;
   });
   sessionsEl.replaceChildren(...cards);
-}
-
-/** La tarjeta de Home. */
-function renderHome() {
-  const { sessions, lastEventAt, server } = state.ai;
-  const live = sessions.filter((session) => session.status === 'working' || session.status === 'waiting');
-  const session = live[0] || sessions[0];
-  homeCard.dataset.status = session?.status || '';
-  homeTitle.classList.toggle('is-dim', !session);
-  if (!session) {
-    setText(homeTitle, 'Sin sesiones');
-    setText(homeNote, !server.listening ? 'Servidor apagado' : lastEventAt ? 'Esperando a Claude Code' : 'Conecta Claude Code');
-    return;
-  }
-  setText(homeTitle, session.project);
-  const extra = live.length > 1 ? ` · ${plural(live.length, 'sesión', 'sesiones')}` : '';
-  setText(homeNote, `${verbOf(session)}${session.tool?.target && session.status === 'working' ? ` ${session.tool.target}` : ''}${extra}`);
 }
 
 // -----------------------------------------------------------------------------
