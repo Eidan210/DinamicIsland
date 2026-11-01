@@ -6,8 +6,22 @@
 export const SPRING = 'cubic-bezier(0.32, 0.72, 0, 1)';
 export const SPRING_POP = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
 
-// Si en Windows desactivas "Efectos de animación", respetamos esa preferencia.
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+/**
+ * Una curva de muelle de styles.css (p. ej. '--spring-open'), para usarla en
+ * animate(). Son curvas linear() largas: así solo están escritas en un sitio.
+ */
+export function cssEasing(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || SPRING;
+}
+
+/**
+ * ¿Hay que animar? Lo decide el ajuste "animations" (motion.js lo pone en
+ * <html data-reduce-motion>): por defecto se anima siempre, aunque Windows
+ * tenga apagados los "Efectos de animación".
+ */
+export function isMotionReduced() {
+  return document.documentElement.dataset.reduceMotion === 'true';
+}
 
 /** Atajo para buscar un elemento por su id. */
 export const $ = (id) => document.getElementById(id);
@@ -18,7 +32,7 @@ export const $ = (id) => document.getElementById(id);
  * @returns {Animation | null}
  */
 export function animate(element, keyframes, options) {
-  if (!element || reducedMotion.matches) return null;
+  if (!element || isMotionReduced()) return null;
   return element.animate(keyframes, options);
 }
 
@@ -40,7 +54,7 @@ export function setRollingText(element, text, { countDown = false } = {}) {
   element.dataset.rollText = text;
   const before = [...(previous ?? '')];
   const after = [...text];
-  if (previous === undefined || before.length !== after.length || reducedMotion.matches) {
+  if (previous === undefined || before.length !== after.length || isMotionReduced()) {
     element.textContent = text;
     return;
   }

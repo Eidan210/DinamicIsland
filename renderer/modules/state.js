@@ -12,6 +12,7 @@ export const state = {
     shortcut: 'Control+Alt+T',
     pageShortcuts: {},
     theme: 'auto',
+    animations: 'always',
     locale: 'es-ES',
     hour12: false,
     autoHide: true,

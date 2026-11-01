@@ -133,6 +133,7 @@ Todo está en la carpeta `config/`. **Al guardar un archivo, Notch lo aplica al 
     "note": "Control+Alt+6"
   },
   "theme": "auto",
+  "animations": "always",
   "locale": "es-ES",
   "hour12": false,
   "autoHide": true,
@@ -151,6 +152,7 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `shortcut` | `"Control+Alt+T"` | Atajo global para abrir y cerrar. Usa el [formato de atajos de Electron](https://www.electronjs.org/docs/latest/api/accelerator), por ejemplo `"Control+Shift+Space"` o `"Alt+N"`. |
 | `pageShortcuts` | `Ctrl+Alt+1…6` | Un atajo por página (`home`, `music`, `ai`, `focus`, `clipboard`, `note`). Solo pon las que quieras cambiar, p. ej. `{ "note": "Control+Alt+N" }`; `""` deja esa página sin atajo. |
 | `theme` | `"auto"` | Tema del panel abierto: `"auto"` (como el modo de las apps de Windows), `"light"` (claro) o `"dark"` (oscuro). La isla compacta siempre es negra. |
+| `animations` | `"always"` | `"always"`: anima siempre, aunque Windows tenga apagados los «Efectos de animación». `"system"`: hace caso a Windows (con los efectos apagados, no anima). `"off"`: no anima nada. |
 | `locale` | `"es-ES"` | Idioma de la fecha: `"es-MX"`, `"es-CO"`, `"en-US"`… |
 | `hour12` | `false` | `true` muestra el reloj en formato de 12 horas (a. m./p. m.). |
 | `autoHide` | `true` | `true`: en reposo se encoge a la mini-muesca. `false`: la píldora siempre está a la vista. |
@@ -272,6 +274,7 @@ assets/
 - **La línea que suena, sin sondeos.** La página calcula en qué línea vas con la posición interpolada y programa **un solo temporizador** para el instante exacto de la siguiente; si pausas, saltas o cambias de canción, lo recalcula. Solo funciona con la página Música a la vista.
 - **Colores con k-means.** La carátula se reduce a 16 × 16 píxeles y se agrupan los píxeles parecidos en 3 grupos; el color medio de cada uno pinta los degradados y el más vivo es el color de acento. Son variables CSS registradas con `@property`, así que cambian de una canción a otra con una transición suave.
 - **Salida de audio.** El helper lista las salidas con Core Audio (`IMMDeviceEnumerator`) y se entera de los cambios por avisos de Windows. Para cambiar la predeterminada usa `IPolicyConfig`, la interfaz que usa la propia configuración de sonido de Windows. ⚠️ Microsoft no la documenta: funciona de Windows 7 a Windows 11, pero si algún día cambia, Notch solo mostrará el aviso «No se pudo cambiar la salida de audio».
+- **Muelles de verdad.** La isla cambia de forma con curvas de muelle amortiguado (escritas con `linear()` en `styles.css`): al crecer se pasa un poco y se asienta, como en el iPhone; al encoger, se asienta sin rebotar. Al pulsarla se hunde un poco. Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca; el contenido del panel entra igual, en cascada.
 - **Batería por eventos.** La página usa la API de batería de Chromium (`navigator.getBattery()`), que avisa cuando cambia el nivel o enchufas el cargador. Avisa una vez al bajar del 20 % y otra del 10 %, y vuelve a avisar tras cargarlo.
 - **Centro de avisos.** Solo los de Notch (Pomodoro, batería, errores de configuración, atajos, helper; más adelante, la IA). Viven en memoria: al cerrar Notch se olvidan. Notch no puede leer las notificaciones de otras apps (Windows solo lo permite a las instaladas desde la Microsoft Store).
 - **Tema.** `main/theme.js` aplica `theme` con `nativeTheme` (así el menú del clic derecho también cambia) y le dice a la página qué tema toca; la página lo pone en `<html data-theme>`. Con `"auto"`, si cambias el modo de Windows, el panel cambia solo.
@@ -287,7 +290,7 @@ assets/
   - La cuenta atrás del Pomodoro solo se dibuja cuando se ve.
   - Las animaciones son cortas y se lanzan por eventos.
   - Con el panel cerrado, la **única animación continua** es el ecualizador, y solo corre mientras suena música y se ve en pantalla.
-  - Si en Windows desactivas los «Efectos de animación», Notch no anima nada (la línea de la letra se ve entera iluminada).
+  - Notch anima aunque Windows tenga apagados los «Efectos de animación» (muchos portátiles gamer vienen así). Para que le haga caso a Windows, pon `"animations": "system"`; para no animar nada, `"off"` (entonces la línea de la letra se ve entera iluminada).
 
 ## Privacidad
 
@@ -314,6 +317,7 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **No aparece el botón de la salida de audio.** Vuelve a compilar el helper (`npm run build:helper`) y reinicia Notch: las salidas de audio son nuevas en la Fase 2.
 - **No se pudo cambiar la salida de audio.** Windows no lo permitió (la interfaz que usa Notch no está documentada). Cámbiala en *Configuración → Sistema → Sonido*; la lista de Notch se actualiza sola.
 - **Deslizar con el touchpad va al revés.** Depende de la dirección de desplazamiento de Windows (*Configuración → Bluetooth y dispositivos → Panel táctil → Desplazar y hacer zoom*). Con el ratón (arrastrar y soltar) siempre es: izquierda = siguiente.
+- **Todo se ve estático o las barritas de la música no se mueven.** Revisa que en `settings.json` no tengas `"animations": "system"` u `"off"`. Con `"system"`, Notch hace caso a Windows: si los «Efectos de animación» están apagados (*Configuración → Accesibilidad → Efectos visuales*), no anima. Con `"always"` (lo de por defecto) anima siempre.
 - **No veo la batería.** Solo sale si el equipo tiene batería y no está llena y enchufada a la vez. En la mini-muesca, solo cuando queda poca (20 % o menos) y no está cargando.
 - **No llega la notificación del Pomodoro.** Revisa que «No molestar» esté desactivado (*Configuración → Sistema → Notificaciones*). Windows también silencia las notificaciones mientras juegas a pantalla completa. Con `npm start`, la notificación aparece con un nombre técnico (`com.eidancuadros.notch`); en la versión instalada, como «Notch».
 - **Un link no aparece.** Mira la terminal: dice qué link se ignoró y por qué.

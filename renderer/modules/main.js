@@ -24,6 +24,7 @@
 //    battery.js   la batería
 //    note.js      la nota rápida
 //    theme.js     tema claro u oscuro del panel
+//    motion.js    animar siempre, como Windows o nunca (ajuste "animations")
 //  Este archivo solo los pone en marcha, en orden.
 // =============================================================================
 
@@ -43,6 +44,7 @@ import { initNotices, loadInitialNotices } from './notices.js';
 import { initBattery } from './battery.js';
 import { initNote, loadNote } from './note.js';
 import { initTheme, setTheme } from './theme.js';
+import { initMotion, applyMotionSetting } from './motion.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -77,6 +79,7 @@ async function loadInitialState() {
 async function init() {
   // 1. Cada módulo registra sus botones y los avisos de main.js que le tocan.
   initTheme();
+  initMotion();
   initIsland();
   initPanel();
   initTabs();
@@ -93,6 +96,7 @@ async function init() {
   // Al guardar config/settings.json, se aplica al momento.
   window.notch.onSettingsChange((newSettings) => {
     state.settings = { ...state.settings, ...newSettings };
+    applyMotionSetting();
     applyClockSettings();
     applyTabShortcuts();
     renderIslandToggle();
@@ -102,6 +106,7 @@ async function init() {
   // 2. Pedimos a main.js el estado actual de todo.
   const loaded = await loadInitialState();
   if (loaded.settings) state.settings = { ...state.settings, ...loaded.settings };
+  applyMotionSetting();
   if (loaded.theme) setTheme(loaded.theme);
   if (loaded.pomodoro) state.pomodoro = loaded.pomodoro;
   if (loaded.media) loadInitialMedia(loaded.media);

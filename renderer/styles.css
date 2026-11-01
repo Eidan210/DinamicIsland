@@ -72,8 +72,12 @@
   --spring: cubic-bezier(0.32, 0.72, 0, 1); /* suave, sin rebote (tipo iOS) */
   --spring-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* rebote ligero (se pasa un 4 %) */
   --spring-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* rebote marcado (se pasa un 9 %) */
-  --open-duration: 560ms;
-  --close-duration: 420ms;
+  /* Muelles "de verdad", como los de iOS: la curva de un muelle amortiguado
+     muestreada con linear() (se pasa, vuelve y se asienta). La isla los usa
+     al cambiar de forma. */
+  --spring-bouncy: linear(0, 0.035, 0.122, 0.241, 0.375, 0.511, 0.639, 0.753, 0.85, 0.928, 0.988, 1.032, 1.06, 1.077, 1.083, 1.082, 1.076, 1.067, 1.056, 1.045, 1.034, 1.024, 1.015, 1.008, 1.003, 0.999, 0.996, 0.994, 0.993, 0.993, 0.993, 0.994, 0.995, 0.996, 0.997, 0.998, 0.998, 0.999, 1, 1, 1); /* se pasa un 8 % */
+  --spring-open: linear(0, 0.029, 0.102, 0.202, 0.317, 0.435, 0.549, 0.654, 0.748, 0.827, 0.893, 0.946, 0.986, 1.015, 1.035, 1.047, 1.053, 1.054, 1.052, 1.048, 1.043, 1.036, 1.03, 1.024, 1.018, 1.013, 1.009, 1.005, 1.003, 1.001, 0.999, 0.998, 0.997, 0.997, 0.997, 0.997, 0.997, 0.998, 0.998, 0.998, 1); /* se pasa un 5 % */
+  --spring-close: linear(0, 0.018, 0.064, 0.129, 0.204, 0.284, 0.366, 0.445, 0.52, 0.589, 0.652, 0.709, 0.758, 0.802, 0.84, 0.872, 0.899, 0.921, 0.94, 0.955, 0.967, 0.977, 0.985, 0.991, 0.996, 0.999, 1.001, 1.003, 1.004, 1.005, 1.005, 1.005, 1.005, 1.005, 1.004, 1.004, 1.003, 1.003, 1.003, 1.002, 1); /* casi sin pasarse */
 
   /* Colores de la música: music.js los saca de la carátula y cambian con suavidad.
      --music-accent es el más vivo (barras, progreso) y --art-1/2/3 son los 3
@@ -233,9 +237,10 @@ img {
 
 /* ---------- 3. La isla y sus formas ---------- */
 .island {
-  /* island.js pone data-motion="grow" o "shrink": al crecer rebota un poco, al encoger no */
-  --size-duration: var(--close-duration);
-  --size-easing: var(--spring);
+  /* island.js pone data-motion="grow" o "shrink": al crecer rebota con un
+     muelle; al abrir el panel, un muelle algo más suave; al encoger, se asienta */
+  --size-duration: 520ms;
+  --size-easing: var(--spring-close);
 
   position: relative;
   margin-top: var(--top-gap);
@@ -257,7 +262,7 @@ img {
     translate var(--size-duration) var(--size-easing),
     background-color var(--size-duration) ease,
     box-shadow var(--size-duration) ease,
-    scale 260ms var(--spring-bounce),
+    scale 420ms var(--spring-bouncy),
     --island-tint-1 600ms ease,
     --island-tint-2 600ms ease;
 }
@@ -270,8 +275,13 @@ img {
 }
 
 .island[data-motion="grow"] {
-  --size-duration: 540ms;
-  --size-easing: var(--spring-bounce);
+  --size-duration: 640ms;
+  --size-easing: var(--spring-bouncy);
+}
+
+.island[data-motion="grow"][data-shape="expanded"] {
+  --size-duration: 740ms;
+  --size-easing: var(--spring-open);
 }
 
 /* Mini: una muesca pegada al borde de arriba, como el notch de un portátil.
@@ -310,6 +320,17 @@ img {
     [data-shape="alert"]
   ):hover {
   scale: 1.04;
+}
+
+/* Al pulsarla se "hunde" un poco, y al soltar crece con el muelle */
+.island:is(
+    [data-shape="pill"],
+    [data-shape="activity"],
+    [data-shape="volume"],
+    [data-shape="banner"],
+    [data-shape="alert"]
+  ):active {
+  scale: 0.94;
 }
 
 .island[data-shape="expanded"] {
@@ -353,7 +374,10 @@ img {
   align-items: center;
   translate: -50% 0;
   pointer-events: none;
-  transition: opacity 200ms ease;
+  transition:
+    opacity 200ms ease,
+    filter 220ms ease,
+    scale 420ms var(--spring-bouncy);
 }
 
 /* --look-x / --look-y los pone eyes.js para que los ojos miren hacia el ratón */
@@ -396,6 +420,8 @@ img {
 /* En el volumen y en los avisos, los ojos dejan sitio al contenido */
 .island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"]) .face {
   opacity: 0;
+  filter: blur(4px);
+  scale: 0.6;
 }
 
 /* Pomodoro en marcha: ojos entrecerrados, "concentrados" */
@@ -423,13 +449,25 @@ img {
   align-items: center;
   justify-content: space-between;
   opacity: 0;
+  filter: blur(6px);
+  scale: 0.9;
   pointer-events: none;
-  transition: opacity 140ms ease;
+  transition:
+    opacity 140ms ease,
+    filter 180ms ease,
+    scale 260ms var(--spring-close);
 }
 
+/* Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca y
+   crece con un muelle (igual en el volumen y los avisos) */
 .island[data-shape="activity"] .activity {
   opacity: 1;
-  transition: opacity 260ms ease 120ms;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 260ms ease 110ms,
+    filter 340ms ease 90ms,
+    scale 640ms var(--spring-bouncy) 60ms;
 }
 
 /* Al arrastrar la isla para cambiar de canción, el contenido sigue al ratón
@@ -489,6 +527,9 @@ img {
 
 .activity .eq {
   display: none;
+  height: 18px;
+  gap: 2.5px;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--music-accent) 55%, transparent));
 }
 
 /* Según qué actividad sea, se ve una cosa u otra */
@@ -519,13 +560,23 @@ img {
   gap: 13px;
   padding: 0 20px 0 12px;
   opacity: 0;
+  filter: blur(6px);
+  scale: 0.9;
   pointer-events: none;
-  transition: opacity 120ms ease;
+  transition:
+    opacity 120ms ease,
+    filter 180ms ease,
+    scale 260ms var(--spring-close);
 }
 
 .island[data-shape="banner"] .banner {
   opacity: 1;
-  transition: opacity 260ms ease 150ms;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 260ms ease 140ms,
+    filter 360ms ease 120ms,
+    scale 680ms var(--spring-bouncy) 80ms;
 }
 
 .banner-art-wrap {
@@ -733,13 +784,23 @@ img {
   gap: 11px;
   padding: 0 17px 0 15px;
   opacity: 0;
+  filter: blur(6px);
+  scale: 0.9;
   pointer-events: none;
-  transition: opacity 120ms ease;
+  transition:
+    opacity 120ms ease,
+    filter 180ms ease,
+    scale 260ms var(--spring-close);
 }
 
 .island[data-shape="volume"] .volume {
   opacity: 1;
-  transition: opacity 220ms ease 90ms;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 220ms ease 80ms,
+    filter 300ms ease 60ms,
+    scale 600ms var(--spring-bouncy) 40ms;
 }
 
 .volume-icon {
@@ -813,13 +874,23 @@ img {
   gap: 13px;
   padding: 0 24px 0 14px;
   opacity: 0;
+  filter: blur(6px);
+  scale: 0.9;
   pointer-events: none;
-  transition: opacity 120ms ease;
+  transition:
+    opacity 120ms ease,
+    filter 180ms ease,
+    scale 260ms var(--spring-close);
 }
 
 .island[data-shape="alert"] .alert {
   opacity: 1;
-  transition: opacity 260ms ease 150ms;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 260ms ease 140ms,
+    filter 360ms ease 120ms,
+    scale 680ms var(--spring-bouncy) 80ms;
 }
 
 .alert-icon {
@@ -927,11 +998,13 @@ img {
   opacity: 0;
   scale: 0.3;
   translate: -44px 0;
+  filter: blur(4px);
   pointer-events: none;
   transition:
     opacity 160ms ease,
     scale 260ms var(--spring),
     translate 300ms var(--spring),
+    filter 200ms ease,
     left 420ms var(--spring);
 }
 
@@ -939,11 +1012,13 @@ img {
   opacity: 1;
   scale: 1;
   translate: 0 0;
+  filter: none;
   pointer-events: auto;
   transition:
     opacity 240ms ease,
-    scale 540ms var(--spring-pop),
-    translate 540ms var(--spring-bounce),
+    scale 680ms var(--spring-bouncy),
+    translate 680ms var(--spring-bouncy),
+    filter 300ms ease,
     left 420ms var(--spring);
 }
 
@@ -1008,31 +1083,37 @@ img {
 .views,
 .tabbar {
   opacity: 0;
+  filter: blur(8px);
+  scale: 0.94;
   transition:
-    opacity 140ms ease,
-    translate 160ms ease,
-    filter 160ms ease;
+    opacity 120ms ease,
+    translate 180ms ease,
+    filter 160ms ease,
+    scale 200ms ease;
 }
 
 .topbar {
-  translate: 0 -8px;
+  translate: 0 -10px;
+  transform-origin: 50% 0;
 }
 
 .views {
-  translate: 0 10px;
-  filter: blur(6px);
+  translate: 0 14px;
 }
 
 .tabbar {
-  translate: 0 12px;
+  translate: 0 16px;
+  transform-origin: 50% 100%;
 }
 
+/* Al abrir: cada parte se enfoca y llega a su sitio con un muelle, en cascada */
 .island[data-shape="expanded"] :is(.topbar, .views, .tabbar) {
   opacity: 1;
   translate: 0 0;
   filter: none;
-  transition-duration: 380ms, 560ms, 420ms;
-  transition-timing-function: ease, var(--spring-bounce), ease;
+  scale: 1;
+  transition-duration: 360ms, 720ms, 420ms, 720ms;
+  transition-timing-function: ease, var(--spring-open), ease, var(--spring-open);
 }
 
 .island[data-shape="expanded"] .topbar {
@@ -3226,13 +3307,14 @@ code {
 }
 
 /* ---------- 15. Accesibilidad ---------- */
-/* Si en Windows desactivas "Efectos de animación", el notch no anima */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 1ms !important;
-    transition-delay: 0s !important;
-    animation: none !important;
-  }
+/* Sin animaciones: con "animations": "off", o con "system" y los "Efectos de
+   animación" de Windows apagados (motion.js pone data-reduce-motion). Por
+   defecto ("always") Notch anima siempre. */
+:root[data-reduce-motion="true"],
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  transition-duration: 1ms !important;
+  transition-delay: 0s !important;
+  animation: none !important;
 }

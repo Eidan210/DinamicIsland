@@ -28,6 +28,9 @@ const DEFAULT_SETTINGS = {
     note: 'Control+Alt+6',
   },
   theme: 'auto', // tema del panel: "auto" (como Windows), "light" (claro) o "dark" (oscuro)
+  // "always": animar siempre | "system": como Windows (si tienes los "Efectos de
+  // animación" apagados, no anima) | "off": nunca
+  animations: 'always',
   locale: 'es-ES', // idioma para la fecha y la hora
   hour12: false, // true = reloj de 12 horas (a. m. / p. m.)
   autoHide: true, // cuando no lo usas, se encoge a una mini-muesca (no tapa pestañas)
@@ -39,6 +42,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const THEMES = ['auto', 'light', 'dark'];
+const ANIMATION_MODES = ['always', 'system', 'off'];
 const POMODORO_MIN_MINUTES = 1;
 const POMODORO_MAX_MINUTES = 180;
 
@@ -121,6 +125,7 @@ function loadSettings() {
   result.shortcut = result.shortcut.trim();
   result.pageShortcuts = normalizePageShortcuts(result.pageShortcuts);
   if (!THEMES.includes(result.theme)) result.theme = DEFAULT_SETTINGS.theme;
+  if (!ANIMATION_MODES.includes(result.animations)) result.animations = DEFAULT_SETTINGS.animations;
   if (typeof result.locale !== 'string') result.locale = DEFAULT_SETTINGS.locale;
   result.hour12 = result.hour12 === true;
   result.autoHide = result.autoHide !== false;

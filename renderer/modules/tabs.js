@@ -8,7 +8,7 @@
 //  página que ya se ve, debe cerrar el panel.
 // =============================================================================
 
-import { $, animate, prettyAccelerator, SPRING } from './utils.js';
+import { $, animate, cssEasing, prettyAccelerator } from './utils.js';
 import { state } from './state.js';
 
 // ⚠️ Mismos nombres y orden que PAGES en main/state.js y que index.html.
@@ -58,23 +58,23 @@ export function showTab(name) {
   newView.classList.add('is-active');
 
   if (state.isExpanded) {
-    // La vista nueva entra por el lado hacia el que avanzas y la vieja sale por
-    // el contrario (como pasar páginas). Con el panel cerrado no hace falta.
+    // La vista nueva entra por el lado hacia el que avanzas, enfocándose y con
+    // un muelle; la vieja sale por el contrario, desenfocándose (como pasar páginas).
     const direction = TAB_ORDER.indexOf(name) > TAB_ORDER.indexOf(previousTab) ? 1 : -1;
     animate(
       newView,
       [
-        { opacity: 0, transform: `translateX(${30 * direction}px)` },
-        { opacity: 1, transform: 'translateX(0)' },
+        { opacity: 0, transform: `translateX(${34 * direction}px) scale(0.97)`, filter: 'blur(5px)' },
+        { opacity: 1, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' },
       ],
-      { duration: 420, easing: SPRING }
+      { duration: 560, easing: cssEasing('--spring-open') }
     );
     animate(
       oldView,
       [
         // visibility: 'visible' mantiene la vista vieja a la vista mientras se va
-        { opacity: 1, transform: 'translateX(0)', visibility: 'visible' },
-        { opacity: 0, transform: `translateX(${-30 * direction}px)`, visibility: 'visible' },
+        { opacity: 1, transform: 'translateX(0)', filter: 'blur(0px)', visibility: 'visible' },
+        { opacity: 0, transform: `translateX(${-30 * direction}px) scale(0.97)`, filter: 'blur(5px)', visibility: 'visible' },
       ],
       { duration: 200, easing: 'ease-in' }
     );
