@@ -7,8 +7,10 @@
 //   volume    → barra de volumen, 1,5 s después de cambiarlo
 //   banner    → aviso grande unos segundos (canción nueva)
 //   alert     → aviso importante unos segundos (batería baja, un error...)
+//   drop      → arrastras archivos encima: se abre para recibirlos (y, al
+//               soltar, confirma que están en la bandeja; ver tray.js)
 //   decision  → Claude Code espera tu respuesta (permiso, pregunta o plan):
-//               salta por encima de todo menos del panel abierto
+//               salta por encima de todo menos del panel abierto y de soltar archivos
 //   expanded  → el panel abierto
 // computeShape() decide la forma a partir del estado; updateShape() la aplica.
 //
@@ -30,7 +32,7 @@ const bubbleEls = [...document.querySelectorAll('.bubble')];
 const bubblePomodoro = $('bubble-pomodoro');
 
 // De menor a mayor (al crecer la isla rebota; al encoger, no)
-const SHAPE_ORDER = ['mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'decision', 'expanded'];
+const SHAPE_ORDER = ['mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'drop', 'decision', 'expanded'];
 const MAX_ACTIVITIES = 3; // 1 en la isla + 2 burbujas
 const WAKE_DELAY = 200; // ms con el ratón sobre la mini-muesca para que se despierte
 const SLEEP_DELAY = 800; // ms que espera antes de volver a encogerse cuando te alejas
@@ -42,6 +44,7 @@ let keepAwakeUntil = 0; // saludo al arrancar
 let volumeUntil = 0; // barra de volumen
 let bannerUntil = 0; // aviso de canción nueva
 let alertUntil = 0; // aviso importante
+let dropUntil = 0; // "Guardado en la bandeja" tras soltar archivos
 let wakeTimer = null;
 let sleepTimer = null;
 let shapeTimer = null;
@@ -109,6 +112,8 @@ export function getActivity() {
 function computeShape(activities) {
   const now = Date.now();
   if (state.isExpanded) return 'expanded';
+  // Arrastrando archivos encima (o recién soltados): eso es lo que estás haciendo ahora
+  if (state.fileDrag || now < dropUntil) return 'drop';
   if (state.ai.pending.length) return 'decision';
   if (now < volumeUntil) return 'volume';
   // Los avisos no se van mientras tengas el ratón encima (para que te dé tiempo a leerlos).
@@ -166,7 +171,7 @@ function updateBubbles(activities) {
 function scheduleShapeTimer() {
   clearTimeout(shapeTimer);
   const now = Date.now();
-  const upcoming = [keepAwakeUntil, volumeUntil, bannerUntil, alertUntil, state.celebrateUntil, state.musicGraceUntil, state.aiDoneUntil].filter(
+  const upcoming = [keepAwakeUntil, volumeUntil, bannerUntil, alertUntil, dropUntil, state.celebrateUntil, state.musicGraceUntil, state.aiDoneUntil].filter(
     (time) => time > now
   );
   if (upcoming.length) shapeTimer = setTimeout(updateShape, Math.min(...upcoming) - now + 20);
@@ -195,6 +200,11 @@ export function showAlert(ms) {
   alertUntil = Date.now() + ms;
 }
 
+/** Tras soltar archivos, la isla cuenta cómo fue durante `ms` milisegundos. */
+export function showDropResult(ms) {
+  dropUntil = Date.now() + ms;
+}
+
 /** panel.js nos avisa de que el panel se abrió o se cerró. */
 export function handlePanelToggle(expanded) {
   cancelWake();
@@ -205,6 +215,7 @@ export function handlePanelToggle(expanded) {
     volumeUntil = 0;
     bannerUntil = 0;
     alertUntil = 0;
+    dropUntil = 0;
   } else {
     // Si el ratón sigue cerca, se queda como píldora hasta que te alejes.
     awake = state.pointerInside;
@@ -299,6 +310,10 @@ export function initIsland() {
       if (isNearIsland(x, y)) cancelSleep(); // sigues cerca: que no se encoja
       else if (!sleepTimer) scheduleSleep(); // te alejaste: se encoge en un momento
     }
+
+    // Por si el ratón ya estaba encima sin "entrar" (p. ej. al volver de
+    // arrastrar archivos fuera de la isla): que la isla vuelva a atraparlo.
+    if (!state.mouseInteractive && state.shape !== 'mini' && isPointerOnIsland()) setMouseInteractive(true);
   });
 
   // El ratón salió de la ventana entera (relatedTarget vacío = fuera de la página).

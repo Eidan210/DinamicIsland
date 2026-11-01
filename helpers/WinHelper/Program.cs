@@ -6,6 +6,7 @@
 //    MediaModule.cs         la música que suena (sesión multimedia de Windows)
 //    VolumeModule.cs        el volumen (Core Audio; declaraciones en CoreAudio.cs)
 //    AudioDevicesModule.cs  las salidas de audio y cambiar la predeterminada
+//    ClipboardModule.cs     lo que copias (solo texto; solo si Notch lo pide)
 //
 //  Protocolo con Electron (una línea de texto por mensaje):
 //    stdout → {"type":"ready"}                  al arrancar
@@ -13,6 +14,8 @@
 //             {"type":"volume", ...}             cambió el volumen
 //             {"type":"audio-devices", ...}      cambiaron las salidas de audio
 //             {"type":"audio-output-result", ...} resultado de "set-output"
+//             {"type":"clipboard", ...}          copiaste un texto
+//             {"type":"clipboard-status", ...}   escucha (o no) el portapapeles
 //             {"type":"error","message":"..."}   algo no se pudo iniciar
 //    stdin  ← órdenes, p. ej. "play", "next", "seek 83.5" (ver cada módulo)
 //    stderr → avisos para depurar (Electron los muestra en la terminal)
@@ -45,6 +48,7 @@ internal static class Program
     private static async Task<int> Main()
     {
         // Cada módulo arranca por su cuenta: si uno falla, los demás siguen.
+        // (El del portapapeles espera a que Notch lo encienda: "clipboard on".)
         var mediaStarted = await MediaModule.StartAsync();
         VolumeModule.Start();
         AudioDevicesModule.Start();
@@ -75,7 +79,8 @@ internal static class Program
             {
                 // Cada módulo dice si la orden es suya.
                 if (!await MediaModule.TryRunCommandAsync(command, argument)
-                    && !AudioDevicesModule.TryRunCommand(command, argument))
+                    && !AudioDevicesModule.TryRunCommand(command, argument)
+                    && !ClipboardModule.TryRunCommand(command, argument))
                 {
                     LogError($"Orden desconocida: {command}");
                 }

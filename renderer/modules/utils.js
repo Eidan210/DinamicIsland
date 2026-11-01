@@ -95,6 +95,21 @@ export function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/**
+ * Para una fila que se desplaza a los lados: marca si hay más contenido a la
+ * izquierda (data-more-before) o a la derecha (data-more-after), y el CSS
+ * difumina ese borde. Devuelve la función que lo revisa (llámala al redibujar).
+ */
+export function trackScrollEdges(element) {
+  const update = () => {
+    const max = element.scrollWidth - element.clientWidth;
+    element.dataset.moreBefore = String(element.scrollLeft > 2);
+    element.dataset.moreAfter = String(element.scrollLeft < max - 2);
+  };
+  element.addEventListener('scroll', update, { passive: true });
+  return update;
+}
+
 /** "Control+Alt+3" → "Ctrl+Alt+3" (atajos de settings.json, más cortos para leer). */
 export function prettyAccelerator(accelerator) {
   return String(accelerator).replace(/\b(CommandOrControl|CmdOrCtrl|Control)\b/gi, 'Ctrl');

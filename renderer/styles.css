@@ -6,7 +6,7 @@
    su atributo data-shape (lo pone island.js) y todos los cambios son
    transiciones CSS:
 
-     mini → pill → activity → volume → banner → alert → expanded
+     mini → pill → activity → volume → banner → alert → drop → expanded
      (de menor a mayor)
 
    ÍNDICE
@@ -16,8 +16,8 @@
       4. Los ojos (y 4b. Clawd)       12. Pestañas
       5. Actividad, volumen y avisos  13. Barras de ecualizador
       6. Burbujas                     14. Tema claro
-      7. Contenido del panel          15. Accesibilidad
-      8. Home: tarjetas
+      7. Contenido del panel          11c. Portapapeles y bandeja
+      8. Home: widgets                15. Accesibilidad
    ============================================================================= */
 
 /* ---------- 1. Variables: cambia aquí tamaños, colores y tiempos ---------- */
@@ -31,6 +31,8 @@
   --volume-width: 300px; /* barra de volumen */
   --banner-width: 430px; /* avisos grandes (canción nueva, batería baja...) */
   --banner-height: 76px;
+  --drop-width: 380px; /* arrastras archivos encima: se abre para recibirlos */
+  --drop-height: 84px;
   --decision-width: 548px; /* Claude Code espera tu respuesta (permiso, pregunta o plan) */
   --decision-height: 180px;
   --panel-width: 720px;
@@ -426,6 +428,13 @@ img {
   border-radius: 28px;
 }
 
+/* Soltar archivos: se abre para recibirlos (con una línea discontinua que late) */
+.island[data-shape="drop"] {
+  width: var(--drop-width);
+  height: var(--drop-height);
+  border-radius: 30px;
+}
+
 /* Decisión pendiente de Claude Code: una tarjeta grande que salta por encima de todo */
 .island[data-shape="decision"] {
   width: var(--decision-width);
@@ -541,7 +550,7 @@ img {
 }
 
 /* En el volumen y en los avisos, los ojos dejan sitio al contenido */
-.island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"], [data-shape="decision"]) .face {
+.island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"], [data-shape="drop"], [data-shape="decision"]) .face {
   opacity: 0;
   filter: blur(4px);
   scale: 0.6;
@@ -1478,6 +1487,159 @@ img {
 
 :is(.alert, .notice)[data-tone="danger"] {
   --tone: var(--danger);
+}
+
+/* Soltar archivos (tray.js): "Suelta para guardarlo" mientras los arrastras
+   encima y, al soltar, "Guardado en la bandeja" (o "llena", en amarillo) */
+.drop {
+  --drop-tone: var(--accent);
+
+  position: absolute;
+  inset: 7px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 20px 0 8px;
+  border-radius: 23px;
+  opacity: 0;
+  filter: blur(6px);
+  scale: 0.9;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    filter 180ms ease,
+    scale 260ms var(--spring-close);
+}
+
+.drop[data-state="full"] {
+  --drop-tone: var(--warning);
+}
+
+.island[data-shape="drop"] .drop {
+  opacity: 1;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 240ms ease 100ms,
+    filter 320ms ease 80ms,
+    scale 640ms var(--spring-bouncy) 60ms;
+}
+
+/* La línea discontinua de "aquí se puede soltar" (late mientras arrastras) */
+.drop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1.5px dashed color-mix(in srgb, var(--drop-tone) 60%, transparent);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.island[data-shape="drop"] .drop[data-state="over"]::before {
+  opacity: 1;
+  animation: drop-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes drop-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.drop-icon {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--drop-tone) 18%, transparent);
+  color: var(--drop-tone);
+  transition:
+    background-color 240ms ease,
+    color 240ms ease;
+}
+
+.drop-icon svg {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  transition:
+    opacity 160ms ease,
+    scale 420ms var(--spring-pop);
+}
+
+.drop-done {
+  stroke-width: 2.6;
+}
+
+.drop-full {
+  --glyph-cut: #000;
+}
+
+/* Se ve un icono u otro según cómo fue */
+.drop-done,
+.drop-full,
+.drop:not([data-state="over"]) .drop-tray,
+.drop:not([data-state="done"]) .drop-done,
+.drop:not([data-state="full"]) .drop-full {
+  opacity: 0;
+  scale: 0.4;
+}
+
+.drop[data-state="over"] .drop-tray,
+.drop[data-state="done"] .drop-done,
+.drop[data-state="full"] .drop-full {
+  opacity: 1;
+  scale: 1;
+}
+
+/* La flecha "entra" en la bandeja, una y otra vez, mientras arrastras */
+.island[data-shape="drop"] .drop[data-state="over"] .drop-arrow {
+  animation: drop-bob 640ms ease-in-out infinite alternate;
+}
+
+@keyframes drop-bob {
+  from {
+    translate: 0 -1.5px;
+  }
+  to {
+    translate: 0 1.5px;
+  }
+}
+
+.drop-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.drop-title {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drop-sub {
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.island[data-shape="drop"] .drop-text > * {
+  animation: rise-in 420ms var(--spring) backwards;
+}
+
+.island[data-shape="drop"] .drop-text > :nth-child(2) {
+  animation-delay: 60ms;
 }
 
 /* ---------- Decisiones de Claude Code (permiso, pregunta o plan) ----------
@@ -2464,44 +2626,6 @@ code {
   font-size: 11px;
 }
 
-/* Contenido provisional de las páginas que llegan más adelante (IA, Portapapeles) */
-.placeholder {
-  max-width: 520px;
-  text-align: center;
-}
-
-.placeholder-icon {
-  width: 28px;
-  height: 28px;
-  margin-bottom: 6px;
-  color: var(--accent);
-}
-
-.placeholder h2 {
-  margin: 0 0 6px;
-  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.placeholder p {
-  margin: 0;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-
-.badge {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
 /* Animaciones de entrada que se reutilizan */
 @keyframes pop-in {
   from {
@@ -3243,6 +3367,114 @@ code {
 
 .widget-notepad[data-empty="true"] .notepad-placeholder {
   display: block;
+}
+
+/* ----- Portapapeles ----- */
+.widget-clipboard {
+  --widget-accent: var(--info);
+
+  align-items: stretch;
+  gap: 12px;
+}
+
+.clipw-last {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding-right: 14px;
+}
+
+.clipw-text {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.widget-clipboard[data-size="2x1"] .clipw-text {
+  -webkit-line-clamp: 3;
+}
+
+.widget-clipboard[data-size="2x1"] .widget-corner-icon {
+  display: none;
+}
+
+.clipw-placeholder {
+  display: none;
+}
+
+.widget-clipboard[data-empty="true"] .clipw-text {
+  display: none;
+}
+
+.widget-clipboard[data-empty="true"] .clipw-placeholder {
+  display: block;
+}
+
+/* La bandeja (solo en 2x1): sus archivos apilados, un poco girados */
+.clipw-tray {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 96px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(var(--ink), 0.08);
+}
+
+.clipw-files {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding-left: 10px;
+}
+
+.clipw-file {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: -10px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(var(--ink), 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  rotate: calc((var(--i, 0) - 1) * 7deg);
+  color: var(--text-dim);
+}
+
+.clipw-file img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clipw-file svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.6;
+}
+
+.clipw-file.is-empty {
+  background: transparent;
+  box-shadow: none;
+  rotate: none;
+  color: var(--text-faint);
+}
+
+.clipw-file.is-empty svg {
+  width: 22px;
+  height: 22px;
 }
 
 /* ----- Novedades: un borde de luz que late hasta que lo miras ----- */
@@ -5646,6 +5878,1003 @@ code {
   display: block;
 }
 
+/* ---------- 11c. Portapapeles y bandeja ---------- */
+/* Arriba, el control para cambiar entre "Copiado" y "Bandeja" (clip-page.js)
+   y sus herramientas; debajo, una fila de tarjetas que se desplaza a los
+   lados (también con la rueda del ratón). */
+.clip-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 2px 0 8px;
+}
+
+.clip-page [hidden] {
+  display: none !important;
+}
+
+.clip-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 30px;
+}
+
+/* Control segmentado (como el de iOS): el fondo se desliza al elegido */
+.segmented {
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.06);
+}
+
+.segmented-indicator {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: var(--indicator-width, 0px);
+  height: 24px;
+  border-radius: 999px;
+  background: var(--selected);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  translate: var(--indicator-x, 0px) 0;
+  pointer-events: none;
+  transition:
+    translate 440ms var(--spring-bounce),
+    width 440ms var(--spring-bounce);
+}
+
+.segmented-indicator.no-animation {
+  transition: none;
+}
+
+.segment {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 11px 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.segment:hover {
+  color: var(--text);
+}
+
+.segment.is-active {
+  color: var(--text-strong);
+}
+
+.segment svg {
+  width: 14px;
+  height: 14px;
+  transition: scale 320ms var(--spring-pop);
+}
+
+.segment.is-active svg {
+  scale: 1.1;
+}
+
+.segment-count {
+  min-width: 17px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: rgba(var(--ink), 0.1);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  text-align: center;
+}
+
+.segment-count:empty {
+  display: none;
+}
+
+/* Herramientas: solo las de la parte que se ve */
+.clip-tools {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.clip-page[data-segment="clips"] .clip-tools[data-for="clips"],
+.clip-page[data-segment="files"] .clip-tools[data-for="files"] {
+  display: flex;
+}
+
+.clip-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 150px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.05);
+  color: var(--text-faint);
+  cursor: text;
+  transition:
+    width 360ms var(--spring),
+    box-shadow 200ms ease,
+    background-color 200ms ease;
+}
+
+.clip-search:focus-within {
+  width: 190px;
+  background: rgba(var(--ink), 0.08);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 0 3px var(--accent-soft);
+}
+
+.clip-search svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+
+.clip-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  caret-color: var(--accent);
+  user-select: text;
+}
+
+.clip-search input::placeholder {
+  color: var(--text-faint);
+}
+
+.clip-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none; /* Esc borra la búsqueda */
+}
+
+/* Botón redondo (pausa) */
+.round-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--ink), 0.06);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 240ms var(--spring-pop);
+}
+
+.round-btn svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.round-btn:hover:not(:disabled) {
+  background: rgba(var(--ink), 0.1);
+  color: var(--text);
+}
+
+.round-btn:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
+.round-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.round-btn .icon-play-solid,
+.round-btn[aria-pressed="true"] .icon-pause-solid {
+  display: none;
+}
+
+.round-btn[aria-pressed="true"] .icon-play-solid {
+  display: block;
+  animation: icon-swap 340ms var(--spring-pop);
+}
+
+/* En pausa: amarillo (como el Pomodoro en pausa) */
+.round-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
+}
+
+/* "¿Borrar?" / "¿Vaciar?": el segundo clic confirma */
+.text-btn[data-confirm="true"] {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+/* La etiqueta de estado (En pausa, Sin helper...) y los mensajes cortos */
+.clip-state {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: pop-in 360ms var(--spring-pop);
+}
+
+.clip-state:is([data-status="old-helper"], [data-status="no-helper"], [data-status="error"]) {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.clip-state[data-status="hint"] {
+  background: rgba(var(--ink), 0.08);
+  color: var(--text-dim);
+}
+
+.clip-hint {
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  translate: 4px 0;
+  transition:
+    opacity 200ms ease,
+    translate 300ms var(--spring);
+}
+
+.clip-hint.is-visible {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* "Arrastrar todo": se arrastra como si fuera un archivo */
+.drag-all {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.06);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  cursor: grab;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.drag-all:hover {
+  background: rgba(var(--ink), 0.1);
+  color: var(--text);
+}
+
+.drag-all svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Las dos partes, una encima de otra: solo se ve la elegida */
+.clip-panes {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.clip-pane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.clip-page[data-segment="clips"] .clip-pane[data-pane="files"],
+.clip-page[data-segment="files"] .clip-pane[data-pane="clips"] {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Una fila de tarjetas que se desplaza a los lados (sin barra visible) */
+.clips,
+.files {
+  position: relative; /* (las tarjetas miden su sitio respecto a la fila) */
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 3px 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-padding: 2px;
+  scrollbar-width: none;
+}
+
+.clips::-webkit-scrollbar,
+.files::-webkit-scrollbar {
+  display: none;
+}
+
+/* Si hay más tarjetas a un lado, ese borde se difumina (trackScrollEdges, utils.js) */
+.clips,
+.files {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--fade-before, 0px),
+    #000 calc(100% - var(--fade-after, 0px)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-before, 0px), #000 calc(100% - var(--fade-after, 0px)), transparent 100%);
+}
+
+:is(.clips, .files)[data-more-before="true"] {
+  --fade-before: 22px;
+}
+
+:is(.clips, .files)[data-more-after="true"] {
+  --fade-after: 22px;
+}
+
+/* ----- Una tarjeta de lo copiado ----- */
+.clip {
+  --clip-accent: var(--text-dim);
+
+  position: relative;
+  flex: 0 0 158px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px 8px;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: rgba(var(--ink), 0.045);
+  background-image: radial-gradient(120px 90px at 100% 0%, color-mix(in srgb, var(--clip-accent) 14%, transparent), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 280ms var(--spring-bounce),
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.clip:hover,
+.clip:focus-visible {
+  transform: translateY(-2px);
+  background-color: rgba(var(--ink), 0.07);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--ink), 0.1),
+    0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.clip:focus-visible {
+  box-shadow:
+    inset 0 0 0 1.5px var(--accent),
+    0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.clip:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Los recién copiados entran con un rebote */
+.clip.is-new,
+.file.is-new {
+  animation: card-in 520ms var(--spring-bounce) backwards;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+/* Cada tipo con su color */
+.clip[data-kind="link"] {
+  --clip-accent: var(--links-color);
+}
+
+.clip[data-kind="email"] {
+  --clip-accent: var(--info);
+}
+
+.clip[data-kind="code"] {
+  --clip-accent: var(--ai-color);
+}
+
+.clip[data-kind="path"] {
+  --clip-accent: var(--warning);
+}
+
+.clip[data-kind="color"] {
+  --clip-accent: var(--swatch-accent, var(--text-dim));
+}
+
+/* Los fijados, con un borde dorado finito */
+.clip[data-pinned="true"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.clip-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 16px;
+  transition: padding-right 200ms var(--spring);
+}
+
+.clip-kind {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--clip-accent);
+}
+
+.clip-kind svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* El logo de la web, en un círculo del color de su marca */
+.clip-kind[data-logo="true"] {
+  border-radius: 50%;
+  background: var(--logo-color, var(--links-color));
+  color: #fff;
+}
+
+.clip-kind .clip-logo {
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.clip-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.25);
+}
+
+.clip-source {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clip-time {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  transition: opacity 150ms ease;
+}
+
+/* Un color: la muestra grande */
+.clip-color {
+  flex: none;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.12);
+}
+
+.clip-text {
+  display: -webkit-box;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.33;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.clip[data-kind="code"] .clip-text {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 1.38;
+  white-space: pre;
+  tab-size: 2;
+  -webkit-line-clamp: 5;
+}
+
+.clip:is([data-kind="link"], [data-kind="email"], [data-kind="path"]) .clip-text {
+  color: color-mix(in srgb, var(--clip-accent) 70%, var(--text));
+  word-break: break-all;
+}
+
+.clip[data-kind="color"] .clip-text {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
+  -webkit-line-clamp: 1;
+}
+
+.clip-foot {
+  flex: none;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fijar y quitar: arriba a la derecha, al pasar el ratón (la chincheta de
+   los fijados se ve siempre) */
+.clip-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 3px;
+}
+
+.clip-action {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--ink), 0.1);
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  scale: 0.7;
+  transition:
+    opacity 150ms ease,
+    scale 260ms var(--spring-pop),
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.clip-action svg {
+  width: 12px;
+  height: 12px;
+}
+
+.clip-remove svg {
+  width: 9px;
+  height: 9px;
+}
+
+.clip:is(:hover, :focus-within) .clip-action,
+.clip[data-pinned="true"] .clip-pin {
+  opacity: 1;
+  scale: 1;
+}
+
+.clip-action:hover {
+  background: rgba(var(--ink), 0.18);
+  color: var(--text);
+}
+
+.clip-remove:hover {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+/* La chincheta se rellena al fijar */
+.clip-pin[aria-pressed="true"] {
+  --pin-fill: 1;
+
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  color: var(--warning);
+}
+
+.pin-head {
+  fill: currentColor;
+  fill-opacity: var(--pin-fill, 0);
+  transition: fill-opacity 200ms ease;
+}
+
+/* Que la hora no quede debajo de los botones */
+.clip[data-pinned="true"] .clip-top {
+  padding-right: 22px;
+}
+
+.clip:is(:hover, :focus-within) .clip-top {
+  padding-right: 48px;
+}
+
+.clip:is(:hover, :focus-within) .clip-time {
+  opacity: 0;
+}
+
+/* "Copiado ✓" encima de la tarjeta, un momento */
+.clip-copied {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--accent) 16%, rgba(16, 16, 20, 0.86));
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.clip-copied svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.6;
+}
+
+.clip.is-copied .clip-copied {
+  opacity: 1;
+  transition-duration: 120ms;
+}
+
+.clip.is-copied .clip-copied svg {
+  animation: pop-in 420ms var(--spring-pop);
+}
+
+/* La rayita entre los fijados y los demás */
+.clip-divider {
+  flex: none;
+  width: 1px;
+  margin: 14px 2px;
+  border-radius: 1px;
+  background: rgba(var(--ink), 0.12);
+}
+
+/* Vacío (o en pausa, sin helper...): un mensaje en el centro */
+.clip-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0 40px;
+  text-align: center;
+}
+
+.clip-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--empty-tone, var(--info)) 14%, transparent);
+  color: var(--empty-tone, var(--info));
+}
+
+.clip-empty-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.clip-empty[data-status="paused"] {
+  --empty-tone: var(--warning);
+}
+
+.clip-empty:is([data-status="old-helper"], [data-status="no-helper"], [data-status="error"], [data-status="off"]) {
+  --empty-tone: var(--danger);
+}
+
+.clip-empty-title {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.clip-empty-text {
+  max-width: 440px;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* La bandeja vacía es una "zona para soltar" con borde discontinuo */
+.files-empty {
+  border: 1.5px dashed rgba(var(--ink), 0.16);
+  border-radius: 18px;
+}
+
+/* ----- Un archivo de la bandeja ----- */
+.file {
+  position: relative;
+  flex: 0 0 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 16px;
+  background-color: rgba(var(--ink), 0.045);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  cursor: grab;
+  outline: none;
+  transition:
+    transform 280ms var(--spring-bounce),
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    opacity 200ms ease;
+}
+
+.file:hover,
+.file:focus-visible {
+  transform: translateY(-2px);
+  background-color: rgba(var(--ink), 0.07);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--ink), 0.1),
+    0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.file:focus-visible {
+  box-shadow:
+    inset 0 0 0 1.5px var(--accent),
+    0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.file:active {
+  cursor: grabbing;
+}
+
+.file-icon {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 2px;
+  color: var(--text-dim);
+}
+
+.file-icon img {
+  max-width: 44px;
+  max-height: 44px;
+}
+
+/* Miniaturas (fotos, vídeos, PDF): llenan el cuadro, con esquinas redondas */
+.file-icon[data-thumbnail="true"] img {
+  width: 52px;
+  height: 52px;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(var(--ink), 0.08);
+}
+
+.file-icon > svg {
+  width: 42px;
+  height: 42px;
+  stroke-width: 1.3;
+}
+
+.file[data-dir="true"] .file-icon > svg {
+  color: var(--info);
+}
+
+/* Archivos sin icono: la extensión en una etiqueta */
+.file-ext {
+  position: absolute;
+  bottom: 11px;
+  max-width: 44px;
+  padding: 1px 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--info);
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-name {
+  display: -webkit-box;
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.22;
+  text-align: center;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.file-meta {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ya no está donde estaba: apagado y solo se puede quitar */
+.file[data-missing="true"] {
+  cursor: default;
+}
+
+.file[data-missing="true"] :is(.file-icon, .file-name) {
+  opacity: 0.4;
+}
+
+.file[data-missing="true"] .file-meta {
+  color: var(--danger);
+}
+
+.file[data-missing="true"] .file-show {
+  display: none;
+}
+
+.file-actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.file-action {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--ink), 0.12);
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  scale: 0.7;
+  transition:
+    opacity 150ms ease,
+    scale 260ms var(--spring-pop),
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.file-action svg {
+  width: 12px;
+  height: 12px;
+}
+
+.file-remove svg {
+  width: 9px;
+  height: 9px;
+}
+
+.file:is(:hover, :focus-within) .file-action {
+  opacity: 1;
+  scale: 1;
+}
+
+.file-action:hover {
+  background: rgba(var(--ink), 0.2);
+  color: var(--text);
+}
+
+.file-remove:hover {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+/* ----- Soltar archivos con el panel abierto: "suelta aquí" encima de todo ----- */
+.drop-overlay {
+  position: absolute;
+  inset: 8px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--glass) 82%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text);
+  opacity: 0;
+  scale: 0.97;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    scale 300ms var(--spring),
+    visibility 0s linear 300ms;
+}
+
+.island[data-drop="over"][data-shape="expanded"] .drop-overlay {
+  opacity: 1;
+  scale: 1;
+  visibility: visible;
+  transition:
+    opacity 200ms ease,
+    scale 460ms var(--spring-bounce),
+    visibility 0s;
+}
+
+.drop-overlay-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.drop-overlay-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.island[data-drop="over"] .drop-overlay-icon svg {
+  animation: drop-bob 640ms ease-in-out infinite alternate;
+}
+
+.drop-overlay-title {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.drop-overlay-sub {
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
+
 /* ---------- 12. Pestañas ---------- */
 .tabbar {
   position: relative;
@@ -5909,6 +7138,39 @@ code {
 
 :root[data-theme="light"] .msg-ai {
   background: rgba(255, 255, 255, 0.8);
+}
+
+/* Portapapeles y bandeja: tarjetas blancas, como los widgets */
+:root[data-theme="light"] :is(.clip, .file) {
+  background-color: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] :is(.clip, .file):hover {
+  background-color: #fff;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .clip[data-pinned="true"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 50%, transparent);
+}
+
+:root[data-theme="light"] .clip-copied {
+  background: color-mix(in srgb, var(--accent) 14%, rgba(255, 255, 255, 0.9));
+}
+
+:root[data-theme="light"] .segmented-indicator {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .clip-search {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 /* El fondo animado de Música, más suave sobre el panel claro */

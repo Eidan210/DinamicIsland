@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    WinHelper: programa de consola que habla con Windows por Notch. Hoy lee la
-    sesión multimedia (lo que suena en Apple Music, Spotify, el navegador...);
-    en próximas fases también el volumen y el portapapeles. Escribe una línea
-    JSON por novedad en stdout y recibe órdenes por stdin.
+    WinHelper: programa de consola que habla con Windows por Notch: la sesión
+    multimedia (lo que suena en Apple Music, Spotify, el navegador...), el
+    volumen, las salidas de audio y el portapapeles (solo texto). Escribe una
+    línea JSON por novedad en stdout y recibe órdenes por stdin.
 
     Compilar (desde la raíz del proyecto):
       npm run build:helper

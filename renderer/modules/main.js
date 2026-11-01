@@ -32,6 +32,9 @@
 //    clawd.js     Clawd, la mascota (en lugar de los ojos)
 //    home.js      Home: la rejilla de widgets y el modo edición
 //    home-grid.js dónde cae cada widget en la rejilla de 4×2
+//    clip-page.js la página Portapapeles: sus dos partes (Copiado y Bandeja)
+//    clipboard.js lo que copiaste (tarjetas para volver a copiar)
+//    tray.js      la bandeja de archivos y soltar archivos sobre la isla
 //  Y en renderer/widgets/, un archivo por widget de Home (index.js es el catálogo).
 //  Este archivo solo los pone en marcha, en orden.
 // =============================================================================
@@ -57,6 +60,9 @@ import { initAi, setAiState } from './ai.js';
 import { initChat, loadChat, applyChatSettings } from './chat.js';
 import { initGlow } from './glow.js';
 import { initClawd, scheduleBye, setClawdSleeping } from './clawd.js';
+import { initClipPage } from './clip-page.js';
+import { initClipboard, loadClipboard } from './clipboard.js';
+import { initTray, loadTray } from './tray.js';
 import { initHome, loadHome, startHome } from './home.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
@@ -78,6 +84,8 @@ async function loadInitialState() {
     chat: window.notch.chat.getState(),
     clawd: window.notch.clawd.getState(),
     home: window.notch.home.get(),
+    clipboard: window.notch.clipboard.getState(),
+    tray: window.notch.tray.getState(),
   };
   const names = Object.keys(requests);
   const results = await Promise.allSettled(Object.values(requests));
@@ -113,6 +121,9 @@ async function init() {
   initAi();
   initGlow();
   initClawd({ keepAwakeFor });
+  initClipPage();
+  initClipboard();
+  initTray();
   initHome(); // después de los demás: cada widget se apunta a los avisos de su módulo
 
   // Al guardar config/settings.json, se aplica al momento.
@@ -143,6 +154,8 @@ async function init() {
   if (loaded.ai) setAiState(loaded.ai);
   if (loaded.clawd) setClawdSleeping(loaded.clawd.sleeping);
   scheduleBye();
+  loadClipboard(loaded.clipboard);
+  loadTray(loaded.tray);
   loadHome(loaded.home); // si no se pudo leer, el Home de por defecto
 
   // 3. Lo dibujamos todo.

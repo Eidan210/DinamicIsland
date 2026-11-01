@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS = {
   lyrics: true, // buscar las letras en LRCLIB (la única conexión a internet de Notch)
   volumeIndicator: true, // al cambiar el volumen, la isla enseña una barra 1,5 s
   glow: true, // brillo de color alrededor de la isla (colores en renderer/styles.css, sección 1b)
+  clipboard: true, // historial del portapapeles: los últimos 30 textos que copias (solo en memoria)
   // Clawd (Fase 5)
   clawd: true, // Clawd vive en la isla en lugar de los ojos (false = los ojos de siempre)
   clawdSleepMinutes: 5, // se duerme tras estos minutos sin tocar el PC (o al bloquearlo)
@@ -152,6 +153,7 @@ function loadSettings() {
   result.lyrics = result.lyrics !== false;
   result.volumeIndicator = result.volumeIndicator !== false;
   result.glow = result.glow !== false;
+  result.clipboard = result.clipboard !== false;
   result.clawd = result.clawd !== false;
   const sleepMinutes = Math.round(Number(result.clawdSleepMinutes));
   result.clawdSleepMinutes =

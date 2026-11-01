@@ -130,6 +130,35 @@
     <symbol id="i-pause" viewBox="0 0 24 24">
       <rect x="6" y="4.5" width="4.4" height="15" rx="1.4" /><rect x="13.6" y="4.5" width="4.4" height="15" rx="1.4" />
     </symbol>
+    <!-- Portapapeles y bandeja de archivos -->
+    <symbol id="i-clipboard" viewBox="0 0 24 24">
+      <rect x="8" y="2.5" width="8" height="4" rx="1.2" /><path d="M16 4.5h1.5a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2H8" />
+    </symbol>
+    <symbol id="i-tray" viewBox="0 0 24 24">
+      <path d="M12 3v8.4M8.7 8.2 12 11.5l3.3-3.3" /><path d="M4 12.5v5a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-5" /><path d="M4 12.5h3.6l1.2 2.2h6.4l1.2-2.2H20" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.6" cy="10.6" r="6.1" /><path d="m15.2 15.2 4.8 4.8" stroke-width="2.2" />
+    </symbol>
+    <!-- La chincheta: su cabeza se rellena al fijar (--pin-fill, como la campana) -->
+    <symbol id="i-pin" viewBox="0 0 24 24">
+      <path class="pin-head" d="M9.2 3.5h5.6l-.8 5.2 3.3 3.3v1.7H6.7V12L10 8.7z" /><path d="M12 13.7v6.8" />
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3.5 7.3c0-1.2.95-2.1 2.1-2.1h3.6c.6 0 1.15.25 1.55.7l1.35 1.5h6.3c1.15 0 2.1.95 2.1 2.1v7.7c0 1.15-.95 2.1-2.1 2.1H5.6c-1.15 0-2.1-.95-2.1-2.1z" /><path d="M3.5 10h17" />
+    </symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24">
+      <path d="M13.8 3H7.6A2.6 2.6 0 0 0 5 5.6v12.8A2.6 2.6 0 0 0 7.6 21h8.8a2.6 2.6 0 0 0 2.6-2.6V8.2z" /><path d="M13.8 3v5.2H19" />
+    </symbol>
+    <symbol id="i-k-text" viewBox="0 0 24 24">
+      <path d="M5 6.5h14M5 10.5h14M5 14.5h14M5 18.5h8.5" />
+    </symbol>
+    <symbol id="i-k-code" viewBox="0 0 24 24">
+      <path d="M8.5 7.5 4 12l4.5 4.5M15.5 7.5 20 12l-4.5 4.5M13.4 5.2l-2.8 13.6" />
+    </symbol>
+    <symbol id="i-k-mail" viewBox="0 0 24 24">
+      <rect x="3" y="5.5" width="18" height="13" rx="2.8" /><path d="m4 7.2 8 6 8-6" />
+    </symbol>
   </svg>
 
   <!--
@@ -147,6 +176,7 @@
         volume    → barra de volumen (1,5 s al cambiarlo)
         banner    → aviso grande unos segundos (canción nueva)
         alert     → aviso importante unos segundos (batería baja, un error...)
+        drop      → arrastras archivos encima: se abre para recibirlos (bandeja)
         decision  → Claude Code espera tu respuesta (permiso, pregunta o plan)
         expanded  → el panel abierto
     -->
@@ -304,6 +334,20 @@
         </div>
       </div>
 
+      <!-- Soltar archivos: al arrastrar archivos sobre la isla se abre para
+           recibirlos y, al soltarlos, confirma que están en la bandeja. tray.js -->
+      <div class="drop" id="drop" data-state="over" aria-hidden="true">
+        <span class="drop-icon">
+          <svg class="drop-tray" viewBox="0 0 24 24"><path class="drop-arrow" d="M12 3v8.4M8.7 8.2 12 11.5l3.3-3.3" /><path d="M4 12.5v5a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-5" /><path d="M4 12.5h3.6l1.2 2.2h6.4l1.2-2.2H20" /></svg>
+          <svg class="drop-done" viewBox="0 0 24 24"><use href="#i-check-mark"></use></svg>
+          <svg class="drop-full" viewBox="0 0 24 24"><use href="#i-warning"></use></svg>
+        </span>
+        <span class="drop-text">
+          <span class="drop-title" id="drop-title">Suelta para guardarlo</span>
+          <span class="drop-sub" id="drop-sub">en la bandeja de Notch</span>
+        </span>
+      </div>
+
       <!-- Decisión pendiente de Claude Code: permiso, pregunta o plan. Salta por
            encima de todo (con el panel abierto, sale como tarjeta encima). ai.js la rellena. -->
       <div class="decision" id="decision" data-kind="" role="dialog" aria-labelledby="decision-title">
@@ -319,6 +363,13 @@
 
       <!-- Contenido del panel abierto -->
       <div class="panel">
+
+        <!-- Arrastrando archivos con el panel abierto: "suelta aquí" encima de todo -->
+        <div class="drop-overlay" id="drop-overlay" aria-hidden="true">
+          <span class="drop-overlay-icon"><svg viewBox="0 0 24 24"><use href="#i-tray"></use></svg></span>
+          <span class="drop-overlay-title">Suelta para añadirlo a la bandeja</span>
+          <span class="drop-overlay-sub">Se guarda solo el enlace al archivo: el original no se mueve</span>
+        </div>
 
         <!-- Fondo de la página Música: manchas con los colores de la carátula que se mueven despacio -->
         <div class="music-backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -492,6 +543,19 @@
                   </div>
                 </article>
 
+                <!-- Portapapeles: lo último que copiaste y (en 2x1) la bandeja -->
+                <article class="widget widget-clipboard" data-widget="clipboard" id="home-clipboard" data-empty="true" hidden>
+                  <svg class="widget-corner-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clipboard"></use></svg>
+                  <div class="clipw-last">
+                    <span class="widget-sub clipw-label" id="home-clip-label">Lo último copiado</span>
+                    <p class="clipw-text" id="home-clip-text"></p>
+                    <span class="widget-sub clipw-placeholder">Copia algo y sale aquí</span>
+                  </div>
+                  <div class="clipw-tray only-wide" id="home-clip-tray" data-count="0">
+                    <span class="clipw-files" id="home-clip-files"></span>
+                    <span class="widget-sub" id="home-clip-tray-text">Bandeja vacía</span>
+                  </div>
+                </article>
                 <!-- Nota: el principio de tu nota rápida -->
                 <article class="widget widget-notepad" data-widget="note" id="home-note" data-empty="true" hidden>
                   <svg class="widget-corner-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-w-note"></use></svg>
@@ -700,15 +764,75 @@
             </div>
           </section>
 
-          <!-- ===================== PORTAPAPELES (Fase 7) ===================== -->
+          <!-- ===================== PORTAPAPELES: lo copiado y la bandeja ===================== -->
+          <!-- Dos partes que se cambian arriba a la izquierda (data-segment):
+                 clips → lo que copiaste (clipboard.js): pulsa uno para copiarlo otra vez
+                 files → la bandeja de archivos (tray.js): arrástralos hacia fuera -->
           <section class="view" data-view="clipboard" role="tabpanel" aria-label="Portapapeles">
-            <div class="placeholder">
-              <svg class="placeholder-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="8" y="2.5" width="8" height="4" rx="1.2" /><path d="M16 4.5h1.5a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2H8" />
-              </svg>
-              <h2>Portapapeles</h2>
-              <p>Lo último que copias (solo texto y solo en memoria) y una bandeja para soltar y sacar archivos.</p>
-              <span class="badge">Fase 7</span>
+            <div class="clip-page" id="clip-page" data-segment="clips">
+
+              <header class="clip-head">
+                <div class="segmented" id="clip-segments" role="tablist" aria-label="Portapapeles">
+                  <span class="segmented-indicator" id="clip-segment-indicator" aria-hidden="true"></span>
+                  <button class="segment is-active" type="button" role="tab" aria-selected="true" aria-controls="clip-pane-clips" data-segment="clips">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clipboard"></use></svg>
+                    <span>Copiado</span>
+                    <span class="segment-count" id="clips-count"></span>
+                  </button>
+                  <button class="segment" type="button" role="tab" aria-selected="false" aria-controls="clip-pane-files" data-segment="files">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tray"></use></svg>
+                    <span>Bandeja</span>
+                    <span class="segment-count" id="files-count"></span>
+                  </button>
+                </div>
+
+                <!-- Herramientas de "Copiado" -->
+                <div class="clip-tools" data-for="clips">
+                  <span class="clip-state" id="clip-state" hidden></span>
+                  <label class="clip-search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-search"></use></svg>
+                    <input id="clip-search" type="search" maxlength="80" spellcheck="false" autocomplete="off" placeholder="Buscar" aria-label="Buscar en lo copiado" />
+                  </label>
+                  <button class="round-btn" id="clip-pause" type="button" aria-pressed="false" aria-label="Pausar" title="Pausar: no guardar lo que copie">
+                    <svg class="icon-pause-solid" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"></use></svg>
+                    <svg class="icon-play-solid" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"></use></svg>
+                  </button>
+                  <button class="text-btn" id="clip-clear" type="button" title="Borra todo menos lo fijado">Borrar</button>
+                </div>
+
+                <!-- Herramientas de la bandeja -->
+                <div class="clip-tools" data-for="files">
+                  <span class="clip-hint" id="tray-hint" aria-live="polite"></span>
+                  <span class="drag-all" id="tray-drag-all" draggable="true" title="Arrástralo para sacar todos los archivos a la vez" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-doc"></use></svg>Arrastrar todo
+                  </span>
+                  <button class="text-btn" id="tray-add" type="button">Añadir…</button>
+                  <button class="text-btn" id="tray-clear" type="button" title="Quita todo de la bandeja (los archivos siguen en su sitio)">Vaciar</button>
+                </div>
+              </header>
+
+              <div class="clip-panes">
+                <!-- Lo que copiaste: tarjetas en fila (rueda del ratón = desplazar) -->
+                <div class="clip-pane" id="clip-pane-clips" role="tabpanel" data-pane="clips">
+                  <div class="clips" id="clips" role="list" aria-label="Lo que copiaste"></div>
+                  <div class="clip-empty" id="clips-empty">
+                    <span class="clip-empty-icon" id="clips-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clipboard"></use></svg></span>
+                    <span class="clip-empty-title" id="clips-empty-title">Aún no has copiado nada</span>
+                    <span class="clip-empty-text" id="clips-empty-text">Copia un texto (Ctrl+C) y aparecerá aquí. Solo texto, solo en memoria y nunca contraseñas.</span>
+                  </div>
+                </div>
+
+                <!-- La bandeja: archivos en fila (arrástralos para sacarlos) -->
+                <div class="clip-pane" id="clip-pane-files" role="tabpanel" data-pane="files">
+                  <div class="files" id="files" role="list" aria-label="Archivos de la bandeja"></div>
+                  <div class="clip-empty files-empty" id="files-empty">
+                    <span class="clip-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tray"></use></svg></span>
+                    <span class="clip-empty-title">Suelta archivos en la isla</span>
+                    <span class="clip-empty-text">Se quedan aquí hasta que los arrastres a otro sitio (se copian: el original no se mueve).</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </section>
 

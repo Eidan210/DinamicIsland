@@ -2,7 +2,7 @@
 
 Isla dinámica estilo iPhone para **Windows 11**. En reposo es una mini-muesca negra con dos ojos verdes, pegada al borde superior de la pantalla. Cuando pasa algo (un Pomodoro, una canción, cambias el volumen, se acaba la batería), se convierte en una píldora con información en vivo, como la isla dinámica de Apple; si pasan dos cosas a la vez, la segunda sale en una burbuja a su lado. Con **Ctrl + Alt + T** se despliega en un panel con 6 páginas (Home, Música, IA, Focus, Portapapeles y Nota), y con **Ctrl + Alt + 1…6** vas directo a cada una. En la página Música ves la **letra sincronizada**, los colores de la carátula y puedes cambiar la **salida de audio**; para pasar de canción basta con **deslizar** a los lados.
 
-Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en **C#** (WinHelper) que habla con Windows: la música, el volumen y las salidas de audio. Código comentado en español.
+Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en **C#** (WinHelper) que habla con Windows: la música, el volumen, las salidas de audio y el portapapeles. Código comentado en español.
 
 ## Estado
 
@@ -25,7 +25,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 4 | Glow: colores que avisan de lo que pasa | ✅ Hecha |
 | 5 | Clawd, la mascota, en la isla | ✅ Hecha |
 | 6 | Home con widgets editables y links con su logo | ✅ Hecha |
-| 7 | Portapapeles y bandeja de archivos | ⏳ Pendiente |
+| 7 | Portapapeles (historial) y bandeja de archivos | ✅ Hecha |
 | 8 | «Casa de Clawd»: ventana de ajustes e historial | ⏳ Pendiente |
 
 ## Requisitos
@@ -45,7 +45,7 @@ npm install
 npm run build:helper
 ```
 
-`npm run build:helper` compila el helper de Windows y deja `WinHelper.exe` en `helpers/WinHelper/publish/`. Hay que repetirlo cada vez que cambia el código C# (por ejemplo, al actualizar a una fase que añade algo al helper, como el volumen de la Fase 1).
+`npm run build:helper` compila el helper de Windows y deja `WinHelper.exe` en `helpers/WinHelper/publish/`. Hay que repetirlo cada vez que cambia el código C# (por ejemplo, al actualizar a una fase que añade algo al helper, como el volumen de la Fase 1 o el portapapeles de la Fase 7). Cierra Notch antes de compilarlo: con Notch abierto, `WinHelper.exe` está en uso y no se puede sobrescribir.
 
 `npm install` también hay que repetirlo cuando una fase añade un paquete: la Fase 6 trae **Simple Icons** (los logos de los links). Si no lo haces, Notch funciona igual, pero los links salen con su inicial.
 
@@ -77,6 +77,7 @@ La isla cambia de forma según lo que pasa:
 | **Volumen** | Al cambiar el volumen de Windows: una barra con el nivel durante 1,5 segundos (con el panel abierto, sale en lugar de la fecha). |
 | **Aviso** | Cuando empieza una canción nueva: «Ahora suena», con carátula, título y artista, durante 4 segundos. |
 | **Aviso importante** | Batería baja (20 % y 10 %), un error en `settings.json`, un atajo que no funciona, el helper que falta, Claude que se paró por un error… Si lo pulsas, se abre el panel con la lista de avisos. |
+| **Soltar archivos** | Al arrastrar archivos (del Explorador, del escritorio…) hasta la isla, se abre para recibirlos: «Suelta para guardarlo». Al soltar, confirma «Guardado en la bandeja» y, si la pulsas, abre la bandeja. Ver [Portapapeles y bandeja](#portapapeles-y-bandeja). |
 | **Decisión** | Claude Code te pide **permiso** (con el comando exacto), te hace una **pregunta** o tiene un **plan** listo: la isla salta por encima de todo con sus botones (Permitir, Denegar, Permitir siempre; las opciones de la pregunta; Aprobar o Rechazar). Con el panel abierto, sale como tarjeta encima. «En la terminal» deja que te pregunte la terminal, como siempre. |
 | **Panel** | Con `Ctrl + Alt + T`, con `Ctrl + Alt + 1…6` o al hacer clic en la isla. Si haces clic en una actividad o en una burbuja, el panel se abre en su página. |
 
@@ -138,7 +139,7 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
 
 ### Páginas
 
-- **Home**: tus widgets (Reloj, Música, Focus, IA, Links, Batería y Nota), en una rejilla que tú eliges. Ver [Home y sus widgets](#home-y-sus-widgets).
+- **Home**: tus widgets (Reloj, Música, Focus, IA, Links, Batería, Nota y Portapapeles), en una rejilla que tú eliges. Ver [Home y sus widgets](#home-y-sus-widgets).
 - **Música**: lo que suena en **cualquier app** que se integre con Windows (Apple Music, Spotify, el navegador…).
   - Carátula, título, artista, app de origen, barra de progreso y controles (anterior, reproducir/pausar, siguiente).
   - Haz clic en la barra para saltar a ese punto, si la app lo permite.
@@ -156,7 +157,7 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
 - **IA**: arriba eliges **Sesiones** o **Chat**.
   - **Sesiones**: una tarjeta por cada sesión de Claude Code (o de Antigravity): el proyecto, lo que le pediste, qué hace ahora, el cronómetro del turno y los pasos **Leer → Editar → Probar → Hecho**. Al terminar: su resumen, cuántos archivos cambió, si los tests pasaron y los errores de compilación. Sin sesiones, te explica cómo conectarlo (ver [Conectar Claude Code](#conectar-claude-code)).
   - **Chat**: con **Gemini**, **Claude** (eliges Opus, Sonnet, Haiku o Fable) o **Ambos** a la vez para comparar. La respuesta aparece mientras se escribe; el botón de enviar pasa a ser «parar». `Enter` manda y `Mayús + Enter` hace un salto de línea. El lápiz empieza una conversación nueva. Lo que escribas va **solo** a quien elijas (Claude → Anthropic, Gemini → Google) y la conversación vive en memoria: al cerrar Notch se olvida.
-- **Portapapeles**: el historial de lo que copias y la bandeja de archivos. Llega en la Fase 7.
+- **Portapapeles**: lo último que copiaste y la bandeja de archivos. Ver [Portapapeles y bandeja](#portapapeles-y-bandeja).
 - **Nota**: una nota rápida. Con `Ctrl + Alt + 6` se abre con el cursor listo para escribir.
   - Se guarda sola medio segundo después de que dejes de escribir (y al cerrar el panel o cambiar de página). Abajo ves «Guardado» y cuántas palabras llevas.
   - Vive en `%APPDATA%\Notch\nota.md`, un archivo de texto normal (Markdown) que puedes abrir con cualquier editor.
@@ -174,6 +175,7 @@ Home es una rejilla de **4 × 2 celdas**. Cada widget ocupa **1 celda (1×1)** o
 | **Links** | Hasta 8 logos | Hasta 6 logos con su nombre | Cada logo abre su web; fuera de ellos, Focus |
 | **Batería** | El nivel, si carga y cuánto queda | (solo 1×1) | — |
 | **Nota** | El principio de tu nota | Más ancha | Abre Nota |
+| **Portapapeles** | El principio de lo último que copiaste | Los archivos de la bandeja (sus miniaturas y cuántos hay) | Abre Portapapeles |
 
 **Modo edición: mantén pulsado 0,6 s** sobre cualquier widget (o sobre un hueco). Los widgets tiemblan y abajo, en lugar de las pestañas, aparece la barra de edición:
 
@@ -185,7 +187,31 @@ Home es una rejilla de **4 × 2 celdas**. Cada widget ocupa **1 celda (1×1)** o
 
 Lo que elijas se guarda en `%APPDATA%\Notch\home.json` (no en `config/`: no hace falta tocarlo a mano).
 
-**Novedades.** Un widget brilla con un borde de luz cuando su módulo tiene algo nuevo que aún no viste: Claude te espera o terminó (IA, en azul), el Pomodoro acabó (Focus), empezó otra canción (Música, con el color de la carátula), queda poca batería (Batería, en amarillo o rojo), cambiaste `links.json` (Links) o la nota no se pudo guardar (Nota, en rojo). Al pasar el ratón por encima, tocarlo o abrir su página, se da por visto.
+**Novedades.** Un widget brilla con un borde de luz cuando su módulo tiene algo nuevo que aún no viste: Claude te espera o terminó (IA, en azul), el Pomodoro acabó (Focus), empezó otra canción (Música, con el color de la carátula), queda poca batería (Batería, en amarillo o rojo), cambiaste `links.json` (Links), la nota no se pudo guardar (Nota, en rojo) o soltaste archivos nuevos en la bandeja (Portapapeles; lo que copias no, que sería a todas horas). Al pasar el ratón por encima, tocarlo o abrir su página, se da por visto.
+
+### Portapapeles y bandeja
+
+La página **Portapapeles** (`Ctrl + Alt + 5`) tiene dos partes; arriba a la izquierda eliges cuál ves.
+
+**Copiado**: los últimos **30 textos** que copias, en tarjetas (las fijadas, primero). Pulsa una y se **copia otra vez** (sube al principio: ya puedes pegarla con `Ctrl + V`).
+
+- Cada tarjeta dice de qué programa vino («Google Chrome», «Visual Studio Code»…) y cuándo, y se dibuja según lo que parece: un **link** (con el logo de la web si es conocida, como los de Focus), un **color** (`#ff8a4c`, `rgb(…)`: con su muestra), un **correo**, una **ruta**, **código** (en letra de programador) o texto.
+- **📌 Fijar** (al pasar el ratón): hasta 10. Las fijadas no se van al pasar de 30 ni con «Borrar».
+- **✕** quita una; **Borrar** quita todas menos las fijadas (pide confirmación: el primer clic lo pone en rojo).
+- **Buscar**: empieza a escribir con la página a la vista y va directo ahí (sin mayúsculas ni tildes). `Esc` borra la búsqueda.
+- **⏸ Pausa**: mientras está en pausa, no se guarda lo que copias (por ejemplo, antes de copiar contraseñas desde una extensión del navegador). Al reiniciar Notch vuelve a escuchar.
+- **Solo texto y solo en memoria**: nada se escribe en el disco y al cerrar Notch se olvida (también lo fijado). Las imágenes y los archivos copiados no se guardan.
+- **Nunca las contraseñas de tu gestor**: Notch hace caso a las marcas que ponen los gestores de contraseñas (KeePass, 1Password, Bitwarden…) para que nadie guarde lo que copias de ellos, igual que el historial de Windows (`Win + V`). Ni siquiera lo lee.
+- Con `"clipboard": false` en `settings.json` se apaga del todo (y se borra lo que había).
+
+**Bandeja**: un sitio donde dejar archivos un rato, para llevarlos de una app a otra.
+
+- **Suelta archivos sobre la isla** (o sobre el panel abierto). Puedes soltar varios a la vez, y carpetas. Caben 24.
+- **Arrástralos hacia fuera** (al escritorio, a una carpeta, a un correo, a WhatsApp…) y se **copian** allí: el original no se mueve. **Arrastrar todo** saca todos a la vez.
+- **Doble clic** (o el icono de la carpeta) abre el Explorador con el archivo marcado. **✕** lo quita de la bandeja; **Vaciar**, todos (los archivos siguen en su sitio).
+- **Añadir…** elige archivos con la ventana de Windows (por si prefieres no arrastrar).
+- Las fotos, vídeos y PDF salen con su **miniatura** (la misma del Explorador); los demás, con el icono de su tipo.
+- Se guarda solo **la ruta** de cada archivo (en `%APPDATA%\Notch\bandeja.json`), nunca una copia, y sigue ahí al reiniciar. Si mueves o borras el archivo, sale apagado y con «No está».
 
 ## Conectar Claude Code
 
@@ -264,6 +290,7 @@ Todo está en la carpeta `config/`. **Al guardar un archivo, Notch lo aplica al 
   "lyrics": true,
   "volumeIndicator": true,
   "glow": true,
+  "clipboard": true,
   "clawd": true,
   "clawdSleepMinutes": 5,
   "clawdByeTime": "18:00",
@@ -294,6 +321,7 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `lyrics` | `true` | `true`: busca las letras en LRCLIB (la única conexión a internet de Notch). `false`: sin letras y sin ninguna conexión. |
 | `volumeIndicator` | `true` | `true`: al cambiar el volumen, la isla enseña una barra 1,5 s. `false`: solo se ve el indicador de Windows. |
 | `glow` | `true` | `true`: brillo de color alrededor de la isla (ver [El brillo](#el-brillo-glow)). `false`: sin brillo. Los colores se cambian en `renderer/styles.css`, sección 1b. |
+| `clipboard` | `true` | `true`: guarda los últimos 30 textos que copias (solo en memoria; ver [Portapapeles y bandeja](#portapapeles-y-bandeja)). `false`: Notch ni mira el portapapeles (y olvida lo que había). La bandeja de archivos funciona igual. |
 | `clawd` | `true` | `true`: Clawd vive en la isla (ver [Clawd](#clawd)). `false`: los dos ojos verdes de siempre. |
 | `clawdSleepMinutes` | `5` | Minutos sin tocar el PC para que Clawd se duerma (de 1 a 240). También se duerme al bloquear el PC. |
 | `clawdByeTime` | `"18:00"` | A esta hora Clawd se despide hasta mañana (formato `"HH:MM"`). `""` = nunca. |
@@ -381,6 +409,9 @@ main/                    Proceso principal (Node.js), un archivo por tema:
   audio.js               las salidas de audio
   volume.js              el volumen de Windows
   note.js                la nota rápida (nota.md)
+  clipboard-history.js   la lista de lo copiado: 30 textos, fijados, repetidos (lógica pura)
+  clipboard.js           el portapapeles: lo que manda el helper, pausa y volver a copiar
+  tray.js                la bandeja de archivos (bandeja.json), miniaturas y arrastrar hacia fuera
   ai-logic.js            qué significa cada evento de Claude Code (lógica pura, sin Electron)
   ai-sessions.js         las sesiones de Claude Code / Antigravity y sus decisiones pendientes
   ai-server.js           el servidor local (127.0.0.1) que recibe sus eventos, y el bloque para pegar
@@ -414,16 +445,20 @@ renderer/
     clawd.js             Clawd: qué hace, sus acciones, bailes y disfraces
     home.js              Home: la rejilla, el modo edición, las novedades y guardarlo
     home-grid.js         dónde cae cada widget en la rejilla de 4×2 (funciones puras)
+    clip-page.js         la página Portapapeles: sus dos partes (Copiado y Bandeja)
+    clipboard.js         lo que copiaste: tarjetas, fijar, buscar y pausa
+    tray.js              la bandeja y soltar archivos sobre la isla
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
   widgets/               Un archivo por widget de Home:
     index.js             el catálogo (y los 3 diseños)
-    clock.js, music.js, focus.js, ai.js, links.js, battery.js, note.js
+    clock.js, music.js, focus.js, ai.js, links.js, battery.js, note.js, clipboard.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
   Program.cs             Arranca los módulos y habla con Notch (stdin/stdout)
   MediaModule.cs         La música (sesión multimedia de Windows)
   VolumeModule.cs        El volumen (Core Audio)
   AudioDevicesModule.cs  Las salidas de audio y cambiar la predeterminada
+  ClipboardModule.cs     Lo que copias (solo texto), por avisos de Windows
   CoreAudio.cs           Las declaraciones de Core Audio (y de IPolicyConfig)
 config/
   settings.json          Tu configuración
@@ -439,12 +474,15 @@ assets/
 - **Clics que atraviesan.** La ventana ignora el ratón con `setIgnoreMouseEvents(true, { forward: true })`, así que los clics pasan a lo que hay debajo. Gracias a `forward`, la página sigue recibiendo los movimientos del ratón dentro de su zona. Así sabe cuándo dejas el ratón sobre la mini-muesca, para despertarla, y cuándo entras en la isla, para que `main.js` vuelva a aceptar clics. La mini-muesca nunca atrapa clics.
 - **Foco.** Al abrirse, el notch toma el foco para recibir `Esc` y para saber, con el evento `blur`, cuándo haces clic fuera. Al cerrarse con `Esc` o con el atajo, devuelve el foco a la app que estabas usando.
 - **Música con un helper en C#.** `WinHelper.exe` usa `GlobalSystemMediaTransportControlsSessionManager` de Windows: la misma sesión que ves en el panel de volumen. Por eso funciona con cualquier app, sin conectarse a ninguna en concreto.
-  - Electron lo lanza como proceso hijo. El helper escribe en su salida estándar (stdout) **una línea JSON por cada cambio**, con un campo `type` que dice de qué trata (`media`, `volume`, `audio-devices` o `audio-output-result`), y `main/helper.js` la reparte al módulo que corresponde. Para la música trae título, artista, álbum, estado, posición, duración, app y carátula. Recibe órdenes por su entrada estándar (stdin): `play`, `pause`, `toggle`, `next`, `previous`, `seek`, `refresh`, `audio-devices` y `set-output`.
+  - Electron lo lanza como proceso hijo. El helper escribe en su salida estándar (stdout) **una línea JSON por cada cambio**, con un campo `type` que dice de qué trata (`media`, `volume`, `audio-devices`, `audio-output-result`, `clipboard` o `clipboard-status`), y `main/helper.js` la reparte al módulo que corresponde. Para la música trae título, artista, álbum, estado, posición, duración, app y carátula. Recibe órdenes por su entrada estándar (stdin): `play`, `pause`, `toggle`, `next`, `previous`, `seek`, `refresh`, `audio-devices`, `set-output` y `clipboard on`/`off`.
   - Apple Music manda «Artista — Álbum» juntos en el artista: Notch los separa.
   - Funciona solo por avisos de Windows: no comprueba nada periódicamente.
   - La carátula se reduce a 300 px en JPEG y **solo viaja cuando cambia**.
   - Si el helper se cierra, Electron lo reinicia esperando cada vez más (2 s, 4 s… hasta 1 minuto). Al salir de Notch, el helper se cierra con él.
 - **Volumen con Core Audio.** El mismo helper escucha el volumen de tu salida de audio con las interfaces COM de Windows (`IAudioEndpointVolumeCallback` y, para cuando cambias de altavoces a auriculares, `IMMNotificationClient`). Windows le avisa en cada cambio; al arrastrar el control llegan decenas de avisos seguidos y los junta en uno cada 40 ms. Windows 11 no deja ocultar su propio indicador de volumen, así que se ven los dos (o pon `"volumeIndicator": false`).
+- **Portapapeles por avisos.** El helper crea una ventana invisible «de solo mensajes» (no se ve, ni sale en la barra de tareas) y se apunta con `AddClipboardFormatListener`: Windows le manda `WM_CLIPBOARDUPDATE` cada vez que alguien copia algo. Espera 60 ms (algunos programas copian en varios pasos) y solo entonces lo mira: si trae `ExcludeClipboardContentFromMonitorProcessing`, `Clipboard Viewer Ignore` o `CanIncludeInClipboardHistory = 0` (las marcas de los gestores de contraseñas), ni lo lee; si no es texto o pasa de 100 000 caracteres, tampoco. De quién vino lo saca del dueño del portapapeles (`GetClipboardOwner` → su programa). La ventana y su hilo solo existen si Notch se lo pide (`clipboard on`), y con `clipboard off` deja de mirar. `main/clipboard.js` guarda los textos **en memoria** y a la página solo le manda el principio de cada uno (1500 caracteres); al pulsar una tarjeta, `main.js` copia el texto entero con `clipboard.writeText`. Si el helper no contesta a `clipboard on` en 5 s (uno sin recompilar), la página pide recompilarlo.
+- **Soltar en una ventana que deja pasar los clics.** Mientras la ventana ignora el ratón, Windows tampoco le deja recibir archivos. Pero `forward: true` sigue mandando sus movimientos a la página también mientras arrastras, así que la isla se despierta y «atrapa» el ratón como siempre; entonces Windows ya le deja recibir el arrastre. Si sales de la isla, la ventana vuelve a dejar pasar el ratón y el arrastre pasa a las ventanas de abajo. La página nunca ve las rutas de lo que sueltas: `preload.js` las saca con `webUtils.getPathForFile` y se las pasa a `main/tray.js`.
+- **Sacar archivos.** Al empezar a arrastrar un archivo de la bandeja, la página cancela el arrastre «de página web» y `main.js` empieza uno de verdad con `webContents.startDrag` (el mismo que haría el Explorador), con la miniatura bajo el cursor. Solo permite **copiar** (o crear un acceso directo): nunca mueve el original. Las miniaturas salen de Windows (`nativeImage.createThumbnailFromPath`) y, si no tiene, el icono de su tipo (`app.getFileIcon`).
 - **Letras de LRCLIB.** Al cambiar de canción, `main/lyrics.js` mira primero su caché (`%APPDATA%\Notch\lyrics\`, un archivo por canción). Si no la tiene, espera 1,5 s (por si estás pasando canciones) y pregunta a LRCLIB: primero la búsqueda exacta (`/api/get`, con título, artista, álbum y duración) y, si no la encuentra, la aproximada (`/api/search`, quitando cosas como «(feat. …)» o «- Remastered»). Guarda la respuesta, también el «no hay letra» (lo vuelve a intentar a los 7 días). Si LRCLIB no contesta en 10 s o no hay internet, la página ofrece «Reintentar». Sin artista (un vídeo cualquiera) no busca, para no traer la letra de otra canción.
 - **La línea que suena, sin sondeos.** La página calcula en qué línea vas con la posición interpolada y programa **un solo temporizador** para el instante exacto de la siguiente; si pausas, saltas o cambias de canción, lo recalcula. Solo funciona con la página Música a la vista.
 - **Colores con k-means.** La carátula se reduce a 16 × 16 píxeles y se agrupan los píxeles parecidos en 3 grupos; el color medio de cada uno pinta los degradados y el más vivo es el color de acento. Son variables CSS registradas con `@property`, así que cambian de una canción a otra con una transición suave.
@@ -457,7 +495,7 @@ assets/
 - **Decisiones.** Un permiso, una pregunta o un plan dejan la petición de Claude Code abierta: la isla enseña la tarjeta y, cuando eliges, Notch contesta con el JSON que dice la documentación de Claude Code (`decision.behavior` en los permisos; `permissionDecision` con `updatedInput` en las preguntas y los planes). Si Claude Code cuelga antes (respondiste en la terminal o se agotó su tiempo), la tarjeta se va sola. Un temporizador por decisión (590 s) y otro por sesión (se olvida a los 45 minutos sin señales): nada de sondeos.
 - **Chat.** `main/ai-chat.js` busca los programas con `where.exe`, prefiere el `.exe` y, si solo hay un `.cmd` (instalado con npm), lo lanza con `cmd.exe` pasándole solo argumentos de Notch: tu texto va por la entrada estándar. Lee su salida línea a línea (`stream-json`) y se la manda a la página a trozos (cada 50 ms). «Parar» cierra el programa con todo lo que haya abierto (`taskkill /T`).
 - **Batería por eventos.** La página usa la API de batería de Chromium (`navigator.getBattery()`), que avisa cuando cambia el nivel o enchufas el cargador. Avisa una vez al bajar del 20 % y otra del 10 %, y vuelve a avisar tras cargarlo.
-- **Centro de avisos.** Solo los de Notch (Pomodoro, batería, errores de configuración, atajos, helper; más adelante, la IA). Viven en memoria: al cerrar Notch se olvidan. Notch no puede leer las notificaciones de otras apps (Windows solo lo permite a las instaladas desde la Microsoft Store).
+- **Centro de avisos.** Solo los de Notch (Pomodoro, batería, errores de configuración, atajos, helper y la IA). Viven en memoria: al cerrar Notch se olvidan. Notch no puede leer las notificaciones de otras apps (Windows solo lo permite a las instaladas desde la Microsoft Store).
 - **Tema.** `main/theme.js` aplica `theme` con `nativeTheme` (así el menú del clic derecho también cambia) y le dice a la página qué tema toca; la página lo pone en `<html data-theme>`. Con `"auto"`, si cambias el modo de Windows, el panel cambia solo.
 - **Nota rápida.** Se escribe primero en un archivo temporal y luego se renombra: si se apaga el PC a mitad, la nota anterior sigue entera. Si `nota.md` no se puede leer, la página queda en solo lectura para no pisarla nunca.
 - **Posición interpolada.** Las apps solo actualizan la posición de vez en cuando. El helper la ajusta al momento exacto en que la mide (Windows indica cuándo fue su última actualización). Notch guarda esa posición y la hora de la medición, y mientras suena calcula la posición actual por su cuenta: posición + tiempo transcurrido.
@@ -469,7 +507,8 @@ assets/
 - **Bajo consumo.** No hay sondeo periódico (polling) en ninguna parte.
   - El reloj y los tiempos de la música solo se actualizan con el panel abierto, una vez por segundo (y sus números «ruedan», como en el iPhone).
   - El fondo animado, la letra que se ilumina y la barra continua solo se mueven con la página Música a la vista y la música sonando; al cerrar el panel o cambiar de página, se paran. El fondo solo usa `translate` y `scale`, que mueve la tarjeta gráfica casi sin gastar.
-  - El volumen, la batería, el tema y los atajos funcionan por avisos del sistema.
+  - El volumen, la batería, el tema, los atajos y el portapapeles funcionan por avisos del sistema.
+  - La bandeja no vigila tus archivos: comprueba que siguen en su sitio solo al abrirla.
   - La cuenta atrás del Pomodoro solo se dibuja cuando se ve.
   - Los widgets de Home no tienen temporizadores propios: el reloj se mueve con el de la barra de arriba (solo con el panel abierto) y la barra de la música avanza sola con una animación del navegador, que se para al cerrar el panel o cambiar de página.
   - Las animaciones son cortas y se lanzan por eventos.
@@ -485,6 +524,8 @@ Sin telemetría ni analíticas. La **única** conexión a internet que hace Notc
 **IA.** El servidor de la IA solo escucha en tu PC (`127.0.0.1`) y solo recibe lo que Claude Code (o Antigravity) le manda. **Notch no manda nada a Anthropic ni a Google por su cuenta.** El chat no lo hace Notch: lanza tus propios programas (`claude`, `agy` o `gemini`) solo cuando escribes, y lo que escribas va solo a quien elijas (**Claude → Anthropic**, **Gemini → Google**). La conversación vive en memoria (a Claude además se le pide que no la guarde) y se olvida al cerrar Notch. Con `"ai": false` no hay servidor.
 
 El corrector ortográfico que trae Electron descargaba diccionarios de Google al arrancar: está desactivado (la nota no lo usa) y esa descarga se redirige a tu propio PC. Tu nota, tus avisos, tu configuración, tus widgets de Home (`%APPDATA%\Notch\home.json`) y la caché de letras (`%APPDATA%\Notch\lyrics\`, se puede borrar cuando quieras) se quedan en tu PC. Los logos de los links vienen dentro de Notch (Simple Icons): no se descarga ninguno.
+
+**Portapapeles.** Lo que copias se queda **solo en la memoria** de Notch: nunca se escribe en el disco ni sale de tu PC, y se olvida al cerrar Notch. Notch no lee lo que los gestores de contraseñas marcan como privado. Con la pausa (o `"clipboard": false`), no mira el portapapeles. De la **bandeja** solo se guarda la ruta de cada archivo, en `%APPDATA%\Notch\bandeja.json`; los archivos no se copian ni se suben a ningún sitio.
 
 ## Solución de problemas
 
@@ -512,6 +553,11 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **Los links salen con la inicial y no con el logo.** Si es con todos, falta `npm install` (la terminal dice «No encuentro el paquete simple-icons»). Si es con uno, esa marca no está en Simple Icons (o la web no se reconoce): búscala en <https://simpleicons.org> y pon su nombre en `"icon"`. Si pusiste `"initial"`, se usa la inicial: quítala o añade `"icon"`.
 - **No entra en el modo edición de Home.** Mantén pulsado 0,6 s **sin mover** el ratón (si lo mueves, cuenta como un clic normal).
 - **Quiero el Home de siempre.** En el modo edición, «Diseños» → «Clásico». O cierra Notch y borra `%APPDATA%\Notch\home.json`.
+- **Portapapeles dice «Hay que recompilar el helper».** Tu `WinHelper.exe` es de antes de la Fase 7: cierra Notch, ejecuta `npm run build:helper` y vuelve a abrirlo.
+- **No guarda algo que copié.** Puede que el programa lo marcara como privado (los gestores de contraseñas lo hacen), que no fuera texto (una imagen, unos archivos), que pasara de 100 000 caracteres o que estuviera en pausa (el botón ⏸ en amarillo). Las contraseñas que copias desde una **extensión del navegador** no llevan esa marca: pon la pausa antes de copiarlas, o quítalas después con ✕.
+- **No puedo soltar archivos en la isla.** Acerca el archivo a la mini-muesca y espera un instante a que se despierte (con `"revealOnHover": false` no se despierta: suelta sobre la isla cuando esté grande, o abre el panel y suéltalo encima). También puedes usar **Añadir…** en la bandeja.
+- **Un archivo de la bandeja sale «No está».** Lo moviste, lo borraste o estaba en un USB que ya no está conectado. Quítalo con ✕ (si vuelve a aparecer en su sitio, al abrir la bandeja se recupera solo).
+- **Al sacar un archivo de la bandeja, el original sigue donde estaba.** Es a propósito: siempre se copia, nunca se mueve.
 - **No sale encima de un juego.** Los juegos en pantalla completa exclusiva tapan todas las ventanas. En modo «ventana sin bordes», el notch sí se ve.
 - **`npm run dist` falla con «Cannot create symbolic link».** Activa el modo de desarrollador de Windows (*Configuración → Sistema → Para programadores*) o ejecuta la terminal como administrador y vuelve a intentarlo.
 - **`npm start` dice que la versión de Node no es compatible.** Actualiza Node.js a 22.12 o superior.

@@ -31,6 +31,7 @@ const WIDGET_SIZES = {
   links: ['2x1', '1x1'],
   battery: ['1x1'],
   note: ['2x1', '1x1'],
+  clipboard: ['2x1', '1x1'],
 };
 
 // Home la primera vez (o si home.json está mal)

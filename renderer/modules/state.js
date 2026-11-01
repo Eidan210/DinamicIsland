@@ -35,8 +35,9 @@ export const state = {
   lastPointer: { x: 0, y: 0 }, // última posición conocida
 
   // Forma actual de la isla:
-  // 'mini' | 'pill' | 'activity' | 'volume' | 'banner' | 'alert' | 'decision' | 'expanded'
+  // 'mini' | 'pill' | 'activity' | 'volume' | 'banner' | 'alert' | 'drop' | 'decision' | 'expanded'
   shape: 'mini',
+  fileDrag: false, // ¿estás arrastrando archivos sobre la isla? (tray.js)
 
   // Pomodoro (lo actualiza pomodoro.js con lo que manda main)
   pomodoro: {

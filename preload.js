@@ -9,7 +9,7 @@
 
 'use strict';
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 /**
  * Escucha un mensaje que manda main.js.
@@ -144,6 +144,60 @@ contextBridge.exposeInMainWorld('notch', {
     get: () => ipcRenderer.invoke('note:get'),
     /** Guarda el texto. Devuelve (Promise) { ok, error? }. */
     save: (text) => ipcRenderer.invoke('note:save', String(text)),
+  },
+
+  // ---------- Portapapeles: lo que copias (solo texto, solo en memoria) ----------
+  clipboard: {
+    /** Devuelve (Promise) { status, message, paused, items }. Cada item trae solo el principio del texto. */
+    getState: () => ipcRenderer.invoke('clipboard:get'),
+    /** Avisa de cada cambio (copiaste algo, fijaste...): callback(estado). */
+    onChange: (callback) => subscribe('clipboard:state', callback),
+    /** Vuelve a copiar el texto entero de un elemento. Devuelve (Promise) true si se copió. */
+    copy: (id) => ipcRenderer.invoke('clipboard:copy', String(id)),
+    /** Fijar (true) o soltar (false). Devuelve (Promise) { ok, error? }. */
+    pin: (id, pinned) => ipcRenderer.invoke('clipboard:pin', String(id), pinned === true),
+    remove: (id) => ipcRenderer.send('clipboard:remove', String(id)),
+    /** "Borrar": todo menos lo fijado. */
+    clear: () => ipcRenderer.send('clipboard:clear'),
+    /** Pausar (true) o volver a guardar lo que copias (false). */
+    pause: (paused) => ipcRenderer.send('clipboard:pause', paused === true),
+  },
+
+  // ---------- Bandeja de archivos ----------
+  tray: {
+    /** Devuelve (Promise) { items, max }. Sin las rutas: solo nombre, tamaño e icono. */
+    getState: () => ipcRenderer.invoke('tray:get'),
+    /** Avisa de cada cambio: callback(estado). */
+    onChange: (callback) => subscribe('tray:state', callback),
+    /**
+     * Añade los archivos que soltaste: un ARRAY de File (p. ej.
+     * Array.from(event.dataTransfer.files); un FileList no cruza este puente).
+     * Las rutas las saca este puente y van directas a main.js: la página no las ve.
+     * Devuelve (Promise) { ok, added, duplicate, missing, full }.
+     */
+    addFiles: (files) => {
+      const paths = (Array.isArray(files) ? files : []).slice(0, 200).map((file) => {
+        try {
+          return webUtils.getPathForFile(file);
+        } catch {
+          return ''; // no es un archivo de verdad
+        }
+      }).filter(Boolean);
+      return ipcRenderer.invoke('tray:add', paths);
+    },
+    /** "Añadir…": elegir archivos con la ventana de Windows. Devuelve (Promise) lo mismo que addFiles. */
+    pick: () => ipcRenderer.invoke('tray:pick'),
+    remove: (id) => ipcRenderer.send('tray:remove', String(id)),
+    /** "Vaciar" (los archivos siguen en su sitio). */
+    clear: () => ipcRenderer.send('tray:clear'),
+    /** Comprueba que los archivos siguen en su sitio (al abrir la página). */
+    refresh: () => ipcRenderer.send('tray:refresh'),
+    /** Empieza a arrastrar estos archivos hacia fuera (en el dragstart de la página). */
+    startDrag: (ids) => ipcRenderer.send('tray:drag', Array.from(ids || [], String)),
+    /** Avisa cuando termina ese arrastre (soltaste o lo cancelaste). */
+    onDragEnd: (callback) => subscribe('tray:drag-end', callback),
+    /** Abre el Explorador con el archivo marcado. */
+    showInFolder: (id) => ipcRenderer.send('tray:show', String(id)),
   },
 
   // ---------- IA: Claude Code y Antigravity ----------

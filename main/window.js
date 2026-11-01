@@ -86,9 +86,10 @@ function createWindow() {
   });
 
   // Clic fuera del panel (en otra ventana, el escritorio, el otro monitor...)
-  // = nuestra ventana pierde el foco → cerramos el panel.
+  // = nuestra ventana pierde el foco → cerramos el panel. Salvo mientras está
+  // abierta la ventana de elegir archivos (la bandeja): esa se lleva el foco.
   win.on('blur', () => {
-    if (state.isExpanded && !IS_DEV) setExpanded(false);
+    if (state.isExpanded && !IS_DEV && !state.dialogOpen) setExpanded(false);
   });
 
   // Alt+F4 con el panel abierto: lo cerramos en lugar de salir de la app.

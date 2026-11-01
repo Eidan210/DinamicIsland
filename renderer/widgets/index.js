@@ -27,9 +27,10 @@ import { aiWidget } from './ai.js';
 import { linksWidget } from './links.js';
 import { batteryWidget } from './battery.js';
 import { noteWidget } from './note.js';
+import { clipboardWidget } from './clipboard.js';
 
 /** Todos los widgets, en el orden del catálogo. */
-export const WIDGETS = [clockWidget, musicWidget, focusWidget, aiWidget, linksWidget, batteryWidget, noteWidget];
+export const WIDGETS = [clockWidget, musicWidget, focusWidget, aiWidget, linksWidget, batteryWidget, noteWidget, clipboardWidget];
 
 export const WIDGET_BY_TYPE = new Map(WIDGETS.map((widget) => [widget.type, widget]));
 

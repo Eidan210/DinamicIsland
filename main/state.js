@@ -31,6 +31,7 @@ const state = {
   isExpanded: false, // ¿el panel está abierto? La "verdad" vive aquí, no en la página.
   currentTab: 'home', // la página que se ve en el panel (la página nos avisa al cambiar)
   isQuitting: false, // pasa a true cuando el usuario elige "Salir"
+  dialogOpen: false, // hay una ventana de Windows abierta (elegir archivos): el panel no se cierra
 };
 
 module.exports = { IS_DEV, APP_ID, ROOT_DIR, PAGES, state };

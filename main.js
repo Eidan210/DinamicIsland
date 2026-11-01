@@ -25,6 +25,8 @@
 //    audio.js      las salidas de audio (vía el helper)
 //    volume.js     el volumen de Windows (vía el helper)
 //    note.js       la nota rápida (nota.md en tu carpeta de datos)
+//    clipboard-history.js / clipboard.js  lo que copias (solo texto, solo en memoria)
+//    tray.js       la bandeja de archivos (sueltas archivos en la isla)
 //    ai-logic.js   qué significa cada evento de Claude Code (lógica pura)
 //    ai-sessions.js las sesiones de Claude Code y Antigravity, y sus decisiones
 //    ai-server.js  el servidor local (127.0.0.1) que recibe sus eventos
@@ -50,6 +52,7 @@ const aiServer = require('./main/ai-server');
 const aiSessions = require('./main/ai-sessions');
 const aiChat = require('./main/ai-chat');
 const idle = require('./main/idle');
+const clipboardHistory = require('./main/clipboard');
 const { registerIpcHandlers } = require('./main/ipc');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
@@ -68,6 +71,7 @@ function onConfigChanged(changedFiles) {
     lyrics.onSettingsChanged(); // "lyrics": encender o apagar las letras al momento
     aiServer.onSettingsChanged(previous); // "ai" / "aiPort": encender, apagar o cambiar de puerto
     idle.onSettingsChanged(); // "clawd" / "clawdSleepMinutes"
+    clipboardHistory.onSettingsChanged(previous); // "clipboard": encender o apagar el historial
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();

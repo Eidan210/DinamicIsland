@@ -25,7 +25,14 @@ const aiServer = require('./ai-server');
 const aiChat = require('./ai-chat');
 const idle = require('./idle');
 const home = require('./home');
+const clipboardHistory = require('./clipboard');
+const tray = require('./tray');
 const { clipboard } = require('electron');
+
+/** Una lista de textos de la página (ids, rutas...), revisada. */
+function stringList(value, max) {
+  return Array.isArray(value) ? value.filter((item) => typeof item === 'string').slice(0, max) : [];
+}
 
 function registerIpcHandlers() {
   // Ventana
@@ -68,6 +75,24 @@ function registerIpcHandlers() {
   // Nota rápida
   onRendererRequest('note:get', () => note.readNote());
   onRendererRequest('note:save', (text) => note.saveNote(text));
+
+  // Portapapeles: lo que copiaste (solo en memoria)
+  onRendererRequest('clipboard:get', () => clipboardHistory.getClipboardState());
+  onRendererRequest('clipboard:copy', (id) => clipboardHistory.copyClip(String(id)));
+  onRendererRequest('clipboard:pin', (id, pinned) => clipboardHistory.pinClip(String(id), pinned === true));
+  onRendererMessage('clipboard:remove', (id) => clipboardHistory.removeClip(String(id)));
+  onRendererMessage('clipboard:clear', () => clipboardHistory.clearClips());
+  onRendererMessage('clipboard:pause', (paused) => clipboardHistory.setClipboardPaused(paused === true));
+
+  // Bandeja de archivos (la página nunca ve las rutas: las saca preload.js al soltar)
+  onRendererRequest('tray:get', () => tray.getTrayState());
+  onRendererRequest('tray:add', (paths) => tray.addPaths(stringList(paths, 200)));
+  onRendererRequest('tray:pick', () => tray.pickFiles());
+  onRendererMessage('tray:remove', (id) => tray.removeItem(String(id)));
+  onRendererMessage('tray:clear', () => tray.clearTray());
+  onRendererMessage('tray:refresh', () => tray.refreshTray());
+  onRendererMessage('tray:drag', (ids) => tray.startDragOut(stringList(ids, tray.MAX_ITEMS)));
+  onRendererMessage('tray:show', (id) => tray.showInFolder(String(id)));
 
   // Centro de avisos
   onRendererRequest('notices:get', () => notices.getNotices());

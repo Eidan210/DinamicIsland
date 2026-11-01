@@ -2,7 +2,7 @@
 //  main/helper.js — El helper de Windows (helpers/WinHelper)
 // -----------------------------------------------------------------------------
 //  WinHelper.exe es un programa en C# que habla con Windows por nosotros (la
-//  música que suena, el volumen y, en próximas fases, el portapapeles).
+//  música que suena, el volumen, las salidas de audio y el portapapeles).
 //
 //  Lo lanzamos como proceso hijo:
 //    • Él nos escribe una línea JSON por cada novedad: {"type":"media", ...}
@@ -55,6 +55,11 @@ function onHelperStatus(listener) {
   statusListeners.push(listener);
 }
 
+/** Cómo está ahora: 'starting', 'ok', 'missing', 'unsupported' o 'error'. */
+function getHelperStatus() {
+  return helper.status;
+}
+
 function setStatus(status) {
   const previous = helper.status;
   helper.status = status;
@@ -69,8 +74,8 @@ function setStatus(status) {
       tone: 'warning',
       title: 'Falta el helper de Windows',
       text: app.isPackaged
-        ? 'Sin él no hay música ni volumen. Reinstala Notch.'
-        : 'Sin él no hay música ni volumen. Compílalo con: npm run build:helper',
+        ? 'Sin él no hay música, volumen ni portapapeles. Reinstala Notch.'
+        : 'Sin él no hay música, volumen ni portapapeles. Compílalo con: npm run build:helper',
       alert: true,
     });
   } else if (status === 'error' && previous !== 'error') {
@@ -164,4 +169,4 @@ function handleHelperLine(line) {
   }
 }
 
-module.exports = { startHelper, stopHelper, sendToHelper, onHelperMessage, onHelperStatus };
+module.exports = { startHelper, stopHelper, sendToHelper, onHelperMessage, onHelperStatus, getHelperStatus };
