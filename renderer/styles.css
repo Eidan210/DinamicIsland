@@ -97,8 +97,9 @@
   initial-value: #3dff8f;
 }
 
-/* El progreso de la canción (de 0 a 1): registrado para que la barra avance
-   de forma continua (music.js lo anima) en vez de a saltos cada segundo */
+/* El progreso de la canción (de 0 a 1). Mientras suena, wave.js lo actualiza
+   en cada fotograma para que la barra avance de forma continua. Registrado
+   como número: si llegara algo raro, vale 0. */
 @property --progress {
   syntax: "<number>";
   inherits: true;
@@ -2185,11 +2186,11 @@ code {
   text-align: right;
 }
 
-/* Barra de progreso con "ola": lo que ya sonó es una onda que avanza
-   mientras suena (en pausa se aplana en una línea recta) y lo que falta, una
-   línea fina. El tirador es una rayita vertical. --progress (de 0 a 1) lo pone
-   y lo anima de forma continua music.js. La onda es un dibujo SVG que se
-   repite (máscara) y se desliza; se recorta hasta --progress con clip-path. */
+/* Barra de progreso con ola, como la del reproductor de los móviles Samsung:
+   lo que ya sonó es una ola que fluye hacia el tirador redondo y se aplana al
+   llegar; lo que falta, una línea gruesa y tenue. Las dos son <path> que
+   dibuja wave.js (en pausa, la ola queda recta). --progress (de 0 a 1), el
+   sitio del tirador, también lo pone wave.js. */
 .bar {
   position: relative;
   flex: 1;
@@ -2203,85 +2204,49 @@ code {
   inset: -6px 0;
 }
 
-.bar-track,
-.bar-fill {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  left: 0;
-  height: 4px;
-  margin-top: -2px;
-  border-radius: 2px;
-}
-
-.bar-track {
-  background: rgba(var(--ink), 0.16);
-  clip-path: inset(0 0 0 calc(var(--progress, 0) * 100% + 6px));
-}
-
-/* La línea recta de lo que ya sonó: solo se ve en pausa (la ola se aplana) */
-.bar-fill {
-  background: var(--music-accent);
-  clip-path: inset(0 calc((1 - var(--progress, 0)) * 100%) 0 0);
-  opacity: 0;
-  transition: opacity 300ms ease;
-}
-
 .bar-wave {
   position: absolute;
-  top: 50%;
-  right: 0;
-  left: 0;
-  height: 12px;
-  margin-top: -6px;
-  background: var(--music-accent);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M-12 6Q-6 .5 0 6T12 6T24 6T36 6' fill='none' stroke='%23000' stroke-width='2.4'/%3E%3C/svg%3E") 0 50% / 24px 12px repeat-x;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M-12 6Q-6 .5 0 6T12 6T24 6T36 6' fill='none' stroke='%23000' stroke-width='2.4'/%3E%3C/svg%3E") 0 50% / 24px 12px repeat-x;
-  clip-path: inset(0 calc((1 - var(--progress, 0)) * 100%) 0 0);
-  transition:
-    opacity 300ms ease,
-    scale 560ms var(--spring-bouncy);
-  animation: wave-flow 1.3s linear infinite paused;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* las puntas redondas de la ola pueden salirse un poco */
+  pointer-events: none;
 }
 
-/* La ola solo se desliza con la página Música a la vista y sonando */
-.island[data-shape="expanded"] .view.is-active .player[data-playing="true"] .bar-wave {
-  animation-play-state: running;
+.bar-wave path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-@keyframes wave-flow {
-  to {
-    -webkit-mask-position: 24px 50%;
-    mask-position: 24px 50%;
-  }
+.bar-played {
+  stroke: var(--music-accent);
+  stroke-width: 3px;
 }
 
-/* En pausa, la ola se aplana y queda la línea recta */
-.player:not([data-playing="true"]) .bar-wave {
-  opacity: 0;
-  scale: 1 0.2;
+.bar-rest {
+  stroke: rgba(var(--ink), 0.18);
+  stroke-width: 5px;
 }
 
-.player:not([data-playing="true"]) .bar-fill {
-  opacity: 1;
-}
-
+/* El tirador: una bolita blanca al final de la ola */
 .bar-knob {
   position: absolute;
   top: 50%;
   left: calc(var(--progress, 0) * 100%);
-  width: 5px;
-  height: 16px;
-  margin: -8px 0 0 -2.5px;
-  border-radius: 3px;
-  background: var(--text-strong);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-  scale: 1 0.8;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.35),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
   transition: scale 280ms var(--spring-bouncy);
 }
 
 .player[data-can-seek="true"] .bar:hover .bar-knob {
-  scale: 1.2 1.05;
+  scale: 1.2;
 }
 
 .player[data-can-seek="false"] .bar {

@@ -101,7 +101,7 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
   - Haz clic en la barra para saltar a ese punto, si la app lo permite.
   - **Letra** a la derecha, de [LRCLIB](https://lrclib.net), animada como en Apple Music: la línea que suena va en el centro y sus palabras se iluminan de izquierda a derecha mientras se canta; al cambiar de línea, las líneas suben en cascada con un pequeño rebote, y las lejanas se ven tenues y algo borrosas. En las pausas instrumentales (y en las intros largas) salen tres puntos que se van encendiendo. Pulsa una línea para saltar a ese momento. Si la letra no tiene tiempos, se ve entera; si no la hay, pone «Sin letra disponible».
   - El **fondo** se mueve despacio con los colores de la carátula y, si el título no cabe, se desplaza de lado a lado.
-  - La **barra de progreso** avanza de forma continua y lo que ya sonó es una **ola** que se mueve mientras suena; en pausa se aplana en una línea recta.
+  - La **barra de progreso** es como la del reproductor de los móviles Samsung: lo que ya sonó es una **ola** que fluye hacia el tirador redondo y se aplana al llegar. Al darle a reproducir, la ola se levanta; al pausar, se calma hasta quedar en una línea recta. Al principio de la canción sigue un poco más allá del tirador, en gris, y se va llenando de color según suena.
   - Los **colores** de la carátula tiñen el fondo de la página (un degradado con sus 3 colores principales), la tarjeta de Home, la isla, la barra y el ecualizador.
   - El botón de la **píldora** decide si la música se muestra en la isla (se guarda en `musicActivity`).
   - El botón de **salida** (ondas sobre un triángulo) abre la lista de **salidas de audio** (altavoces, auriculares, la tele…): la que eliges pasa a ser la predeterminada de Windows.
@@ -243,6 +243,7 @@ renderer/
     colors.js            los colores de la carátula (k-means)
     swipe.js             deslizar para cambiar de canción
     outputs.js           la lista de salidas de audio
+    wave.js              la ola de la barra de progreso
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
@@ -276,7 +277,7 @@ assets/
 - **Colores con k-means.** La carátula se reduce a 16 × 16 píxeles y se agrupan los píxeles parecidos en 3 grupos; el color medio de cada uno pinta los degradados y el más vivo es el color de acento. Son variables CSS registradas con `@property`, así que cambian de una canción a otra con una transición suave.
 - **Salida de audio.** El helper lista las salidas con Core Audio (`IMMDeviceEnumerator`) y se entera de los cambios por avisos de Windows. Para cambiar la predeterminada usa `IPolicyConfig`, la interfaz que usa la propia configuración de sonido de Windows. ⚠️ Microsoft no la documenta: funciona de Windows 7 a Windows 11, pero si algún día cambia, Notch solo mostrará el aviso «No se pudo cambiar la salida de audio».
 - **Muelles de verdad.** La isla cambia de forma con curvas de muelle amortiguado (escritas con `linear()` en `styles.css`): al crecer se pasa un poco y se asienta, como en el iPhone; al encoger, se asienta sin rebotar. Al pulsarla se hunde un poco. Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca; el contenido del panel entra igual, en cascada.
-- **Iconos dibujados a mano.** Son SVG propios al estilo de los de Apple (rellenos y con las puntas redondeadas), definidos una sola vez en `index.html` y reutilizados con `<use>`: no se descarga ninguna fuente de iconos. La ola de la barra es un dibujo SVG que se repite como máscara y se desliza con CSS; solo se mueve con la página Música a la vista y la música sonando.
+- **Iconos dibujados a mano.** Son SVG propios al estilo de los de Apple (rellenos y con las puntas redondeadas), definidos una sola vez en `index.html` y reutilizados con `<use>`: no se descarga ninguna fuente de iconos. La ola de la barra la dibuja `wave.js` en dos `<path>` de SVG (lo que ya sonó y lo que falta): para cada punto, altura = envolvente × amplitud × seno; la envolvente la hace nacer y morir plana. Mientras suena, un único `requestAnimationFrame` la hace fluir y avanza la barra, como mucho unas 60-80 veces por segundo, solo con la página Música a la vista; en pausa, en cuanto se calma, se para.
 - **Batería por eventos.** La página usa la API de batería de Chromium (`navigator.getBattery()`), que avisa cuando cambia el nivel o enchufas el cargador. Avisa una vez al bajar del 20 % y otra del 10 %, y vuelve a avisar tras cargarlo.
 - **Centro de avisos.** Solo los de Notch (Pomodoro, batería, errores de configuración, atajos, helper; más adelante, la IA). Viven en memoria: al cerrar Notch se olvidan. Notch no puede leer las notificaciones de otras apps (Windows solo lo permite a las instaladas desde la Microsoft Store).
 - **Tema.** `main/theme.js` aplica `theme` con `nativeTheme` (así el menú del clic derecho también cambia) y le dice a la página qué tema toca; la página lo pone en `<html data-theme>`. Con `"auto"`, si cambias el modo de Windows, el panel cambia solo.

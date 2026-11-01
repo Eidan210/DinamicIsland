@@ -20,6 +20,7 @@ import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange } from './tabs.js';
 import { readPalette } from './colors.js';
 import { makeSwipeable } from './swipe.js';
+import { drawWave, initWave, updateWave } from './wave.js';
 
 const MEDIA_MESSAGES = {
   starting: ['Conectando…', 'Buscando qué suena en Windows'],
@@ -72,7 +73,6 @@ let skipDirection = 0; // +1 siguiente / -1 anterior: para animar la carátula h
 let skipUntil = 0;
 let lastBannerKey = ''; // última canción anunciada con el aviso "Ahora suena"
 let artFling = null; // la carátula saliendo hacia un lado tras deslizar
-let progressMotion = null; // la barra de progreso avanzando de forma continua
 const mediaListeners = [];
 
 /** Avisa a `listener()` cada vez que cambia algo de la música (la usa la letra). */
@@ -185,39 +185,33 @@ export function renderMedia({ trackChanged = false } = {}) {
   setText(bannerArtist, media.artist);
 
   renderMediaProgress();
-  updateProgressMotion();
+  updateWave(); // al reproducir, la ola se levanta; al pausar, se calma
   if (titleChanged) updateTitleMarquee();
   if (trackChanged && track) animateTrackChange();
 }
 
-/** Barra de progreso y tiempos (los tiempos cambian una vez por segundo). */
+/**
+ * Barra de progreso y tiempos (los tiempos cambian una vez por segundo).
+ * Mientras suena con la página Música a la vista, wave.js además hace avanzar
+ * la barra de forma continua (no a saltos) y mueve la ola.
+ */
 function renderMediaProgress() {
   const { duration } = state.media;
   const position = getMediaPosition();
-  playerBar.style.setProperty('--progress', duration > 0 ? (position / duration).toFixed(4) : '0');
+  drawWave();
   setText(playerElapsed, formatTime(position));
   setText(playerRemaining, duration > 0 ? `-${formatTime(duration - position)}` : '');
 }
 
-/**
- * La barra avanza de forma continua, no a saltos cada segundo: una única
- * animación de --progress desde donde va hasta el final, al ritmo de la
- * canción. Se rehace al pausar, saltar o cambiar de canción, y solo existe
- * con la página Música a la vista y la música sonando.
- */
-function updateProgressMotion() {
-  progressMotion?.cancel();
-  progressMotion = null;
-  const { duration, rate } = state.media;
-  if (!isPlaying() || !state.isExpanded || getCurrentTab() !== 'music' || duration <= 0) return;
-  const position = getMediaPosition();
-  const remainingMs = ((duration - position) / (rate || 1)) * 1000;
-  if (remainingMs <= 0) return;
-  progressMotion = animate(playerBar, [{ '--progress': position / duration }, { '--progress': 1 }], {
-    duration: remainingMs,
-    easing: 'linear',
-    fill: 'forwards',
-  });
+/** Por dónde va la canción, de 0 a 1 (para la barra); null si no se sabe cuánto dura. */
+function getMediaProgress() {
+  const { duration } = state.media;
+  return duration > 0 ? getMediaPosition() / duration : null;
+}
+
+/** ¿Se ve la página Música? (solo entonces se mueve la ola) */
+function isMusicPageVisible() {
+  return state.isExpanded && getCurrentTab() === 'music';
 }
 
 /**
@@ -336,7 +330,7 @@ export function seekTo(seconds) {
   media.position = media.duration > 0 ? Math.min(Math.max(seconds, 0), media.duration) : Math.max(seconds, 0);
   media.timestamp = Date.now();
   renderMediaProgress();
-  updateProgressMotion();
+  updateWave();
   window.notch.media.seek(media.position);
   notifyMediaChange();
 }
@@ -438,20 +432,30 @@ export function initMusic() {
     ignoreDragFrom: (target) => Boolean(target.closest('button, .bar, .lyrics')),
   });
 
+  // La ola de la barra de progreso (wave.js)
+  initWave({
+    bar: playerBar,
+    playedPath: $('player-wave'),
+    restPath: $('player-wave-rest'),
+    getProgress: getMediaProgress,
+    isPlaying,
+    isVisible: isMusicPageVisible,
+  });
+
   window.notch.media.onChange(onMediaState);
   onPanelChange((expanded) => {
     if (expanded) {
       renderMediaProgress();
       updateTitleMarquee();
     }
-    updateProgressMotion(); // con el panel cerrado, la barra continua se para
+    updateWave({ instant: true }); // con el panel cerrado, la ola se para
   });
   onTabChange((tab) => {
     if (tab === 'music') {
       renderMediaProgress();
       updateTitleMarquee();
     }
-    updateProgressMotion(); // en otra página, la barra continua se para
+    updateWave({ instant: true }); // en otra página, la ola se para
   });
   // Cada vez que la isla cambia de forma, la barra se enciende o se apaga.
   onShapeChange(updateMediaTicker);

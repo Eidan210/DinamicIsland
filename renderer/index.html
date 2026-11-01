@@ -325,12 +325,14 @@
 
                 <div class="player-progress">
                   <span class="time" id="player-elapsed">0:00</span>
-                  <!-- Lo que ya sonó es una onda que avanza mientras suena (en pausa se
-                       aplana en una línea); lo que falta, una línea fina. -->
+                  <!-- Lo que ya sonó es una ola que fluye hacia el tirador y se aplana al
+                       llegar (la dibuja wave.js; en pausa queda recta); lo que falta,
+                       una línea gruesa y tenue. -->
                   <div class="bar" id="player-bar" title="Saltar a este punto">
-                    <div class="bar-track"></div>
-                    <div class="bar-fill"></div>
-                    <div class="bar-wave"></div>
+                    <svg class="bar-wave" aria-hidden="true">
+                      <path class="bar-rest" id="player-wave-rest" />
+                      <path class="bar-played" id="player-wave" />
+                    </svg>
                     <div class="bar-knob"></div>
                   </div>
                   <span class="time time-end" id="player-remaining"></span>
