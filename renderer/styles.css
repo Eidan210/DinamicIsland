@@ -62,6 +62,7 @@
   --ctrl-main-bg: #fff; /* botón grande de reproducir */
   --ctrl-main-fg: #000;
   --popover-bg: #232328; /* fondo de la lista de avisos */
+  --ctrl-cut: #15151a; /* el "recorte" dentro de un icono relleno (fondo del panel) */
   --panel-shadow: rgba(0, 0, 0, 0.45);
   --ai-color: #a98bff;
   --claude-color: #e8866a;
@@ -196,17 +197,17 @@ img {
   -webkit-user-drag: none;
 }
 
-/* Iconos de reproducir/pausar: se cambia uno por otro con data-running.
-   El que aparece entra girando con un rebote (la animación se repite cada
-   vez que pasa de oculto a visible). */
-.icon-play {
+/* Iconos de reproducir/pausar (rellenos y redondeados, como los de Apple):
+   se cambia uno por otro con data-running. El que aparece entra girando con
+   un rebote (la animación se repite cada vez que pasa de oculto a visible). */
+.icon-play,
+.icon-pause {
   fill: currentColor;
-  stroke-width: 1.2;
+  stroke: none;
 }
 
 .icon-pause {
   display: none;
-  stroke-width: 2.8;
 }
 
 .icon-play,
@@ -233,6 +234,26 @@ img {
 .icon-fill {
   fill: currentColor;
   stroke-width: 1.2;
+}
+
+/* Partes rellenas de los iconos estilo SF Symbols (sirve también dentro de
+   los <symbol> de index.html: el color sale del botón que los usa) */
+.icon-solid {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* El detalle "recortado" dentro de una forma rellena (la ! del triángulo, el
+   ✓ del círculo...): se pinta del color del fondo (--glyph-cut) */
+.icon-cut {
+  fill: none;
+  stroke: var(--glyph-cut, rgba(0, 0, 0, 0.8));
+  stroke-width: 2.2;
+}
+
+.icon-cut-dot {
+  fill: var(--glyph-cut, rgba(0, 0, 0, 0.8));
+  stroke: none;
 }
 
 /* ---------- 3. La isla y sus formas ---------- */
@@ -716,6 +737,10 @@ img {
   translate: 0 0;
 }
 
+.status-battery {
+  --battery-fill: currentColor;
+}
+
 .status-battery[data-state="critical"] {
   color: var(--danger);
 }
@@ -725,54 +750,41 @@ img {
   font-size: 11px;
 }
 
-/* La pila: un rectángulo con su "botón" y un relleno según --level (de 0 a 1) */
-.battery-icon {
-  position: relative;
-  display: inline-block;
+/* La pila, como la del iPhone (un SVG): el cuerpo translúcido, la carga
+   (--level, de 0 a 1, la pone battery.js) y el "botón" de la derecha.
+   --battery-fill = el color de la carga. */
+.battery-svg {
   flex: none;
-  width: 21px;
-  height: 10px;
-  padding: 1.5px;
-  border: 1.2px solid currentColor;
-  border-radius: 3px;
+  width: 22px;
+  height: 11px;
+  overflow: visible;
 }
 
-.battery-icon::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -3.5px;
-  width: 2px;
-  height: 4px;
-  margin-top: -2px;
-  border-radius: 0 1px 1px 0;
-  background: currentColor;
+.battery-shell {
+  fill: currentColor;
+  fill-opacity: 0.3;
+  stroke: none;
 }
 
-.battery-icon i {
-  display: block;
-  width: calc(var(--level, 1) * 100%);
-  min-width: 1.5px;
-  height: 100%;
-  border-radius: 1px;
-  background: currentColor;
-  transition: width 400ms var(--spring);
+.battery-nub {
+  fill: currentColor;
+  fill-opacity: 0.4;
+  stroke: none;
+}
+
+.battery-level {
+  fill: var(--battery-fill, currentColor);
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--level, 1));
+  transition: transform 600ms var(--spring);
 }
 
 /* En la mini-muesca, una pila diminuta */
-.island[data-shape="mini"] .battery-icon {
-  width: 13px;
-  height: 7px;
-  padding: 1px;
-  border-width: 1px;
-  border-radius: 2px;
-}
-
-.island[data-shape="mini"] .battery-icon::after {
-  right: -2.5px;
-  width: 1.5px;
-  height: 3px;
-  margin-top: -1.5px;
+.island[data-shape="mini"] .battery-svg {
+  width: 15px;
+  height: 7.5px;
 }
 
 /* Barra de volumen (1,5 s al cambiarlo) */
@@ -827,6 +839,15 @@ img {
 
 .volume[data-muted="true"] .volume-mute {
   opacity: 1;
+}
+
+.volume-mute {
+  stroke-width: 1.9;
+}
+
+.volume-mute-gap {
+  stroke: #000;
+  stroke-width: 4.8;
 }
 
 .volume-bar {
@@ -905,8 +926,12 @@ img {
 }
 
 .alert-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
+}
+
+.alert-icon {
+  --glyph-cut: #000;
 }
 
 .alert-text {
@@ -1249,6 +1274,18 @@ img {
   color: var(--text);
 }
 
+/* El cuerpo de la campana se rellena con la lista abierta (como bell.fill).
+   El icono está en un <symbol>: le llega por una variable que se hereda. */
+.bell-body {
+  fill: currentColor;
+  fill-opacity: var(--bell-fill, 0);
+  transition: fill-opacity 200ms ease;
+}
+
+.bell[aria-expanded="true"] {
+  --bell-fill: 1;
+}
+
 .bell:active {
   transform: scale(0.88);
 }
@@ -1270,42 +1307,68 @@ img {
   animation: pop-in 420ms var(--spring-pop);
 }
 
-/* La batería (se oculta si está cargada del todo y enchufada) */
+/* La batería de la barra superior, como en el iPhone: el porcentaje va
+   dentro de la pila y cambia de color justo donde acaba la carga (oscuro
+   sobre lo lleno, claro sobre lo vacío). Verde cargando (con el rayo al
+   lado), amarilla con 20 % o menos y roja con 10 %. Se oculta llena y
+   enchufada. */
 .battery {
+  --battery-fill: var(--text-strong);
+  --battery-number-on: rgba(0, 0, 0, 0.82);
+
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
   color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .battery[hidden] {
   display: none;
 }
 
-.battery-plug {
+.battery-big {
+  width: 30px;
+  height: 14.5px;
+}
+
+.battery-number {
+  fill: var(--text-strong);
+  stroke: none;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: 9.6px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-anchor: middle;
+}
+
+.battery-number.is-on-fill {
+  fill: var(--battery-number-on);
+}
+
+.battery-bolt {
   display: none;
   width: 12px;
   height: 12px;
-  margin-left: 1px;
+  color: var(--text);
 }
 
 .battery[data-state="charging"] {
-  color: var(--accent);
+  --battery-fill: #30d158;
 }
 
-.battery[data-state="charging"] .battery-plug {
+.battery[data-state="charging"] .battery-bolt {
   display: block;
+  animation: pop-in 420ms var(--spring-pop);
 }
 
+/* Mismos colores que la pila de la isla: amarilla con 20 % o menos, roja con 10 % */
 .battery[data-state="low"] {
-  color: var(--warning);
+  --battery-fill: var(--warning);
 }
 
 .battery[data-state="critical"] {
-  color: var(--danger);
+  --battery-fill: var(--danger);
+  --battery-number-on: #fff;
 }
 
 .clock {
@@ -1432,8 +1495,12 @@ img {
 }
 
 .notice-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
+}
+
+.notice-icon {
+  --glyph-cut: var(--popover-bg);
 }
 
 .notice-body {
@@ -2118,56 +2185,111 @@ code {
   text-align: right;
 }
 
-/* Barra de progreso: --progress (de 0 a 1) lo pone music.js */
+/* Barra de progreso con "ola": lo que ya sonó es una onda que avanza
+   mientras suena (en pausa se aplana en una línea recta) y lo que falta, una
+   línea fina. El tirador es una rayita vertical. --progress (de 0 a 1) lo pone
+   y lo anima de forma continua music.js. La onda es un dibujo SVG que se
+   repite (máscara) y se desliza; se recorta hasta --progress con clip-path. */
 .bar {
   position: relative;
   flex: 1;
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(var(--ink), 0.12);
+  height: 16px;
   cursor: pointer;
-  transition: height 200ms var(--spring);
 }
 
 .bar::before {
   content: ""; /* zona de clic más alta que la barra, para acertar fácil */
   position: absolute;
-  inset: -8px 0;
+  inset: -6px 0;
 }
 
+.bar-track,
 .bar-fill {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+}
+
+.bar-track {
+  background: rgba(var(--ink), 0.16);
+  clip-path: inset(0 0 0 calc(var(--progress, 0) * 100% + 6px));
+}
+
+/* La línea recta de lo que ya sonó: solo se ve en pausa (la ola se aplana) */
+.bar-fill {
   background: var(--music-accent);
-  transform: scaleX(var(--progress, 0));
-  transform-origin: 0 50%;
+  clip-path: inset(0 calc((1 - var(--progress, 0)) * 100%) 0 0);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.bar-wave {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 12px;
+  margin-top: -6px;
+  background: var(--music-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M-12 6Q-6 .5 0 6T12 6T24 6T36 6' fill='none' stroke='%23000' stroke-width='2.4'/%3E%3C/svg%3E") 0 50% / 24px 12px repeat-x;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M-12 6Q-6 .5 0 6T12 6T24 6T36 6' fill='none' stroke='%23000' stroke-width='2.4'/%3E%3C/svg%3E") 0 50% / 24px 12px repeat-x;
+  clip-path: inset(0 calc((1 - var(--progress, 0)) * 100%) 0 0);
+  transition:
+    opacity 300ms ease,
+    scale 560ms var(--spring-bouncy);
+  animation: wave-flow 1.3s linear infinite paused;
+}
+
+/* La ola solo se desliza con la página Música a la vista y sonando */
+.island[data-shape="expanded"] .view.is-active .player[data-playing="true"] .bar-wave {
+  animation-play-state: running;
+}
+
+@keyframes wave-flow {
+  to {
+    -webkit-mask-position: 24px 50%;
+    mask-position: 24px 50%;
+  }
+}
+
+/* En pausa, la ola se aplana y queda la línea recta */
+.player:not([data-playing="true"]) .bar-wave {
+  opacity: 0;
+  scale: 1 0.2;
+}
+
+.player:not([data-playing="true"]) .bar-fill {
+  opacity: 1;
 }
 
 .bar-knob {
   position: absolute;
   top: 50%;
   left: calc(var(--progress, 0) * 100%);
-  width: 12px;
-  height: 12px;
-  margin: -6px 0 0 -6px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
-  scale: 0;
-  transition: scale 220ms var(--spring-pop);
-}
-
-.player[data-can-seek="true"] .bar:hover {
-  height: 7px;
+  width: 5px;
+  height: 16px;
+  margin: -8px 0 0 -2.5px;
+  border-radius: 3px;
+  background: var(--text-strong);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  scale: 1 0.8;
+  transition: scale 280ms var(--spring-bouncy);
 }
 
 .player[data-can-seek="true"] .bar:hover .bar-knob {
-  scale: 1;
+  scale: 1.2 1.05;
 }
 
 .player[data-can-seek="false"] .bar {
   cursor: default;
+}
+
+.player[data-can-seek="false"] .bar-knob {
+  display: none;
 }
 
 .player-controls {
@@ -2197,6 +2319,13 @@ code {
 .ctrl svg {
   width: 20px;
   height: 20px;
+}
+
+/* Los dobles triángulos de anterior/siguiente, un poco más grandes */
+#media-prev svg,
+#media-next svg {
+  width: 26px;
+  height: 26px;
 }
 
 .ctrl:hover {
@@ -2252,7 +2381,22 @@ code {
   display: none;
 }
 
-/* "En la isla": la píldora con su punto; tachada si no se muestra */
+/* "En la isla": una cápsula (la isla) con una onda dentro. Activo: la
+   cápsula rellena del color de la música y la onda "recortada"; inactivo:
+   solo el contorno, tachado. */
+.island-capsule {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  transition: fill 220ms ease;
+}
+
+.island-wave {
+  stroke: currentColor;
+  stroke-width: 1.7;
+  transition: stroke 220ms ease;
+}
+
 .island-off {
   opacity: 0;
   transition: opacity 200ms ease;
@@ -2264,6 +2408,14 @@ code {
 
 #media-island[aria-pressed="true"] {
   color: var(--music-text);
+}
+
+#media-island[aria-pressed="true"] .island-capsule {
+  fill: currentColor;
+}
+
+#media-island[aria-pressed="true"] .island-wave {
+  stroke: var(--ctrl-cut);
 }
 
 /* La letra: columna de la derecha, como en Apple Music.
@@ -3253,6 +3405,17 @@ code {
   --ctrl-main-bg: #18181c;
   --ctrl-main-fg: #fff;
   --popover-bg: #fff;
+  --ctrl-cut: #f4f4f7;
+}
+
+/* La pila en el panel claro: carga negra con el número blanco encima (como
+   el iPhone en modo claro); cargando, verde con el número oscuro */
+:root[data-theme="light"] .battery {
+  --battery-number-on: #fff;
+}
+
+:root[data-theme="light"] .battery:is([data-state="charging"], [data-state="low"]) {
+  --battery-number-on: rgba(0, 0, 0, 0.82);
 }
 
 /* Los ojos, un verde más oscuro para que se vean sobre el panel claro */

@@ -4,7 +4,8 @@
 //  Usa la API de batería de Chromium (navigator.getBattery), que avisa con
 //  eventos cuando cambia el nivel o cuando enchufas o desenchufas el cargador:
 //  nada de preguntar cada X segundos.
-//    • Barra superior del panel: la pila y el porcentaje (si no está llena y enchufada).
+//    • Barra superior del panel: la pila del iPhone, con el porcentaje dentro
+//      (si no está llena y enchufada).
 //    • Mini-muesca y píldora: la pila, solo cuando queda poca y no está cargando.
 //    • Aviso en la isla al bajar del 20 % y del 10 % sin el cargador.
 // =============================================================================
@@ -17,7 +18,10 @@ const LOW_LEVEL = 0.2; // 20 %
 const CRITICAL_LEVEL = 0.1; // 10 %
 
 const batteryEl = $('battery');
+// El número va dos veces dentro de la pila: claro (sobre lo vacío) y oscuro,
+// recortado justo donde llega la carga (ver index.html).
 const batteryText = $('battery-text');
+const batteryTextFill = $('battery-text-fill');
 const statusBattery = $('status-battery');
 const statusBatteryText = $('status-battery-text');
 
@@ -41,8 +45,9 @@ function renderBattery() {
   batteryEl.hidden = charging && percent >= 100;
   batteryEl.dataset.state = batteryState;
   batteryEl.style.setProperty('--level', String(level));
-  batteryEl.title = charging ? 'Cargando' : 'Con batería';
-  setRollingText(batteryText, `${percent} %`, { countDown: !charging });
+  batteryEl.title = `Batería: ${percent} %${charging ? ' (cargando)' : ''}`;
+  batteryText.textContent = String(percent);
+  batteryTextFill.textContent = String(percent);
 
   // Mini-muesca y píldora
   statusBattery.classList.toggle('is-on', !charging && level <= LOW_LEVEL);

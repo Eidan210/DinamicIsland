@@ -1,9 +1,9 @@
 // =============================================================================
 //  renderer/modules/outputs.js — Elegir la salida de audio (página Música)
 // -----------------------------------------------------------------------------
-//  El botón de la derecha de los controles abre la lista de salidas
-//  (altavoces, auriculares, la tele por HDMI...). La predeterminada lleva un
-//  ✓. Al elegir otra, main.js se lo pide al WinHelper; mientras Windows la
+//  El botón de la derecha de los controles (el icono de AirPlay, como en
+//  Apple Music) abre la lista de salidas (altavoces, auriculares, la tele por
+//  HDMI...), cada una con su icono. La predeterminada lleva un ✓. Al elegir otra, main.js se lo pide al WinHelper; mientras Windows la
 //  cambia, sale un círculo girando.
 //  Si no hay helper (o es antiguo), el botón no aparece.
 // =============================================================================
@@ -15,8 +15,7 @@ import { onTabChange } from './tabs.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const panelEl = document.querySelector('.panel');
-const button = $('media-output');
-const buttonIcon = button.querySelector('use');
+const button = $('media-output'); // con el icono de AirPlay, como en Apple Music
 const popover = $('outputs');
 const listEl = $('outputs-list');
 
@@ -56,7 +55,6 @@ function renderOutputs() {
   const current = audio.devices.find((device) => device.isDefault);
   button.hidden = audio.devices.length === 0;
   button.title = current ? `Salida de audio: ${current.name}` : 'Salida de audio';
-  buttonIcon.setAttribute('href', `#${iconFor(current?.name)}`);
   listEl.replaceChildren(...audio.devices.map((device, index) => createOutputItem(device, index)));
   if (button.hidden) closeOutputs();
 }
