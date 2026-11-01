@@ -1,22 +1,31 @@
 // =============================================================================
 //  renderer/modules/lyrics.js — La letra de la canción (página Música)
 // -----------------------------------------------------------------------------
-//  main/lyrics.js la busca en LRCLIB y nos la manda. Si tiene tiempos, se ven
-//  unas 5 líneas: la que suena va en el centro, resaltada, y la lista se
-//  desliza sola al llegar la siguiente. Pulsar una línea salta a ese momento.
+//  main/lyrics.js la busca en LRCLIB y nos la manda. Si tiene tiempos, se ve
+//  como en Apple Music:
+//    • La línea que suena va en el centro y sus palabras se iluminan de
+//      izquierda a derecha mientras se canta (una animación CSS por palabra,
+//      con su retraso y su duración calculados aquí).
+//    • Al cambiar de línea, las líneas suben en cascada con un muelle.
+//    • En las pausas instrumentales (y en la intro) salen tres puntos.
+//    • Pulsar una línea salta a ese momento.
 //
 //  Sin sondeos: programamos UN temporizador justo para el instante de la
 //  siguiente línea, y lo recalculamos si pausas, saltas o cambias de canción.
 //  Solo funciona con la página Música a la vista: si no se ve, no gasta nada.
 // =============================================================================
 
-import { $, setText } from './utils.js';
+import { $, animate, setText, SPRING } from './utils.js';
 import { state } from './state.js';
 import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange } from './tabs.js';
 import { getMediaPosition, onMediaChange, seekTo } from './music.js';
 
 const LEAD = 0.2; // s: la línea se enciende un poquito antes (así se siente a tiempo)
+const INTRO_MIN = 4; // s: si la primera línea tarda más, ponemos los puntos de la intro
+const INTERLUDE_MIN = 2.5; // s: pausas más cortas no llevan puntos
+const STAGGER_MS = 45; // ms entre una línea y la siguiente al subir en cascada
+const ENTER_MS = 900; // lo que dura la entrada en cascada de una letra nueva
 const MESSAGES = {
   off: '',
   idle: 'Pon una canción para ver su letra',
@@ -32,9 +41,11 @@ const messageText = $('lyrics-message-text');
 const retryButton = $('lyrics-retry');
 
 let lyrics = { key: '', status: 'idle', lines: null, plain: null };
+let lines = []; // las líneas que se dibujan (las de LRCLIB, más los puntos de la intro)
 let lineEls = [];
 let currentIndex = null; // null = aún no se ha resaltado ninguna
 let lineTimer = null;
+let enterTimer = null;
 
 function isVisible() {
   return state.isExpanded && getCurrentTab() === 'music';
@@ -48,45 +59,99 @@ function isForCurrentTrack() {
 
 /** main.js nos manda la letra (al cambiar de canción, al llegar de LRCLIB...). */
 export function setLyrics(next) {
+  const previousStatus = lyrics.status;
   lyrics = {
     key: String(next?.key || ''),
     status: String(next?.status || 'idle'),
     lines: Array.isArray(next?.lines) ? next.lines : null,
     plain: typeof next?.plain === 'string' ? next.plain : null,
   };
-  renderLyrics();
+  renderLyrics(previousStatus);
 }
 
-function renderLyrics() {
+function renderLyrics(previousStatus) {
   const { status } = lyrics;
   lyricsEl.dataset.status = status;
   setText(messageText, MESSAGES[status] ?? '');
   retryButton.hidden = status !== 'error';
+  if (status !== previousStatus && MESSAGES[status]) {
+    animate(messageText, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], {
+      duration: 360,
+      easing: SPRING,
+    });
+  }
 
-  if (status === 'synced' && lyrics.lines) {
-    lineEls = lyrics.lines.map((line, index) => createLine(line.text || '♪', index));
+  lines = [];
+  if (status === 'synced' && lyrics.lines?.length) {
+    // Intro larga: unos puntos al principio, como en Apple Music.
+    if (lyrics.lines[0].time >= INTRO_MIN) lines.push({ time: 0, text: '' });
+    lines.push(...lyrics.lines);
+    lineEls = lines.map((line, index) => createLine(line, index));
   } else if (status === 'plain' && lyrics.plain) {
-    lineEls = lyrics.plain.split(/\r?\n/).map((text) => createLine(text || ' ', null));
+    lineEls = lyrics.plain.split(/\r?\n/).map((text, index) => {
+      const line = createWords(text || ' ');
+      line.style.setProperty('--d', String(Math.min(index, 6)));
+      return line;
+    });
   } else {
     lineEls = [];
   }
   linesEl.replaceChildren(...lineEls);
   currentIndex = null;
   lyricsEl.scrollTop = 0;
+
+  // La letra nueva entra en cascada.
+  if (lineEls.length) {
+    clearTimeout(enterTimer);
+    lyricsEl.classList.add('is-entering');
+    enterTimer = setTimeout(() => lyricsEl.classList.remove('is-entering'), ENTER_MS);
+  }
   syncLyrics({ animate: false });
 }
 
-function createLine(text, index) {
-  const line = document.createElement('p');
-  line.className = 'lyric';
-  line.textContent = text; // textContent: la letra nunca se interpreta como HTML
-  if (index !== null) line.dataset.index = String(index);
-  return line;
+/** Una línea: cada palabra en su cajita (para iluminarlas una a una), o los puntos de una pausa. */
+function createLine(line, index) {
+  const element = line.text ? createWords(line.text) : createInterlude(line, index);
+  element.dataset.index = String(index);
+  return element;
+}
+
+function createWords(text) {
+  const element = document.createElement('p');
+  element.className = 'lyric';
+  for (const part of text.split(/(\s+)/)) {
+    if (!part) continue;
+    if (/^\s+$/.test(part)) {
+      element.append(' ');
+    } else {
+      const word = document.createElement('span');
+      word.className = 'lyric-word';
+      word.textContent = part; // textContent: la letra nunca se interpreta como HTML
+      element.append(word);
+    }
+  }
+  return element;
+}
+
+function createInterlude(line, index) {
+  const element = document.createElement('p');
+  element.className = 'lyric is-interlude';
+  if (lineGap(index, line) < INTERLUDE_MIN) element.classList.add('is-short');
+  const dots = document.createElement('span');
+  dots.className = 'interlude';
+  dots.append(document.createElement('i'), document.createElement('i'), document.createElement('i'));
+  element.append(dots);
+  return element;
+}
+
+/** Cuánto dura una línea: hasta que empieza la siguiente (la última, 5 s). */
+function lineGap(index, line = lines[index]) {
+  const next = lines[index + 1];
+  return next ? Math.max(0.3, next.time - line.time) : 5;
 }
 
 /** La línea que suena en `position` (segundos), o -1 si aún no empezó la primera. */
 function findLineIndex(position) {
-  const { lines } = lyrics;
   let low = 0;
   let high = lines.length - 1;
   let found = -1;
@@ -104,38 +169,89 @@ function findLineIndex(position) {
 
 /**
  * Resalta la línea que toca y programa el temporizador para la siguiente.
- * @param {{ animate?: boolean }} options  false = colocar sin deslizar (al abrir la página)
+ * @param {{ animate?: boolean, resync?: boolean }} options
+ *   animate: false = colocar sin deslizar (al abrir la página)
+ *   resync: la música cambió (pausa, salto...): volver a cuadrar las palabras con ella
  */
-function syncLyrics({ animate = true } = {}) {
+function syncLyrics({ animate: withAnimation = true, resync = false } = {}) {
   clearTimeout(lineTimer);
   lineTimer = null;
-  if (lyrics.status !== 'synced' || !lyrics.lines || !isVisible() || !isForCurrentTrack()) return;
+  if (lyrics.status !== 'synced' || !lines.length || !isVisible() || !isForCurrentTrack()) return;
 
+  const playing = state.media.status === 'playing';
+  lyricsEl.classList.toggle('is-paused', !playing);
   const position = getMediaPosition() + LEAD;
   const index = findLineIndex(position);
-  showLine(index, animate);
+  if (index !== currentIndex) showLine(index, withAnimation);
+  else if (resync && index >= 0) startLineFill(index); // la misma línea, pero otra posición
 
-  if (state.media.status !== 'playing') return; // en pausa no hace falta temporizador
-  const next = lyrics.lines[index + 1];
+  if (!playing) return; // en pausa no hace falta temporizador
+  const next = lines[index + 1];
   if (!next) return;
   const wait = ((next.time - position) / (state.media.rate || 1)) * 1000;
   lineTimer = setTimeout(() => syncLyrics(), Math.max(40, wait + 15));
 }
 
-/** Resalta la línea `index` y desliza la lista para dejarla en el centro. */
+/** Resalta la línea `index` y sube la lista en cascada para dejarla en el centro. */
 function showLine(index, withAnimation) {
-  if (index === currentIndex) return;
   currentIndex = index;
   const center = Math.max(index, 0); // antes de la primera línea, centramos la primera
   lineEls.forEach((line, i) => {
+    const distance = Math.abs(i - center);
     line.classList.toggle('is-current', i === index);
-    line.classList.toggle('is-far', Math.abs(i - center) > 2);
+    if (i !== index) line.classList.remove('is-filling');
+    line.style.setProperty('--d', String(Math.min(distance, 6)));
+    // Cascada: empieza la de encima de la actual y las de debajo la siguen,
+    // cada una un poco más tarde (las lejanas, sin esperar: no se ven).
+    const order = i - center + 1;
+    const delay = withAnimation && order >= 0 && order <= 7 ? order * STAGGER_MS : 0;
+    line.style.setProperty('--delay', `${delay}ms`);
   });
+
   const target = lineEls[center];
-  if (!target) return;
-  const y = lyricsEl.clientHeight / 2 - (target.offsetTop + target.offsetHeight / 2);
-  linesEl.classList.toggle('no-animation', !withAnimation);
-  linesEl.style.setProperty('--lyrics-y', `${Math.round(y)}px`);
+  if (target) {
+    const y = lyricsEl.clientHeight / 2 - (target.offsetTop + target.offsetHeight / 2);
+    linesEl.classList.toggle('no-animation', !withAnimation);
+    linesEl.style.setProperty('--lyrics-y', `${Math.round(y)}px`);
+  }
+  if (index >= 0) startLineFill(index);
+}
+
+/**
+ * Ilumina las palabras de la línea `index` al ritmo de la canción. Cada
+ * palabra recibe su parte del tiempo de la línea (las largas, más) con su
+ * retraso; si ya íbamos por la mitad, el retraso es negativo y la animación
+ * empieza por donde toca.
+ */
+function startLineFill(index) {
+  const element = lineEls[index];
+  const line = lines[index];
+  if (!element || !line) return;
+  const rate = state.media.rate || 1;
+  const gap = lineGap(index);
+  const elapsed = Math.max(0, getMediaPosition() + LEAD - line.time);
+
+  if (element.classList.contains('is-interlude')) {
+    element.style.setProperty('--gap', `${(gap / rate).toFixed(3)}s`);
+    element.style.setProperty('--elapsed', `${(elapsed / rate).toFixed(3)}s`);
+  } else {
+    const words = [...element.querySelectorAll('.lyric-word')];
+    const letters = words.reduce((sum, word) => sum + word.textContent.length + 1, 0) || 1;
+    // Una línea no se canta durante todo su hueco: la llenamos en un poco
+    // menos, y nunca más despacio de lo que se tarda en cantar sus letras.
+    const fill = Math.min(Math.max(gap * 0.88, 0.5), letters * 0.075 + 0.5);
+    let start = 0;
+    for (const word of words) {
+      const share = ((word.textContent.length + 1) / letters) * fill;
+      word.style.setProperty('--word-delay', `${Math.round(((start - elapsed) * 1000) / rate)}ms`);
+      word.style.setProperty('--word-duration', `${Math.round((share * 1000) / rate)}ms`);
+      start += share;
+    }
+  }
+  // Quitar y volver a poner la clase reinicia las animaciones con los tiempos nuevos.
+  element.classList.remove('is-filling');
+  void element.offsetWidth;
+  element.classList.add('is-filling');
 }
 
 /** Al abrir la página Música (o volver a ella), la letra se coloca sin deslizarse. */
@@ -145,16 +261,20 @@ function onVisibilityChange() {
 }
 
 export function initLyrics() {
-  // Pulsar una línea → saltar a ese momento (si la app lo permite).
+  // Pulsar una línea → saltar a ese momento (si la app lo permite), con un pequeño pulso.
   linesEl.addEventListener('click', (event) => {
     const line = event.target.closest('.lyric');
     if (!line || line.dataset.index === undefined || lyrics.status !== 'synced') return;
-    seekTo(lyrics.lines[Number(line.dataset.index)].time);
+    animate(line, [{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], {
+      duration: 360,
+      easing: 'ease-out',
+    });
+    seekTo(lines[Number(line.dataset.index)].time);
   });
   retryButton.addEventListener('click', () => window.notch.lyrics.retry());
 
   window.notch.lyrics.onChange(setLyrics);
-  onMediaChange(() => syncLyrics()); // pausa, salto, canción nueva...
+  onMediaChange(() => syncLyrics({ resync: true })); // pausa, salto, canción nueva...
   onPanelChange(onVisibilityChange);
   onTabChange(onVisibilityChange);
 }

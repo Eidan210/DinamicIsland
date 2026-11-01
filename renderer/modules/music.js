@@ -17,6 +17,7 @@ import { $, animate, setText, formatTime, SPRING, SPRING_POP } from './utils.js'
 import { state } from './state.js';
 import { getActivity, onShapeChange, showBanner, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
+import { getCurrentTab, onTabChange } from './tabs.js';
 import { readPalette } from './colors.js';
 import { makeSwipeable } from './swipe.js';
 
@@ -37,6 +38,7 @@ const playerArt = $('player-art');
 const playerArtGlow = $('player-art-glow');
 const playerApp = $('player-app');
 const playerTitle = $('player-title');
+const playerTitleText = $('player-title-text');
 const playerArtist = $('player-artist');
 const playerBar = $('player-bar');
 const playerElapsed = $('player-elapsed');
@@ -70,6 +72,7 @@ let skipDirection = 0; // +1 siguiente / -1 anterior: para animar la carátula h
 let skipUntil = 0;
 let lastBannerKey = ''; // última canción anunciada con el aviso "Ahora suena"
 let artFling = null; // la carátula saliendo hacia un lado tras deslizar
+let progressMotion = null; // la barra de progreso avanzando de forma continua
 const mediaListeners = [];
 
 /** Avisa a `listener()` cada vez que cambia algo de la música (la usa la letra). */
@@ -155,11 +158,13 @@ export function renderMedia({ trackChanged = false } = {}) {
   const subtitle = [media.artist, media.album].filter(Boolean).join(' — ');
 
   // Pestaña Música
+  document.documentElement.dataset.musicPlaying = String(playing); // el fondo animado solo se mueve sonando
   playerEl.dataset.state = status;
   playerEl.dataset.playing = String(playing);
   playerEl.dataset.canSeek = String(media.canSeek && media.duration > 0);
   setText(playerApp, media.appName || 'Música');
-  setText(playerTitle, track ? media.title : emptyTitle);
+  const titleChanged = playerTitleText.textContent !== (track ? media.title : emptyTitle);
+  setText(playerTitleText, track ? media.title : emptyTitle);
   setText(playerArtist, track ? subtitle : emptyHint);
   mediaToggle.dataset.running = String(playing);
   mediaToggle.setAttribute('aria-label', playing ? 'Pausar' : 'Reproducir');
@@ -180,16 +185,52 @@ export function renderMedia({ trackChanged = false } = {}) {
   setText(bannerArtist, media.artist);
 
   renderMediaProgress();
+  updateProgressMotion();
+  if (titleChanged) updateTitleMarquee();
   if (trackChanged && track) animateTrackChange();
 }
 
-/** Barra de progreso y tiempos (lo único que cambia cada segundo). */
+/** Barra de progreso y tiempos (los tiempos cambian una vez por segundo). */
 function renderMediaProgress() {
   const { duration } = state.media;
   const position = getMediaPosition();
   playerBar.style.setProperty('--progress', duration > 0 ? (position / duration).toFixed(4) : '0');
   setText(playerElapsed, formatTime(position));
   setText(playerRemaining, duration > 0 ? `-${formatTime(duration - position)}` : '');
+}
+
+/**
+ * La barra avanza de forma continua, no a saltos cada segundo: una única
+ * animación de --progress desde donde va hasta el final, al ritmo de la
+ * canción. Se rehace al pausar, saltar o cambiar de canción, y solo existe
+ * con la página Música a la vista y la música sonando.
+ */
+function updateProgressMotion() {
+  progressMotion?.cancel();
+  progressMotion = null;
+  const { duration, rate } = state.media;
+  if (!isPlaying() || !state.isExpanded || getCurrentTab() !== 'music' || duration <= 0) return;
+  const position = getMediaPosition();
+  const remainingMs = ((duration - position) / (rate || 1)) * 1000;
+  if (remainingMs <= 0) return;
+  progressMotion = animate(playerBar, [{ '--progress': position / duration }, { '--progress': 1 }], {
+    duration: remainingMs,
+    easing: 'linear',
+    fill: 'forwards',
+  });
+}
+
+/**
+ * Si el título no cabe, se desplaza de lado a lado (marquesina), como en
+ * Apple Music. --marquee = cuánto hay que moverlo; --marquee-time, en cuánto.
+ */
+function updateTitleMarquee() {
+  playerTitle.classList.remove('is-marquee');
+  const overflow = playerTitleText.scrollWidth - playerTitle.clientWidth;
+  if (overflow <= 4) return;
+  playerTitle.style.setProperty('--marquee', `${-overflow - 12}px`);
+  playerTitle.style.setProperty('--marquee-time', `${Math.max(5, overflow / 22 + 3).toFixed(1)}s`);
+  playerTitle.classList.add('is-marquee');
 }
 
 /** La barra avanza una vez por segundo, solo con el panel abierto y mientras suena. */
@@ -270,7 +311,7 @@ function toggleMediaOptimistic() {
   media.timestamp = Date.now();
   media.status = isPlaying() ? 'paused' : 'playing';
   window.notch.media.toggle();
-  renderMedia();
+  renderMedia(); // (rehace también la barra continua)
   updateShape();
   notifyMediaChange();
 }
@@ -278,6 +319,12 @@ function toggleMediaOptimistic() {
 function skipTrack(direction) {
   skipDirection = direction;
   skipUntil = Date.now() + 4000;
+  // La flecha del botón da un pequeño salto hacia su lado.
+  const icon = (direction > 0 ? mediaNext : mediaPrev).querySelector('svg');
+  animate(icon, [{ translate: '0 0' }, { translate: `${direction * 5}px 0` }, { translate: '0 0' }], {
+    duration: 380,
+    easing: SPRING_POP,
+  });
   if (direction > 0) window.notch.media.next();
   else window.notch.media.previous();
 }
@@ -289,6 +336,7 @@ export function seekTo(seconds) {
   media.position = media.duration > 0 ? Math.min(Math.max(seconds, 0), media.duration) : Math.max(seconds, 0);
   media.timestamp = Date.now();
   renderMediaProgress();
+  updateProgressMotion();
   window.notch.media.seek(media.position);
   notifyMediaChange();
 }
@@ -392,7 +440,18 @@ export function initMusic() {
 
   window.notch.media.onChange(onMediaState);
   onPanelChange((expanded) => {
-    if (expanded) renderMediaProgress();
+    if (expanded) {
+      renderMediaProgress();
+      updateTitleMarquee();
+    }
+    updateProgressMotion(); // con el panel cerrado, la barra continua se para
+  });
+  onTabChange((tab) => {
+    if (tab === 'music') {
+      renderMediaProgress();
+      updateTitleMarquee();
+    }
+    updateProgressMotion(); // en otra página, la barra continua se para
   });
   // Cada vez que la isla cambia de forma, la barra se enciende o se apaga.
   onShapeChange(updateMediaTicker);

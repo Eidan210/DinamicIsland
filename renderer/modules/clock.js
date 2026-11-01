@@ -5,7 +5,7 @@
 //  cuando cambia el segundo (así nunca va "atrasado" medio segundo).
 // =============================================================================
 
-import { $, setText, capitalize } from './utils.js';
+import { $, setText, setRollingText, capitalize } from './utils.js';
 import { state } from './state.js';
 import { onPanelChange } from './panel.js';
 
@@ -43,8 +43,9 @@ function renderClock() {
   const parts = {};
   for (const part of timeFormatter.formatToParts(now)) parts[part.type] = part.value;
 
-  setText(clockMainEl, `${parts.hour}:${parts.minute}`);
-  setText(clockSecondsEl, `:${parts.second}` + (parts.dayPeriod ? ` ${parts.dayPeriod}` : ''));
+  // Los dígitos que cambian "ruedan" hacia arriba, como en el iPhone.
+  setRollingText(clockMainEl, `${parts.hour}:${parts.minute}`);
+  setRollingText(clockSecondsEl, `:${parts.second}` + (parts.dayPeriod ? ` ${parts.dayPeriod}` : ''));
 }
 
 function startClock() {

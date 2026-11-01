@@ -146,6 +146,9 @@
       <!-- Contenido del panel abierto -->
       <div class="panel">
 
+        <!-- Fondo de la página Música: manchas con los colores de la carátula que se mueven despacio -->
+        <div class="music-backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
+
         <!-- Barra superior: fecha (o el volumen, un momento), avisos, batería y hora -->
         <header class="topbar" id="topbar">
           <div class="topbar-start">
@@ -293,7 +296,8 @@
                   <span class="eq eq-small"><i></i><i></i><i></i><i></i></span>
                   <span id="player-app">Música</span>
                 </div>
-                <div class="player-title" id="player-title">Conectando…</div>
+                <!-- Si el título no cabe, se desplaza de lado a lado (marquesina) -->
+                <div class="player-title" id="player-title"><span class="marquee-text" id="player-title-text">Conectando…</span></div>
                 <div class="player-artist" id="player-artist">Buscando qué suena en Windows</div>
 
                 <div class="player-progress">

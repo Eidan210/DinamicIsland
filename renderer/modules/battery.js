@@ -9,7 +9,7 @@
 //    • Aviso en la isla al bajar del 20 % y del 10 % sin el cargador.
 // =============================================================================
 
-import { $, setText } from './utils.js';
+import { $, setRollingText } from './utils.js';
 import { state } from './state.js';
 import { addLocalNotice } from './notices.js';
 
@@ -42,13 +42,13 @@ function renderBattery() {
   batteryEl.dataset.state = batteryState;
   batteryEl.style.setProperty('--level', String(level));
   batteryEl.title = charging ? 'Cargando' : 'Con batería';
-  setText(batteryText, `${percent} %`);
+  setRollingText(batteryText, `${percent} %`, { countDown: !charging });
 
   // Mini-muesca y píldora
   statusBattery.classList.toggle('is-on', !charging && level <= LOW_LEVEL);
   statusBattery.dataset.state = batteryState;
   statusBattery.style.setProperty('--level', String(level));
-  setText(statusBatteryText, `${percent}%`);
+  setRollingText(statusBatteryText, `${percent}%`, { countDown: !charging });
 }
 
 function checkWarnings() {

@@ -27,6 +27,34 @@ export function setText(element, text) {
   if (element.textContent !== text) element.textContent = text;
 }
 
+/**
+ * Cambia un texto con números haciendo "rodar" los caracteres que cambian,
+ * como los temporizadores del iPhone ("24:59" → "24:58": solo rueda el 9→8).
+ * countDown: true → ruedan hacia abajo (para cuentas atrás o cuando baja).
+ * Si cambia la longitud (p. ej. "25:00" → "¡Listo!"), se cambia sin más.
+ * Usa SIEMPRE esta función para ese elemento (recuerda el texto anterior).
+ */
+export function setRollingText(element, text, { countDown = false } = {}) {
+  const previous = element.dataset.rollText;
+  if (previous === text) return;
+  element.dataset.rollText = text;
+  const before = [...(previous ?? '')];
+  const after = [...text];
+  if (previous === undefined || before.length !== after.length || reducedMotion.matches) {
+    element.textContent = text;
+    return;
+  }
+  element.replaceChildren(
+    ...after.map((char, index) => {
+      if (char === before[index]) return char;
+      const span = document.createElement('span');
+      span.className = countDown ? 'roll-down' : 'roll-up';
+      span.textContent = char;
+      return span;
+    })
+  );
+}
+
 /** 1499000 ms → "24:59" (cuenta atrás del Pomodoro) */
 export function formatCountdown(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));

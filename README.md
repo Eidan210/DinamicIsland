@@ -99,7 +99,8 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
 - **Música**: lo que suena en **cualquier app** que se integre con Windows (Apple Music, Spotify, el navegador…).
   - Carátula, título, artista, app de origen, barra de progreso y controles (anterior, reproducir/pausar, siguiente).
   - Haz clic en la barra para saltar a ese punto, si la app lo permite.
-  - **Letra** a la derecha, de [LRCLIB](https://lrclib.net): la línea que suena va en el centro, resaltada, y la letra avanza sola. Pulsa una línea para saltar a ese momento. Si la letra no tiene tiempos, se ve entera; si no la hay, pone «Sin letra disponible».
+  - **Letra** a la derecha, de [LRCLIB](https://lrclib.net), animada como en Apple Music: la línea que suena va en el centro y sus palabras se iluminan de izquierda a derecha mientras se canta; al cambiar de línea, las líneas suben en cascada con un pequeño rebote, y las lejanas se ven tenues y algo borrosas. En las pausas instrumentales (y en las intros largas) salen tres puntos que se van encendiendo. Pulsa una línea para saltar a ese momento. Si la letra no tiene tiempos, se ve entera; si no la hay, pone «Sin letra disponible».
+  - El **fondo** se mueve despacio con los colores de la carátula, la barra de progreso avanza de forma continua y, si el título no cabe, se desplaza de lado a lado.
   - Los **colores** de la carátula tiñen el fondo de la página (un degradado con sus 3 colores principales), la tarjeta de Home, la isla, la barra y el ecualizador.
   - El botón de la **píldora** decide si la música se muestra en la isla (se guarda en `musicActivity`).
   - El botón del **altavoz** abre la lista de **salidas de audio** (altavoces, auriculares, la tele…): la que eliges pasa a ser la predeterminada de Windows.
@@ -280,11 +281,13 @@ assets/
 - **Links seguros.** La página nunca recibe las URLs: para abrir un link, pide su número y `main.js` lo abre con `shell.openExternal`.
 - **Seguridad.** La página no tiene acceso a Node (`contextIsolation`, `sandbox`, sin `nodeIntegration`). Solo puede usar las funciones que `preload.js` expone en `window.notch`, y su Content-Security-Policy le impide cargar nada externo. Las órdenes al helper pasan por una lista blanca.
 - **Bajo consumo.** No hay sondeo periódico (polling) en ninguna parte.
-  - El reloj y la barra de la música solo se actualizan con el panel abierto, una vez por segundo.
+  - El reloj y los tiempos de la música solo se actualizan con el panel abierto, una vez por segundo (y sus números «ruedan», como en el iPhone).
+  - El fondo animado, la letra que se ilumina y la barra continua solo se mueven con la página Música a la vista y la música sonando; al cerrar el panel o cambiar de página, se paran. El fondo solo usa `translate` y `scale`, que mueve la tarjeta gráfica casi sin gastar.
   - El volumen, la batería, el tema y los atajos funcionan por avisos del sistema.
   - La cuenta atrás del Pomodoro solo se dibuja cuando se ve.
   - Las animaciones son cortas y se lanzan por eventos.
-  - La **única animación continua** es el ecualizador, y solo corre mientras suena música y se ve en pantalla.
+  - Con el panel cerrado, la **única animación continua** es el ecualizador, y solo corre mientras suena música y se ve en pantalla.
+  - Si en Windows desactivas los «Efectos de animación», Notch no anima nada (la línea de la letra se ve entera iluminada).
 
 ## Privacidad
 

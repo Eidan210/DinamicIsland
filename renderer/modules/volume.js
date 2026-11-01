@@ -9,7 +9,7 @@
 //  solo el de Windows: "volumeIndicator": false en settings.json.
 // =============================================================================
 
-import { $, setText } from './utils.js';
+import { $, setRollingText } from './utils.js';
 import { state } from './state.js';
 import { showVolume, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
@@ -24,19 +24,20 @@ const topbarValue = $('topbar-volume-value');
 
 let topbarTimer = null;
 
-function renderVolume() {
+function renderVolume(previousLevel = state.volume.level) {
   const { level, muted } = state.volume;
+  const countDown = level < previousLevel; // si baja, los números ruedan hacia abajo
   const percent = Math.round(level * 100);
 
   // Isla
   volumeEl.style.setProperty('--volume', String(level));
   volumeEl.dataset.muted = String(muted);
   volumeEl.dataset.level = percent === 0 ? 'zero' : level < 0.5 ? 'low' : 'high';
-  setText(volumeValue, String(percent));
+  setRollingText(volumeValue, String(percent), { countDown });
 
   // Barra superior del panel
   topbarVolume.style.setProperty('--volume', muted ? '0' : String(level));
-  setText(topbarValue, muted ? 'Silencio' : String(percent));
+  setRollingText(topbarValue, muted ? 'Silencio' : String(percent), { countDown });
 }
 
 /** Guarda el volumen sin enseñarlo (al arrancar). */
@@ -48,8 +49,9 @@ export function loadInitialVolume(volume) {
 
 function onVolumeChange(volume) {
   if (!volume || !Number.isFinite(volume.level)) return;
+  const previousLevel = state.volume.level;
   state.volume = { level: Math.min(1, Math.max(0, volume.level)), muted: volume.muted === true };
-  renderVolume();
+  renderVolume(previousLevel);
   if (!state.settings.volumeIndicator) return;
 
   if (state.isExpanded) {

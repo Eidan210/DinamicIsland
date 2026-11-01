@@ -7,7 +7,7 @@
 //  calculamos el tiempo restante nosotros mismos.
 // =============================================================================
 
-import { $, animate, setText, formatCountdown, plural, SPRING, SPRING_POP } from './utils.js';
+import { $, animate, setText, setRollingText, formatCountdown, plural, SPRING, SPRING_POP } from './utils.js';
 import { state } from './state.js';
 import { getActivities, onShapeChange, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
@@ -78,7 +78,7 @@ export function renderPomodoro({ animateRings = false } = {}) {
 
   // Pestaña Focus
   pomodoroEl.dataset.status = status;
-  setText(pomoTime, time);
+  setRollingText(pomoTime, time, { countDown: true });
   setText(pomoLabel, label);
   setText(pomoMinutes, `${pomodoro.minutes} min`);
   setText(pomoCount, `${plural(pomodoro.completedToday, 'sesión', 'sesiones')} hoy`);
@@ -90,13 +90,13 @@ export function renderPomodoro({ animateRings = false } = {}) {
   pomoPlus.disabled = locked || pomodoro.minutes >= MAX_MINUTES;
 
   // Tarjeta de Home
-  setText(homePomoTime, time);
+  setRollingText(homePomoTime, time, { countDown: true });
   setText(homePomoLabel, label);
   homePomoToggle.dataset.running = String(running);
   homePomoToggle.setAttribute('aria-label', running ? 'Pausar Pomodoro' : 'Iniciar Pomodoro');
 
   // Isla
-  setText(activityText, status === 'finished' ? '¡Listo!' : time);
+  setRollingText(activityText, status === 'finished' ? '¡Listo!' : time, { countDown: true });
 
   setRings(getProgress(), animateRings);
 }
@@ -104,9 +104,10 @@ export function renderPomodoro({ animateRings = false } = {}) {
 /** Lo único que cambia cada segundo: el tiempo y los anillos. */
 function renderPomodoroTick() {
   const time = formatCountdown(getRemainingMs());
-  setText(pomoTime, time);
-  setText(homePomoTime, time);
-  setText(activityText, time);
+  // Los dígitos que cambian ruedan hacia abajo (es una cuenta atrás).
+  setRollingText(pomoTime, time, { countDown: true });
+  setRollingText(homePomoTime, time, { countDown: true });
+  setRollingText(activityText, time, { countDown: true });
   setRings(getProgress(), false);
 }
 

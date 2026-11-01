@@ -20,7 +20,10 @@ const buttonIcon = button.querySelector('use');
 const popover = $('outputs');
 const listEl = $('outputs-list');
 
+const ENTER_MS = 700; // lo que dura la entrada en cascada de la lista
+
 let audio = { devices: [], pendingId: null };
+let enterTimer = null;
 
 /** Un icono según el nombre: auriculares, pantalla (HDMI) o altavoz. */
 function iconFor(name = '') {
@@ -54,14 +57,15 @@ function renderOutputs() {
   button.hidden = audio.devices.length === 0;
   button.title = current ? `Salida de audio: ${current.name}` : 'Salida de audio';
   buttonIcon.setAttribute('href', `#${iconFor(current?.name)}`);
-  listEl.replaceChildren(...audio.devices.map(createOutputItem));
+  listEl.replaceChildren(...audio.devices.map((device, index) => createOutputItem(device, index)));
   if (button.hidden) closeOutputs();
 }
 
-function createOutputItem(device) {
+function createOutputItem(device, index) {
   const item = document.createElement('button');
   item.type = 'button';
   item.className = 'output';
+  item.style.setProperty('--i', String(index)); // para la entrada en cascada
   item.classList.toggle('is-default', device.isDefault);
   item.classList.toggle('is-pending', device.id === audio.pendingId);
   item.disabled = Boolean(audio.pendingId);
@@ -95,8 +99,10 @@ function placeOutputs() {
 
 function openOutputs() {
   placeOutputs();
-  popover.classList.add('is-open');
+  popover.classList.add('is-open', 'is-entering');
   button.setAttribute('aria-expanded', 'true');
+  clearTimeout(enterTimer);
+  enterTimer = setTimeout(() => popover.classList.remove('is-entering'), ENTER_MS);
 }
 
 function closeOutputs() {
