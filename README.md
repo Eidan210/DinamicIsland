@@ -21,7 +21,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 0 | Cimientos: código repartido en módulos y helper renombrado a WinHelper | ✅ Hecha |
 | 1 | Base: 6 páginas, atajos Ctrl+Alt+1…6, varias actividades, tema, volumen, batería, avisos y nota rápida | ✅ Hecha |
 | 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ✅ Hecha |
-| 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ⏳ Pendiente |
+| 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ✅ Hecha (Antigravity, en prueba) |
 | 4 | Glow: colores que avisan de lo que pasa | ⏳ Pendiente |
 | 5 | Clawd, la mascota, en la isla | ⏳ Pendiente |
 | 6 | Home con widgets editables | ⏳ Pendiente |
@@ -34,6 +34,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 - **Node.js 22.12 o superior.** Electron 44 no arranca con versiones más antiguas. Descárgalo en <https://nodejs.org> (la versión LTS) y comprueba con `node --version`.
 - **.NET 8 SDK**, para compilar el helper de Windows (WinHelper). Descárgalo en <https://dotnet.microsoft.com/download/dotnet/8.0> y comprueba con `dotnet --list-sdks` (debe aparecer una versión 8.x).
 - **Git.**
+- **Para la IA (opcional):** [Claude Code](https://code.claude.com) (el comando `claude`) con tu sesión iniciada. Para el chat con Gemini, Antigravity (`agy`) o Gemini CLI (`gemini`).
 
 ## Instalar
 
@@ -70,10 +71,11 @@ La isla cambia de forma según lo que pasa:
 | --- | --- |
 | **Mini-muesca** | En reposo. Es pequeña, está pegada al borde de arriba y deja pasar los clics: no molesta a las pestañas del navegador. Un **punto azul** a la izquierda indica que hay avisos sin ver, y a la derecha aparece la **pila** cuando queda poca batería. |
 | **Píldora** | Al dejar el ratón un instante sobre la mini-muesca (y 2 segundos al arrancar). Si te alejas, vuelve a encogerse. |
-| **Actividad en vivo** | Mientras hay un Pomodoro en marcha (anillo y cuenta atrás) o suena música (carátula y ecualizador, con la isla teñida de los colores de la carátula). Puede haber hasta 3 a la vez: la más importante en la isla y las demás en **burbujas** a su derecha, como en el iPhone. Hoy manda el Pomodoro; con él en marcha, la música pasa a una burbuja con su carátula. |
+| **Actividad en vivo** | Mientras Claude Code (o Antigravity) trabaja (su icono con lo que hace, «Editando», «Probando»…, y el cronómetro del turno; al terminar, «Hecho» unos segundos), hay un Pomodoro en marcha (anillo y cuenta atrás) o suena música (carátula y ecualizador, con la isla teñida de los colores de la carátula). Puede haber hasta 3 a la vez: la más importante en la isla y las demás en **burbujas** a su derecha, como en el iPhone. Manda Claude, luego el Pomodoro y luego la música. |
 | **Volumen** | Al cambiar el volumen de Windows: una barra con el nivel durante 1,5 segundos (con el panel abierto, sale en lugar de la fecha). |
 | **Aviso** | Cuando empieza una canción nueva: «Ahora suena», con carátula, título y artista, durante 4 segundos. |
-| **Aviso importante** | Batería baja (20 % y 10 %), un error en `settings.json`, un atajo que no funciona, el helper que falta… Si lo pulsas, se abre el panel con la lista de avisos. |
+| **Aviso importante** | Batería baja (20 % y 10 %), un error en `settings.json`, un atajo que no funciona, el helper que falta, Claude que se paró por un error… Si lo pulsas, se abre el panel con la lista de avisos. |
+| **Decisión** | Claude Code te pide **permiso** (con el comando exacto), te hace una **pregunta** o tiene un **plan** listo: la isla salta por encima de todo con sus botones (Permitir, Denegar, Permitir siempre; las opciones de la pregunta; Aprobar o Rechazar). Con el panel abierto, sale como tarjeta encima. «En la terminal» deja que te pregunte la terminal, como siempre. |
 | **Panel** | Con `Ctrl + Alt + T`, con `Ctrl + Alt + 1…6` o al hacer clic en la isla. Si haces clic en una actividad o en una burbuja, el panel se abre en su página. |
 
 | Acción | Resultado |
@@ -110,11 +112,62 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
   - `−` / `+` cambian la duración de 5 en 5 minutos (con el Pomodoro parado). La duración se guarda en `settings.json`.
   - Al terminar, recibes una **notificación de Windows**, la isla lo celebra con los ojos felices y queda en el centro de avisos.
   - Si el portátil se suspende, el Pomodoro se pausa solo.
-- **IA**: Claude Code y Antigravity en vivo y el chat con Claude o Gemini. Llega en la Fase 3.
+- **IA**: arriba eliges **Sesiones** o **Chat**.
+  - **Sesiones**: una tarjeta por cada sesión de Claude Code (o de Antigravity): el proyecto, lo que le pediste, qué hace ahora, el cronómetro del turno y los pasos **Leer → Editar → Probar → Hecho**. Al terminar: su resumen, cuántos archivos cambió, si los tests pasaron y los errores de compilación. Sin sesiones, te explica cómo conectarlo (ver [Conectar Claude Code](#conectar-claude-code)).
+  - **Chat**: con **Gemini**, **Claude** (eliges Opus, Sonnet, Haiku o Fable) o **Ambos** a la vez para comparar. La respuesta aparece mientras se escribe; el botón de enviar pasa a ser «parar». `Enter` manda y `Mayús + Enter` hace un salto de línea. El lápiz empieza una conversación nueva. Lo que escribas va **solo** a quien elijas (Claude → Anthropic, Gemini → Google) y la conversación vive en memoria: al cerrar Notch se olvida.
 - **Portapapeles**: el historial de lo que copias y la bandeja de archivos. Llega en la Fase 7.
 - **Nota**: una nota rápida. Con `Ctrl + Alt + 6` se abre con el cursor listo para escribir.
   - Se guarda sola medio segundo después de que dejes de escribir (y al cerrar el panel o cambiar de página). Abajo ves «Guardado» y cuántas palabras llevas.
   - Vive en `%APPDATA%\Notch\nota.md`, un archivo de texto normal (Markdown) que puedes abrir con cualquier editor.
+
+## Conectar Claude Code
+
+Claude Code puede avisar a otros programas de lo que hace (sus [hooks](https://code.claude.com/docs/en/hooks)). Notch abre un pequeño servidor **solo en tu PC** (`127.0.0.1:47823`) para recibir esos avisos. **Notch no modifica tus archivos**: tú pegas la configuración.
+
+1. Abre Notch, ve a la página **IA** y pulsa **«Copiar para Claude Code»** (o «Copiar configuración» arriba a la derecha). Se copia el bloque de abajo **con tu token** ya puesto.
+2. Abre `%USERPROFILE%\.claude\settings.json` (créalo si no existe) y pega el bloque. Si ya tenías una clave `"hooks"`, añade cada evento dentro de la tuya en vez de crear otra.
+3. Abre (o reinicia) Claude Code. En la página IA verás «Conectado» en cuanto llegue el primer aviso; con `/hooks` dentro de Claude Code puedes revisar que están.
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "PreToolUse": [{ "matcher": "*", "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 600 }] }],
+    "PermissionRequest": [{ "matcher": "*", "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 600, "statusMessage": "Esperando tu respuesta en Notch…" }] }],
+    "PostToolUse": [{ "matcher": "*", "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "PostToolUseFailure": [{ "matcher": "*", "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "Notification": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "Stop": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "StopFailure": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 5 }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "http", "url": "http://127.0.0.1:47823/claude", "headers": { "Authorization": "Bearer TU_TOKEN" }, "timeout": 2 }] }]
+  }
+}
+```
+
+- **`TU_TOKEN`** es una clave secreta que Notch crea la primera vez (`%APPDATA%\Notch\ai-token.txt`). Sin ella, el servidor rechaza todo. El botón de copiar ya la pone; no la compartas.
+- **Por qué esos tiempos**: los permisos (`PermissionRequest`) y las preguntas y planes (que llegan por `PreToolUse`) esperan tu respuesta en la isla hasta 10 minutos (600 s). Si no respondes, o pulsas «En la terminal», Claude Code te pregunta en la terminal como siempre. Los demás avisos tienen 5 segundos: si Notch está cerrado, Claude Code sigue sin esperar.
+- **Mientras Notch espera tu respuesta**, la terminal enseña «Esperando tu respuesta en Notch…».
+- **«Permitir siempre»** guarda la regla que propone el propio Claude Code (la misma que su opción «no volver a preguntar»). Solo aparece cuando Claude Code la propone.
+- Si cambias `aiPort` en `settings.json`, cambia también el puerto de las URLs de este bloque.
+
+### Antigravity (en prueba)
+
+Antigravity (`agy`) también tiene hooks, pero todavía no están bien documentados (cada fuente dice una cosa). Por ahora Notch **solo enseña su estado** (qué herramienta usó), nunca decide nada por él. Con «Antigravity (en prueba)» en la página IA se copia esto, para `%USERPROFILE%\.gemini\config\hooks.json`:
+
+```json
+{ "PostToolUse": [{ "matcher": ".*", "hooks": [{ "type": "command", "command": "curl.exe -s -m 3 -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer TU_TOKEN\" --data-binary @- http://127.0.0.1:47823/agy/PostToolUse" }] }] }
+```
+
+Usa `curl.exe` (viene con Windows) y solo el evento de *después* de cada herramienta: así, aunque Notch esté cerrado, agy no se bloquea. Como agy no avisa al terminar, si pasa minuto y medio sin eventos, Notch lo da por terminado. Si algo no encaja con tu versión de agy, cuéntamelo con lo que salga en `/hooks`.
+
+### El chat
+
+No necesita API keys: usa tus programas con su sesión iniciada.
+
+- **Claude**: `claude -p` sin herramientas (no puede tocar tus archivos), sin guardar la conversación (`--no-session-persistence`) y con un prompt de chat sencillo.
+- **Gemini**: primero Antigravity (`agy -p`); si no está instalado o falla, Gemini CLI (`gemini`). Lo eliges con `geminiCli`.
+- Se ejecutan en una carpeta vacía de Notch (`%APPDATA%\Notch\chat`). Tu texto nunca pasa por la línea de comandos de `cmd.exe`: a Claude y a Gemini CLI se lo da por su entrada estándar, y a `agy.exe` directamente, sin pasar por ningún shell.
 
 ## Configuración
 
@@ -142,7 +195,13 @@ Todo está en la carpeta `config/`. **Al guardar un archivo, Notch lo aplica al 
   "pomodoroMinutes": 25,
   "musicActivity": true,
   "lyrics": true,
-  "volumeIndicator": true
+  "volumeIndicator": true,
+  "ai": true,
+  "aiPort": 47823,
+  "chatProvider": "gemini",
+  "claudeModel": "sonnet",
+  "geminiModel": "",
+  "geminiCli": "auto"
 }
 ```
 
@@ -162,6 +221,12 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `musicActivity` | `true` | `true`: mientras suena música, la isla la muestra y avisa al cambiar de canción. `false`: la música solo aparece en el panel. También lo cambia el botón de la píldora de la página Música. |
 | `lyrics` | `true` | `true`: busca las letras en LRCLIB (la única conexión a internet de Notch). `false`: sin letras y sin ninguna conexión. |
 | `volumeIndicator` | `true` | `true`: al cambiar el volumen, la isla enseña una barra 1,5 s. `false`: solo se ve el indicador de Windows. |
+| `ai` | `true` | `true`: Notch escucha a Claude Code y Antigravity (servidor solo en tu PC, `127.0.0.1`). `false`: sin servidor. |
+| `aiPort` | `47823` | Puerto de ese servidor (de 1024 a 65535). Si lo cambias, cambia también las URLs de tu configuración de Claude Code. |
+| `chatProvider` | `"gemini"` | Con quién habla el chat al abrirlo: `"gemini"`, `"claude"` o `"both"` (los dos). También lo cambia el selector de la página IA. |
+| `claudeModel` | `"sonnet"` | Modelo de Claude en el chat: `"opus"`, `"sonnet"`, `"haiku"` o `"fable"`. |
+| `geminiModel` | `""` | Modelo de Gemini en el chat (`""` = el que use por defecto agy o Gemini CLI), p. ej. `"gemini-2.5-flash"`. |
+| `geminiCli` | `"auto"` | `"auto"`: Antigravity y, si falla, Gemini CLI. `"agy"`: solo Antigravity. `"gemini"`: solo Gemini CLI. |
 
 ### `config/links.json`
 
@@ -223,6 +288,11 @@ main/                    Proceso principal (Node.js), un archivo por tema:
   audio.js               las salidas de audio
   volume.js              el volumen de Windows
   note.js                la nota rápida (nota.md)
+  ai-logic.js            qué significa cada evento de Claude Code (lógica pura, sin Electron)
+  ai-sessions.js         las sesiones de Claude Code / Antigravity y sus decisiones pendientes
+  ai-server.js           el servidor local (127.0.0.1) que recibe sus eventos, y el bloque para pegar
+  ai-chat-parse.js       leer lo que escriben los CLI del chat (stream-json)
+  ai-chat.js             el chat: lanzar claude / agy / gemini y su conversación en memoria
   ipc.js                 TODO lo que la página puede pedir (una lista)
 preload.js               Puente seguro (contextBridge) entre main y la página
 renderer/
@@ -244,6 +314,8 @@ renderer/
     swipe.js             deslizar para cambiar de canción
     outputs.js           la lista de salidas de audio
     wave.js              la ola de la barra de progreso
+    ai.js                Claude Code y Antigravity: isla, decisiones, página IA y Home
+    chat.js              el chat de la página IA
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
@@ -278,6 +350,9 @@ assets/
 - **Salida de audio.** El helper lista las salidas con Core Audio (`IMMDeviceEnumerator`) y se entera de los cambios por avisos de Windows. Para cambiar la predeterminada usa `IPolicyConfig`, la interfaz que usa la propia configuración de sonido de Windows. ⚠️ Microsoft no la documenta: funciona de Windows 7 a Windows 11, pero si algún día cambia, Notch solo mostrará el aviso «No se pudo cambiar la salida de audio».
 - **Muelles de verdad.** La isla cambia de forma con curvas de muelle amortiguado (escritas con `linear()` en `styles.css`): al crecer se pasa un poco y se asienta, como en el iPhone; al encoger, se asienta sin rebotar. Al pulsarla se hunde un poco. Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca; el contenido del panel entra igual, en cascada.
 - **Iconos dibujados a mano.** Son SVG propios al estilo de los de Apple (rellenos y con las puntas redondeadas), definidos una sola vez en `index.html` y reutilizados con `<use>`: no se descarga ninguna fuente de iconos. La ola de la barra la dibuja `wave.js` en dos `<path>` de SVG (lo que ya sonó y lo que falta): para cada punto, altura = envolvente × amplitud × seno; la envolvente la hace nacer y morir plana. Mientras suena, un único `requestAnimationFrame` la hace fluir y avanza la barra, como mucho unas 60-80 veces por segundo, solo con la página Música a la vista; en pausa, en cuanto se calma, se para.
+- **Servidor de la IA.** `main/ai-server.js` escucha solo en `127.0.0.1` y exige el token (`Authorization: Bearer …`, comparado en tiempo constante). Rechaza las peticiones de navegadores (con cabecera `Origin`) y las que no van dirigidas a `127.0.0.1` o `localhost` (así una web no puede hablarle), y como mucho acepta 1 MB por petición. Responde al momento salvo cuando algo espera tu respuesta.
+- **Decisiones.** Un permiso, una pregunta o un plan dejan la petición de Claude Code abierta: la isla enseña la tarjeta y, cuando eliges, Notch contesta con el JSON que dice la documentación de Claude Code (`decision.behavior` en los permisos; `permissionDecision` con `updatedInput` en las preguntas y los planes). Si Claude Code cuelga antes (respondiste en la terminal o se agotó su tiempo), la tarjeta se va sola. Un temporizador por decisión (590 s) y otro por sesión (se olvida a los 45 minutos sin señales): nada de sondeos.
+- **Chat.** `main/ai-chat.js` busca los programas con `where.exe`, prefiere el `.exe` y, si solo hay un `.cmd` (instalado con npm), lo lanza con `cmd.exe` pasándole solo argumentos de Notch: tu texto va por la entrada estándar. Lee su salida línea a línea (`stream-json`) y se la manda a la página a trozos (cada 50 ms). «Parar» cierra el programa con todo lo que haya abierto (`taskkill /T`).
 - **Batería por eventos.** La página usa la API de batería de Chromium (`navigator.getBattery()`), que avisa cuando cambia el nivel o enchufas el cargador. Avisa una vez al bajar del 20 % y otra del 10 %, y vuelve a avisar tras cargarlo.
 - **Centro de avisos.** Solo los de Notch (Pomodoro, batería, errores de configuración, atajos, helper; más adelante, la IA). Viven en memoria: al cerrar Notch se olvidan. Notch no puede leer las notificaciones de otras apps (Windows solo lo permite a las instaladas desde la Microsoft Store).
 - **Tema.** `main/theme.js` aplica `theme` con `nativeTheme` (así el menú del clic derecho también cambia) y le dice a la página qué tema toca; la página lo pone en `<html data-theme>`. Con `"auto"`, si cambias el modo de Windows, el panel cambia solo.
@@ -297,7 +372,9 @@ assets/
 
 ## Privacidad
 
-Sin telemetría ni analíticas. La **única** conexión a internet de Notch es **LRCLIB** (<https://lrclib.net>), una base de datos libre de letras: por cada canción nueva le manda el **título, el artista, el álbum y la duración** (nada más: ni quién eres ni qué más haces), y solo si no tenía ya la letra guardada. Con `"lyrics": false` en `settings.json` no hay ninguna conexión.
+Sin telemetría ni analíticas. La **única** conexión a internet que hace Notch es **LRCLIB** (<https://lrclib.net>), una base de datos libre de letras: por cada canción nueva le manda el **título, el artista, el álbum y la duración** (nada más: ni quién eres ni qué más haces), y solo si no tenía ya la letra guardada. Con `"lyrics": false` en `settings.json` no hay ninguna conexión.
+
+**IA.** El servidor de la IA solo escucha en tu PC (`127.0.0.1`) y solo recibe lo que Claude Code (o Antigravity) le manda. **Notch no manda nada a Anthropic ni a Google por su cuenta.** El chat no lo hace Notch: lanza tus propios programas (`claude`, `agy` o `gemini`) solo cuando escribes, y lo que escribas va solo a quien elijas (**Claude → Anthropic**, **Gemini → Google**). La conversación vive en memoria (a Claude además se le pide que no la guarde) y se olvida al cerrar Notch. Con `"ai": false` no hay servidor.
 
 El corrector ortográfico que trae Electron descargaba diccionarios de Google al arrancar: está desactivado (la nota no lo usa) y esa descarga se redirige a tu propio PC. Tu nota, tus avisos, tu configuración y la caché de letras (`%APPDATA%\Notch\lyrics\`, se puede borrar cuando quieras) se quedan en tu PC.
 
@@ -327,3 +404,9 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **No sale encima de un juego.** Los juegos en pantalla completa exclusiva tapan todas las ventanas. En modo «ventana sin bordes», el notch sí se ve.
 - **`npm run dist` falla con «Cannot create symbolic link».** Activa el modo de desarrollador de Windows (*Configuración → Sistema → Para programadores*) o ejecuta la terminal como administrador y vuelve a intentarlo.
 - **`npm start` dice que la versión de Node no es compatible.** Actualiza Node.js a 22.12 o superior.
+- **La isla no muestra lo que hace Claude Code.** Revisa que pegaste el bloque en `%USERPROFILE%\.claude\settings.json` (con tu token) y reinicia Claude Code; con `/hooks` puedes ver si los cargó. En la página IA debe decir «Escuchando» (o «Conectado»). Para comprobar el servidor: `curl.exe -H "Authorization: Bearer TU_TOKEN" http://127.0.0.1:47823/health` debe responder `{"ok":true,"app":"notch"}`.
+- **Claude Code se queda esperando y la terminal no pregunta nada.** Está esperando tu respuesta en la isla (la terminal dice «Esperando tu respuesta en Notch…»). Responde en la isla o pulsa «En la terminal». Si no haces nada, a los 10 minutos te pregunta la terminal.
+- **«La IA no puede escuchar a Claude Code».** Otra app usa el puerto 47823. Pon otro en `aiPort` y cámbialo también en las URLs de tu configuración de Claude Code.
+- **El chat dice «No encuentro Claude Code».** Abre una terminal nueva y prueba `claude --version`. Si no funciona, instálalo o añade su carpeta al PATH, y reinicia Notch. Si dice que no has iniciado sesión, ejecuta `claude` en una terminal e inicia sesión.
+- **Gemini no responde o tarda mucho.** Si Antigravity falla, Notch prueba solo con Gemini CLI (lo pone en la respuesta). Para usar siempre Gemini CLI, pon `"geminiCli": "gemini"`. Si ninguno está instalado, el chat te lo dice.
+- **Quiero apagar la IA.** Pon `"ai": false` en `settings.json` (se aplica al guardar). Puedes dejar los hooks pegados: si Notch no escucha, Claude Code sigue como siempre.

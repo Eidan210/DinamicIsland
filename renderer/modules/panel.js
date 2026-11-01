@@ -47,10 +47,12 @@ function isTyping(target) {
 export function initPanel() {
   // Clic en la isla → abrir. Si muestra una actividad, se abre en su página.
   island.addEventListener('click', () => {
-    if (state.isExpanded) return;
+    // Con una decisión pendiente, los clics son para sus botones (ai.js).
+    if (state.isExpanded || state.shape === 'decision') return;
     const activity = getActivity();
     if (state.shape === 'banner' || (state.shape === 'activity' && activity === 'music')) showTab('music');
     else if (state.shape === 'activity' && activity === 'pomodoro') showTab('focus');
+    else if (state.shape === 'activity' && activity === 'ai') showTab('ai');
     window.notch.expand();
   });
 

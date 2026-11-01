@@ -138,6 +138,41 @@ contextBridge.exposeInMainWorld('notch', {
     save: (text) => ipcRenderer.invoke('note:save', String(text)),
   },
 
+  // ---------- IA: Claude Code y Antigravity ----------
+  ai: {
+    /** Devuelve (Promise) { server, lastEventAt, sessions, pending }. */
+    getState: () => ipcRenderer.invoke('ai:get'),
+    /** Avisa de cada cambio: callback(estado). */
+    onChange: (callback) => subscribe('ai:state', callback),
+    /**
+     * Responde a una decisión pendiente. Devuelve (Promise) true si se aplicó.
+     * decision: 'allow' | 'always' | 'deny' | 'answer' | 'approve' | 'reject' | 'terminal'
+     * data: { answers: { "pregunta": "respuesta" } } en las preguntas
+     */
+    decide: (id, decision, data) => ipcRenderer.invoke('ai:decide', String(id), String(decision), data ?? null),
+    /** Copia al portapapeles la configuración para pegar: 'claude' o 'agy'. */
+    copySetup: (kind) => ipcRenderer.invoke('ai:copy-setup', String(kind)),
+  },
+
+  // ---------- Chat (Claude y Gemini) ----------
+  chat: {
+    /** Devuelve (Promise) { messages, busy, provider, claudeModel }. */
+    getState: () => ipcRenderer.invoke('chat:get'),
+    /** Manda un mensaje. options: { provider, claudeModel }. Devuelve (Promise) { ok, error? }. */
+    send: (text, options) => ipcRenderer.invoke('chat:send', String(text), options ?? {}),
+    /** Para la respuesta que se está escribiendo. */
+    cancel: () => ipcRenderer.send('chat:cancel'),
+    /** Nueva conversación (se olvida la anterior). */
+    clear: () => ipcRenderer.send('chat:clear'),
+    /** Avisa de cada mensaje nuevo o actualizado: callback({ message, busy }). */
+    onUpdate: (callback) => subscribe('chat:update', callback),
+    /** Avisa cuando se borra la conversación. */
+    onClear: (callback) => subscribe('chat:cleared', callback),
+  },
+
+  /** Tras responder en la isla con el panel cerrado: devolver el foco a tu app. */
+  releaseFocus: () => ipcRenderer.send('notch:release-focus'),
+
   // ---------- Centro de avisos ----------
   notices: {
     /** Devuelve (Promise) los avisos del proceso principal (Pomodoro, errores...). */

@@ -156,6 +156,12 @@ function toggleExpanded() {
   setExpanded(!state.isExpanded, { restoreFocus: true });
 }
 
+/** Respondiste algo en la isla con el panel cerrado: el foco vuelve a tu app. */
+function releaseFocus() {
+  const { win } = state;
+  if (win && !win.isDestroyed() && !state.isExpanded && win.isFocused()) giveFocusBack();
+}
+
 /** Abre el panel directamente en una página (atajos Ctrl+Alt+1…6, la notificación...). */
 function openTab(tabName) {
   const { win } = state;
@@ -274,6 +280,7 @@ module.exports = {
   repositionWindow,
   setExpanded,
   toggleExpanded,
+  releaseFocus,
   openTab,
   togglePage,
   setMouseInteractive,

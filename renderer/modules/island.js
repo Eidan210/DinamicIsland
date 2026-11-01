@@ -7,6 +7,8 @@
 //   volume    → barra de volumen, 1,5 s después de cambiarlo
 //   banner    → aviso grande unos segundos (canción nueva)
 //   alert     → aviso importante unos segundos (batería baja, un error...)
+//   decision  → Claude Code espera tu respuesta (permiso, pregunta o plan):
+//               salta por encima de todo menos del panel abierto
 //   expanded  → el panel abierto
 // computeShape() decide la forma a partir del estado; updateShape() la aplica.
 //
@@ -28,7 +30,7 @@ const bubbleEls = [...document.querySelectorAll('.bubble')];
 const bubblePomodoro = $('bubble-pomodoro');
 
 // De menor a mayor (al crecer la isla rebota; al encoger, no)
-const SHAPE_ORDER = ['mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'expanded'];
+const SHAPE_ORDER = ['mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'decision', 'expanded'];
 const MAX_ACTIVITIES = 3; // 1 en la isla + 2 burbujas
 const WAKE_DELAY = 200; // ms con el ratón sobre la mini-muesca para que se despierte
 const SLEEP_DELAY = 800; // ms que espera antes de volver a encogerse cuando te alejas
@@ -80,8 +82,13 @@ export function onShapeChange(listener) {
  * Para cambiar la prioridad, cambia el orden de los if.
  */
 export function getActivities() {
-  const { pomodoro, media, settings } = state;
+  const { pomodoro, media, settings, ai } = state;
   const activities = [];
+
+  // Claude Code (o Antigravity) trabajando o esperándote; al terminar, se ve
+  // "Hecho" unos segundos.
+  const aiLive = ai.sessions.some((session) => session.status === 'working' || session.status === 'waiting');
+  if (aiLive || Date.now() < state.aiDoneUntil) activities.push('ai');
 
   const celebrating = Date.now() < state.celebrateUntil;
   if (celebrating || pomodoro.status === 'running' || pomodoro.status === 'paused') activities.push('pomodoro');
@@ -102,6 +109,7 @@ export function getActivity() {
 function computeShape(activities) {
   const now = Date.now();
   if (state.isExpanded) return 'expanded';
+  if (state.ai.pending.length) return 'decision';
   if (now < volumeUntil) return 'volume';
   // Los avisos no se van mientras tengas el ratón encima (para que te dé tiempo a leerlos).
   if (now < alertUntil || (state.shape === 'alert' && state.mouseInteractive)) return 'alert';
@@ -117,6 +125,7 @@ export function updateShape() {
   activityEl.dataset.kind = activities[0] || '';
   activityEl.dataset.status = Date.now() < state.celebrateUntil ? 'finished' : state.pomodoro.status;
   island.dataset.activity = activities[0] || ''; // p. ej. con música se tiñe con la carátula
+  island.dataset.decision = String(state.ai.pending.length > 0); // con el panel abierto, la tarjeta sale encima
 
   if (next !== state.shape) {
     const previous = state.shape;
@@ -157,7 +166,7 @@ function updateBubbles(activities) {
 function scheduleShapeTimer() {
   clearTimeout(shapeTimer);
   const now = Date.now();
-  const upcoming = [keepAwakeUntil, volumeUntil, bannerUntil, alertUntil, state.celebrateUntil, state.musicGraceUntil].filter(
+  const upcoming = [keepAwakeUntil, volumeUntil, bannerUntil, alertUntil, state.celebrateUntil, state.musicGraceUntil, state.aiDoneUntil].filter(
     (time) => time > now
   );
   if (upcoming.length) shapeTimer = setTimeout(updateShape, Math.min(...upcoming) - now + 20);

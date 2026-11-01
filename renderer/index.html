@@ -62,6 +62,25 @@
     <symbol id="i-check-mark" viewBox="0 0 24 24">
       <path d="m5.5 12.5 4 4 9-9.5" />
     </symbol>
+    <!-- IA: Claude (destello de rayos) y Gemini/Antigravity (estrella de 4 puntas) -->
+    <symbol id="i-claude" viewBox="0 0 24 24">
+      <path d="M12 3.2v5.3M12 15.5v5.3M3.2 12h5.3M15.5 12h5.3M5.8 5.8l3.7 3.7M14.5 14.5l3.7 3.7M18.2 5.8l-3.7 3.7M9.5 14.5l-3.7 3.7" stroke-width="2.5" />
+    </symbol>
+    <symbol id="i-gemini" viewBox="0 0 24 24">
+      <path class="icon-solid" d="M12 2.6c.7 4.8 3.4 7.9 8.6 9.4-5.2 1.5-7.9 4.6-8.6 9.4-.7-4.8-3.4-7.9-8.6-9.4C8.6 10.5 11.3 7.4 12 2.6z" />
+    </symbol>
+    <symbol id="i-send" viewBox="0 0 24 24">
+      <path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" stroke-width="2.4" />
+    </symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24">
+      <rect class="icon-solid" x="6.5" y="6.5" width="11" height="11" rx="2.6" />
+    </symbol>
+    <symbol id="i-compose" viewBox="0 0 24 24">
+      <path d="M11 4.5H6.8A2.3 2.3 0 0 0 4.5 6.8v10.4a2.3 2.3 0 0 0 2.3 2.3h10.4a2.3 2.3 0 0 0 2.3-2.3V13" /><path d="M17.6 3.9a1.9 1.9 0 0 1 2.7 2.7l-7.6 7.6-3.5.8.8-3.5z" />
+    </symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24">
+      <rect x="3" y="4.5" width="18" height="15" rx="3" /><path d="m7.5 9.5 3 2.5-3 2.5M12.5 15h4" />
+    </symbol>
   </svg>
 
   <!--
@@ -79,6 +98,7 @@
         volume    → barra de volumen (1,5 s al cambiarlo)
         banner    → aviso grande unos segundos (canción nueva)
         alert     → aviso importante unos segundos (batería baja, un error...)
+        decision  → Claude Code espera tu respuesta (permiso, pregunta o plan)
         expanded  → el panel abierto
     -->
     <div id="island" class="island" data-shape="mini">
@@ -114,8 +134,13 @@
             <circle class="ring-progress" id="activity-progress" cx="10" cy="10" r="7" pathLength="100" />
           </svg>
           <img class="activity-art" id="activity-art" alt="" />
+          <span class="activity-ai">
+            <svg class="activity-ai-icon" viewBox="0 0 24 24"><use id="activity-ai-use" href="#i-claude"></use></svg>
+            <span class="activity-ai-label" id="activity-ai-label">Pensando</span>
+          </span>
         </div>
         <div class="activity-trailing">
+          <span class="activity-ai-time" id="activity-ai-time">0:00</span>
           <span class="activity-text" id="activity-text">25:00</span>
           <span class="eq"><i></i><i></i><i></i><i></i></span>
         </div>
@@ -153,6 +178,19 @@
           <span class="alert-title" id="alert-title"></span>
           <span class="alert-body" id="alert-body"></span>
         </div>
+      </div>
+
+      <!-- Decisión pendiente de Claude Code: permiso, pregunta o plan. Salta por
+           encima de todo (con el panel abierto, sale como tarjeta encima). ai.js la rellena. -->
+      <div class="decision" id="decision" data-kind="" role="dialog" aria-labelledby="decision-title">
+        <header class="decision-head">
+          <span class="decision-icon"><svg viewBox="0 0 24 24"><use id="decision-icon" href="#i-claude"></use></svg></span>
+          <span class="decision-title" id="decision-title"></span>
+          <span class="decision-project" id="decision-project"></span>
+          <span class="decision-count" id="decision-count" hidden></span>
+        </header>
+        <div class="decision-body" id="decision-body"></div>
+        <footer class="decision-actions" id="decision-actions"></footer>
       </div>
 
       <!-- Contenido del panel abierto -->
@@ -231,8 +269,8 @@
                   <span>IA</span>
                 </header>
                 <div class="card-main">
-                  <span class="card-value is-dim">Sin sesiones</span>
-                  <span class="card-note">Llega en la Fase 3</span>
+                  <span class="card-value is-dim" id="home-ai-title">Sin sesiones</span>
+                  <span class="card-note" id="home-ai-note">Conecta Claude Code</span>
                 </div>
               </article>
 
@@ -373,15 +411,74 @@
             </div>
           </section>
 
-          <!-- ===================== IA (Fase 3) ===================== -->
+          <!-- ===================== IA: sesiones en vivo y chat ===================== -->
           <section class="view" data-view="ai" role="tabpanel" aria-label="IA">
-            <div class="placeholder">
-              <svg class="placeholder-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M10 3.5 11.7 8a2 2 0 0 0 1.3 1.3l4.5 1.7-4.5 1.7a2 2 0 0 0-1.3 1.3L10 18.5 8.3 14A2 2 0 0 0 7 12.7L2.5 11 7 9.3A2 2 0 0 0 8.3 8z" /><path d="M18.5 3v4M16.5 5h4" />
-              </svg>
-              <h2>IA</h2>
-              <p>Claude Code y Antigravity en vivo, permisos y preguntas desde la isla, y chat con Claude o Gemini.</p>
-              <span class="badge">Fase 3</span>
+            <div class="ai" id="ai" data-mode="sessions">
+              <header class="ai-head">
+                <div class="segmented" role="tablist" aria-label="Sesiones o chat">
+                  <button class="seg" type="button" role="tab" data-mode="sessions" aria-selected="true">
+                    Sesiones<span class="seg-count" id="ai-count" hidden>0</span>
+                  </button>
+                  <button class="seg" type="button" role="tab" data-mode="chat" aria-selected="false">Chat</button>
+                </div>
+                <!-- Con "Sesiones": si Notch está escuchando y copiar la configuración -->
+                <div class="ai-head-end ai-head-sessions">
+                  <span class="ai-server" id="ai-server" data-state="off"></span>
+                  <button class="text-btn" id="ai-copy-head" type="button" title="Copia el bloque para ~/.claude/settings.json">Copiar configuración</button>
+                </div>
+                <!-- Con "Chat": con quién hablas, el modelo de Claude y empezar de cero -->
+                <div class="ai-head-end ai-head-chat">
+                  <div class="segmented segmented-small" id="chat-provider" role="radiogroup" aria-label="Con quién hablas">
+                    <button class="seg" type="button" role="radio" data-provider="gemini" aria-checked="true">Gemini</button>
+                    <button class="seg" type="button" role="radio" data-provider="claude" aria-checked="false">Claude</button>
+                    <button class="seg" type="button" role="radio" data-provider="both" aria-checked="false">Ambos</button>
+                  </div>
+                  <select class="chat-model" id="chat-model" aria-label="Modelo de Claude">
+                    <option value="opus">Opus</option>
+                    <option value="sonnet">Sonnet</option>
+                    <option value="haiku">Haiku</option>
+                    <option value="fable">Fable</option>
+                  </select>
+                  <button class="icon-btn" id="chat-new" type="button" aria-label="Nueva conversación" title="Nueva conversación">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-compose"></use></svg>
+                  </button>
+                </div>
+              </header>
+
+              <!-- Sesiones de Claude Code y Antigravity (ai.js) -->
+              <div class="ai-body ai-sessions-body">
+                <div class="sessions" id="ai-sessions"></div>
+                <div class="ai-setup" id="ai-setup">
+                  <div class="ai-setup-text">
+                    <strong>Conecta Claude Code</strong>
+                    <span>Copia la configuración y pégala en <code>~/.claude/settings.json</code>, dentro de <code>"hooks"</code>. Notch no toca tus archivos.</span>
+                  </div>
+                  <div class="ai-setup-actions">
+                    <button class="btn btn-primary" id="ai-copy-claude" type="button">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-claude"></use></svg>
+                      <span>Copiar para Claude Code</span>
+                    </button>
+                    <button class="btn btn-ghost" id="ai-copy-agy" type="button" title="hooks.json de Antigravity: solo informa del estado">Antigravity (en prueba)</button>
+                    <span class="ai-setup-status" id="ai-setup-status" role="status"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chat con Claude y Gemini (chat.js) -->
+              <div class="ai-body ai-chat-body">
+                <div class="chat-log" id="chat-log" aria-live="polite"></div>
+                <p class="chat-empty" id="chat-empty">
+                  Lo que escribas va solo a quien elijas: <strong>Claude → Anthropic</strong> · <strong>Gemini → Google</strong>.
+                  Notch no guarda la conversación.
+                </p>
+                <form class="composer" id="chat-form">
+                  <textarea class="composer-input" id="chat-input" rows="1" maxlength="8000" spellcheck="false" placeholder="Escribe a Gemini…" aria-label="Mensaje"></textarea>
+                  <button class="composer-send" id="chat-send" type="submit" aria-label="Enviar">
+                    <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-send"></use></svg>
+                    <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stop"></use></svg>
+                  </button>
+                </form>
+              </div>
             </div>
           </section>
 
@@ -518,6 +615,9 @@
       <div class="bubble" id="bubble-music" data-kind="music" data-goto="music" title="Música">
         <img class="bubble-art" id="bubble-art" alt="" />
         <svg class="bubble-note" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+      </div>
+      <div class="bubble" id="bubble-ai" data-kind="ai" data-goto="ai" title="IA">
+        <svg class="bubble-ai-icon" viewBox="0 0 24 24"><use id="bubble-ai-use" href="#i-claude"></use></svg>
       </div>
       <div class="bubble" id="bubble-pomodoro" data-kind="pomodoro" data-goto="focus" title="Pomodoro">
         <svg class="bubble-ring" viewBox="0 0 20 20">

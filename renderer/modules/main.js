@@ -25,6 +25,9 @@
 //    note.js      la nota rápida
 //    theme.js     tema claro u oscuro del panel
 //    motion.js    animar siempre, como Windows o nunca (ajuste "animations")
+//    wave.js      la ola de la barra de progreso de la música
+//    ai.js        Claude Code y Antigravity: isla, decisiones, página IA y Home
+//    chat.js      el chat con Claude y Gemini (página IA)
 //  Este archivo solo los pone en marcha, en orden.
 // =============================================================================
 
@@ -45,6 +48,8 @@ import { initBattery } from './battery.js';
 import { initNote, loadNote } from './note.js';
 import { initTheme, setTheme } from './theme.js';
 import { initMotion, applyMotionSetting } from './motion.js';
+import { initAi, setAiState } from './ai.js';
+import { initChat, loadChat, applyChatSettings } from './chat.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -61,6 +66,8 @@ async function loadInitialState() {
     volume: window.notch.volume.getState(),
     notices: window.notch.notices.getAll(),
     note: window.notch.note.get(),
+    ai: window.notch.ai.getState(),
+    chat: window.notch.chat.getState(),
   };
   const names = Object.keys(requests);
   const results = await Promise.allSettled(Object.values(requests));
@@ -92,6 +99,8 @@ async function init() {
   initVolume();
   initNotices();
   initNote();
+  initChat();
+  initAi();
 
   // Al guardar config/settings.json, se aplica al momento.
   window.notch.onSettingsChange((newSettings) => {
@@ -100,6 +109,7 @@ async function init() {
     applyClockSettings();
     applyTabShortcuts();
     renderIslandToggle();
+    applyChatSettings();
     updateShape();
   });
 
@@ -115,6 +125,8 @@ async function init() {
   setLinks(loaded.links);
   loadInitialVolume(loaded.volume);
   loadNote(loaded.note); // si no se pudo leer, la nota queda en solo lectura
+  loadChat(loaded.chat);
+  if (loaded.ai) setAiState(loaded.ai);
 
   // 3. Lo dibujamos todo.
   applyClockSettings();

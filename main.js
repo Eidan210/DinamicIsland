@@ -25,6 +25,10 @@
 //    audio.js      las salidas de audio (vía el helper)
 //    volume.js     el volumen de Windows (vía el helper)
 //    note.js       la nota rápida (nota.md en tu carpeta de datos)
+//    ai-logic.js   qué significa cada evento de Claude Code (lógica pura)
+//    ai-sessions.js las sesiones de Claude Code y Antigravity, y sus decisiones
+//    ai-server.js  el servidor local (127.0.0.1) que recibe sus eventos
+//    ai-chat-parse.js / ai-chat.js  el chat con Claude y Gemini (sus CLI)
 //    ipc.js        todo lo que la página puede pedir
 // =============================================================================
 
@@ -41,6 +45,9 @@ const pomodoro = require('./main/pomodoro');
 const links = require('./main/links');
 const helper = require('./main/helper');
 const lyrics = require('./main/lyrics');
+const aiServer = require('./main/ai-server');
+const aiSessions = require('./main/ai-sessions');
+const aiChat = require('./main/ai-chat');
 const { registerIpcHandlers } = require('./main/ipc');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
@@ -52,10 +59,12 @@ function shortcutsKey(settings) {
 function onConfigChanged(changedFiles) {
   if (changedFiles.has('settings.json')) {
     const previousShortcuts = shortcutsKey(state.settings);
+    const previous = state.settings;
     state.settings = config.loadSettings();
     if (shortcutsKey(state.settings) !== previousShortcuts) shortcuts.registerShortcuts();
     applyTheme();
     lyrics.onSettingsChanged(); // "lyrics": encender o apagar las letras al momento
+    aiServer.onSettingsChanged(previous); // "ai" / "aiPort": encender, apagar o cambiar de puerto
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();
@@ -109,6 +118,11 @@ if (!hasSingleInstanceLock) {
     config.watchConfigFolder(onConfigChanged);
     helper.startHelper();
 
+    // IA: el servidor local para Claude Code y Antigravity. Los eventos que
+    // vengan de la carpeta del chat de Notch no son sesiones tuyas: se ignoran.
+    aiSessions.setIgnoredDirs([aiChat.getChatDir()]);
+    aiServer.startAiServer();
+
     // Si conectas/desconectas un monitor o cambias resolución/escala, recolocamos el notch.
     // (Son eventos del sistema: no hay ningún temporizador comprobando nada.)
     screen.on('display-metrics-changed', notchWindow.repositionWindow);
@@ -126,5 +140,7 @@ if (!hasSingleInstanceLock) {
   app.on('will-quit', () => {
     shortcuts.unregisterShortcuts();
     helper.stopHelper(); // el helper se cierra con nosotros
+    aiServer.stopAiServer(); // lo pendiente vuelve a la terminal
+    aiChat.stopChat(); // ningún programa del chat se queda abierto
   });
 }

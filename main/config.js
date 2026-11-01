@@ -39,9 +39,19 @@ const DEFAULT_SETTINGS = {
   musicActivity: true, // mostrar la música en la isla mientras suena (y avisar al cambiar de canción)
   lyrics: true, // buscar las letras en LRCLIB (la única conexión a internet de Notch)
   volumeIndicator: true, // al cambiar el volumen, la isla enseña una barra 1,5 s
+  // IA (Fase 3)
+  ai: true, // escuchar a Claude Code y Antigravity (servidor solo en tu PC, 127.0.0.1)
+  aiPort: 47823, // su puerto (si lo cambias, cambia también la URL en la configuración de Claude Code)
+  chatProvider: 'gemini', // chat: "gemini", "claude" o "both" (los dos a la vez)
+  claudeModel: 'sonnet', // modelo de Claude en el chat: "opus", "sonnet", "haiku" o "fable"
+  geminiModel: '', // modelo de Gemini en el chat ("" = el que use por defecto agy o Gemini CLI)
+  geminiCli: 'auto', // "auto" (Antigravity y, si falla, Gemini CLI), "agy" o "gemini"
 };
 
 const THEMES = ['auto', 'light', 'dark'];
+const CHAT_PROVIDERS = ['gemini', 'claude', 'both'];
+const CLAUDE_MODELS = ['opus', 'sonnet', 'haiku', 'fable'];
+const GEMINI_CLIS = ['auto', 'agy', 'gemini'];
 const ANIMATION_MODES = ['always', 'system', 'off'];
 const POMODORO_MIN_MINUTES = 1;
 const POMODORO_MAX_MINUTES = 180;
@@ -134,6 +144,16 @@ function loadSettings() {
   result.musicActivity = result.musicActivity !== false;
   result.lyrics = result.lyrics !== false;
   result.volumeIndicator = result.volumeIndicator !== false;
+  result.ai = result.ai !== false;
+  const port = Math.round(Number(result.aiPort));
+  result.aiPort = Number.isFinite(port) && port >= 1024 && port <= 65535 ? port : DEFAULT_SETTINGS.aiPort;
+  if (!CHAT_PROVIDERS.includes(result.chatProvider)) result.chatProvider = DEFAULT_SETTINGS.chatProvider;
+  if (!CLAUDE_MODELS.includes(result.claudeModel)) result.claudeModel = DEFAULT_SETTINGS.claudeModel;
+  // El modelo de Gemini va a la línea de comandos: solo letras, números y . _ : -
+  if (typeof result.geminiModel !== 'string' || !/^[A-Za-z0-9._:-]{0,60}$/.test(result.geminiModel)) {
+    result.geminiModel = DEFAULT_SETTINGS.geminiModel;
+  }
+  if (!GEMINI_CLIS.includes(result.geminiCli)) result.geminiCli = DEFAULT_SETTINGS.geminiCli;
   return result;
 }
 

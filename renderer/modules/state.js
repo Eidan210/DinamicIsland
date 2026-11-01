@@ -30,7 +30,7 @@ export const state = {
   lastPointer: { x: 0, y: 0 }, // última posición conocida
 
   // Forma actual de la isla:
-  // 'mini' | 'pill' | 'activity' | 'volume' | 'banner' | 'alert' | 'expanded'
+  // 'mini' | 'pill' | 'activity' | 'volume' | 'banner' | 'alert' | 'decision' | 'expanded'
   shape: 'mini',
 
   // Pomodoro (lo actualiza pomodoro.js con lo que manda main)
@@ -68,4 +68,12 @@ export const state = {
 
   // Batería (la actualiza battery.js). En un PC de sobremesa: llena y "cargando".
   battery: { level: 1, charging: true },
+
+  // IA: sesiones de Claude Code / Antigravity y decisiones pendientes (ai.js)
+  ai: { server: { listening: false, port: 0, error: '' }, lastEventAt: 0, sessions: [], pending: [] },
+  aiDoneUntil: 0, // al terminar una sesión, la isla enseña "Hecho" hasta entonces
+  aiDoneId: '', // ...de esta sesión
+
+  // Chat (chat.js)
+  chat: { messages: [], busy: false, provider: 'gemini', claudeModel: 'sonnet' },
 };

@@ -20,6 +20,10 @@ const volume = require('./volume');
 const note = require('./note');
 const notices = require('./notices');
 const theme = require('./theme');
+const aiSessions = require('./ai-sessions');
+const aiServer = require('./ai-server');
+const aiChat = require('./ai-chat');
+const { clipboard } = require('electron');
 
 function registerIpcHandlers() {
   // Ventana
@@ -29,6 +33,7 @@ function registerIpcHandlers() {
   onRendererMessage('notch:expand', () => notchWindow.setExpanded(true));
   onRendererMessage('notch:collapse', () => notchWindow.setExpanded(false, { restoreFocus: true }));
   onRendererMessage('notch:context-menu', () => notchWindow.showContextMenu());
+  onRendererMessage('notch:release-focus', () => notchWindow.releaseFocus());
   onRendererMessage('notch:tab-changed', (tab) => {
     if (PAGES.includes(tab)) state.currentTab = tab;
   });
@@ -61,6 +66,21 @@ function registerIpcHandlers() {
   // Centro de avisos
   onRendererRequest('notices:get', () => notices.getNotices());
   onRendererMessage('notices:clear', () => notices.clearAllNotices());
+
+  // IA: sesiones de Claude Code / Antigravity y sus decisiones
+  onRendererRequest('ai:get', () => aiSessions.getAiState());
+  onRendererRequest('ai:decide', (id, decision, data) => aiSessions.decide(String(id), String(decision), data));
+  // Copia la configuración para pegar (Notch no toca tus archivos): 'claude' o 'agy'
+  onRendererRequest('ai:copy-setup', (kind) => {
+    clipboard.writeText(aiServer.getSetupText(kind === 'agy' ? 'agy' : 'claude'));
+    return true;
+  });
+
+  // Chat
+  onRendererRequest('chat:get', () => aiChat.getChatState());
+  onRendererRequest('chat:send', (text, options) => aiChat.sendChat(String(text), options && typeof options === 'object' ? options : {}));
+  onRendererMessage('chat:cancel', () => aiChat.cancelChat());
+  onRendererMessage('chat:clear', () => aiChat.clearChat());
 }
 
 module.exports = { registerIpcHandlers };
