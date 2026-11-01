@@ -2,18 +2,22 @@
    styles.css — Aspecto y animaciones del notch
    -----------------------------------------------------------------------------
    La ventana es transparente y siempre mide 820 x 318 px. Dentro, la .island
-   es lo único visible. Cambia de forma según su atributo data-shape (lo pone
-   app.js) y todos los cambios son transiciones CSS:
+   es lo único visible (más las burbujas, a su derecha). Cambia de forma según
+   su atributo data-shape (lo pone island.js) y todos los cambios son
+   transiciones CSS:
 
-     mini → pill → activity → banner → expanded   (de menor a mayor)
+     mini → pill → activity → volume → banner → alert → expanded
+     (de menor a mayor)
 
    ÍNDICE
-     1. Variables           7. Home: tarjetas
-     2. Base                8. Música
-     3. La isla y sus formas 9. Focus: Pomodoro y links
-     4. Los ojos           10. Pestañas
-     5. Actividad y aviso  11. Barras de ecualizador
-     6. Contenido del panel 12. Accesibilidad
+      1. Variables                     9. Música
+      2. Base                         10. Focus: Pomodoro y links
+      3. La isla y sus formas         11. Nota rápida
+      4. Los ojos                     12. Pestañas
+      5. Actividad, volumen y avisos  13. Barras de ecualizador
+      6. Burbujas                     14. Tema claro
+      7. Contenido del panel          15. Accesibilidad
+      8. Home: tarjetas
    ============================================================================= */
 
 /* ---------- 1. Variables: cambia aquí tamaños, colores y tiempos ---------- */
@@ -24,7 +28,8 @@
   --pill-width: 200px;
   --pill-height: 40px;
   --activity-width: 280px; /* con información en vivo */
-  --banner-width: 430px; /* aviso de canción nueva */
+  --volume-width: 300px; /* barra de volumen */
+  --banner-width: 430px; /* avisos grandes (canción nueva, batería baja...) */
   --banner-height: 76px;
   --panel-width: 720px;
   --panel-height: 260px;
@@ -39,13 +44,26 @@
   --accent: #3dff8f;
   --accent-soft: rgba(61, 255, 143, 0.16);
   --warning: #ffc94d;
+  --danger: #ff5f57;
+  --info: #4dabf7;
   --text: rgba(255, 255, 255, 0.94);
   --text-dim: rgba(255, 255, 255, 0.6);
   --text-faint: rgba(255, 255, 255, 0.38);
+  --text-strong: #fff;
   --glass: rgba(16, 16, 20, 0.9); /* fondo del panel: oscuro y algo translúcido */
   --stroke: rgba(255, 255, 255, 0.1); /* borde fino tipo vidrio */
   --hover: rgba(255, 255, 255, 0.05);
   --selected: rgba(255, 255, 255, 0.14);
+  /* "Tinta" del panel, en formato R, G, B: los fondos y bordes sutiles se
+     pintan con ella, p. ej. rgba(var(--ink), 0.08). En el tema oscuro es
+     blanca; en el claro, negra (sección 14). */
+  --ink: 255, 255, 255;
+  --music-text: var(--music-accent); /* textos con el color de la carátula */
+  --ctrl-main-bg: #fff; /* botón grande de reproducir */
+  --ctrl-main-fg: #000;
+  --popover-bg: #232328; /* fondo de la lista de avisos */
+  --panel-shadow: rgba(0, 0, 0, 0.45);
+  --ai-color: #a98bff;
   --claude-color: #e8866a;
   --music-color: #fa586a;
   --links-color: #4dabf7;
@@ -57,7 +75,7 @@
   --open-duration: 560ms;
   --close-duration: 420ms;
 
-  /* Color de la música: app.js lo saca de la carátula y cambia con suavidad */
+  /* Color de la música: music.js lo saca de la carátula y cambia con suavidad */
   transition: --music-accent 800ms ease;
 }
 
@@ -109,6 +127,16 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+/* Iconos reutilizables (index.html): el bloque que los define no se ve */
+.sprite {
+  display: none;
+}
+
+/* La isla y sus burbujas. Mide lo que la isla: las burbujas cuelgan a su derecha. */
+.stage {
+  position: relative;
+}
+
 img:not([src]) {
   visibility: hidden; /* sin carátula, que no se vea el icono de imagen rota */
 }
@@ -139,7 +167,7 @@ img:not([src]) {
 
 /* ---------- 3. La isla y sus formas ---------- */
 .island {
-  /* app.js pone data-motion="grow" o "shrink": al crecer rebota un poco, al encoger no */
+  /* island.js pone data-motion="grow" o "shrink": al crecer rebota un poco, al encoger no */
   --size-duration: var(--close-duration);
   --size-easing: var(--spring);
 
@@ -186,14 +214,25 @@ img:not([src]) {
   width: var(--activity-width);
 }
 
-.island[data-shape="banner"] {
+.island[data-shape="volume"] {
+  width: var(--volume-width);
+}
+
+/* Avisos grandes: canción nueva (banner) e importantes (alert) */
+.island:is([data-shape="banner"], [data-shape="alert"]) {
   width: var(--banner-width);
   height: var(--banner-height);
   border-radius: 28px;
 }
 
 /* Pequeño "zoom" al pasar el ratón: indica que se puede pulsar */
-.island:is([data-shape="pill"], [data-shape="activity"], [data-shape="banner"]):hover {
+.island:is(
+    [data-shape="pill"],
+    [data-shape="activity"],
+    [data-shape="volume"],
+    [data-shape="banner"],
+    [data-shape="alert"]
+  ):hover {
   scale: 1.04;
 }
 
@@ -204,7 +243,7 @@ img:not([src]) {
   background-color: var(--glass);
   /* La sombra (12 + 28 = 40 px) cabe en el margen SHADOW_MARGIN de main.js */
   box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.45),
+    0 12px 28px var(--panel-shadow),
     inset 0 0 0 1px var(--stroke);
   cursor: default;
 }
@@ -241,7 +280,7 @@ img:not([src]) {
   transition: opacity 200ms ease;
 }
 
-/* --look-x / --look-y los pone app.js para que los ojos miren hacia el ratón */
+/* --look-x / --look-y los pone eyes.js para que los ojos miren hacia el ratón */
 .eyes {
   display: flex;
   align-items: center;
@@ -264,7 +303,7 @@ img:not([src]) {
     height 320ms var(--spring-bounce),
     border-radius 320ms ease,
     background-color 200ms ease;
-  /* El parpadeo y el "despertar" se lanzan desde app.js */
+  /* El parpadeo y el "despertar" se lanzan desde eyes.js */
 }
 
 /* En la mini-muesca, ojos pequeñitos */
@@ -278,8 +317,8 @@ img:not([src]) {
   box-shadow: 0 0 5px var(--eye-glow);
 }
 
-/* En el aviso, los ojos dejan sitio al contenido */
-.island[data-shape="banner"] .face {
+/* En el volumen y en los avisos, los ojos dejan sitio al contenido */
+.island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"]) .face {
   opacity: 0;
 }
 
@@ -300,7 +339,7 @@ img:not([src]) {
   filter: drop-shadow(0 0 4px var(--eye-glow));
 }
 
-/* ---------- 5. Actividad en vivo y aviso de canción ---------- */
+/* ---------- 5. Actividad en vivo, volumen y avisos ---------- */
 .activity {
   position: absolute;
   inset: 0 14px 0 9px;
@@ -481,7 +520,383 @@ img:not([src]) {
   }
 }
 
-/* ---------- 6. Contenido del panel ---------- */
+/* Indicadores de la muesca y de la píldora en reposo:
+   un punto azul si hay avisos sin leer y la pila cuando queda poca batería */
+.status {
+  position: absolute;
+  inset: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.island:is([data-shape="mini"], [data-shape="pill"]) .status {
+  opacity: 1;
+  transition: opacity 300ms ease 160ms;
+}
+
+.island[data-shape="pill"] .status {
+  inset: 0 17px;
+}
+
+.status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--info);
+  box-shadow: 0 0 6px var(--info);
+  scale: 0;
+  transition: scale 380ms var(--spring-pop);
+}
+
+.status-dot.is-on {
+  scale: 1;
+}
+
+.island[data-shape="pill"] .status-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.status-battery {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--warning);
+  font-size: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  translate: 5px 0;
+  transition:
+    opacity 200ms ease,
+    translate 320ms var(--spring);
+}
+
+.status-battery.is-on {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.status-battery[data-state="critical"] {
+  color: var(--danger);
+}
+
+.island[data-shape="pill"] .status-battery {
+  gap: 6px;
+  font-size: 11px;
+}
+
+/* La pila: un rectángulo con su "botón" y un relleno según --level (de 0 a 1) */
+.battery-icon {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 21px;
+  height: 10px;
+  padding: 1.5px;
+  border: 1.2px solid currentColor;
+  border-radius: 3px;
+}
+
+.battery-icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -3.5px;
+  width: 2px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 0 1px 1px 0;
+  background: currentColor;
+}
+
+.battery-icon i {
+  display: block;
+  width: calc(var(--level, 1) * 100%);
+  min-width: 1.5px;
+  height: 100%;
+  border-radius: 1px;
+  background: currentColor;
+  transition: width 400ms var(--spring);
+}
+
+/* En la mini-muesca, una pila diminuta */
+.island[data-shape="mini"] .battery-icon {
+  width: 13px;
+  height: 7px;
+  padding: 1px;
+  border-width: 1px;
+  border-radius: 2px;
+}
+
+.island[data-shape="mini"] .battery-icon::after {
+  right: -2.5px;
+  width: 1.5px;
+  height: 3px;
+  margin-top: -1.5px;
+}
+
+/* Barra de volumen (1,5 s al cambiarlo) */
+.volume {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 17px 0 15px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.island[data-shape="volume"] .volume {
+  opacity: 1;
+  transition: opacity 220ms ease 90ms;
+}
+
+.volume-icon {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  overflow: visible;
+}
+
+.island[data-shape="volume"] .volume-icon {
+  animation: pop-in 460ms var(--spring-pop) 80ms backwards;
+}
+
+.volume-icon path {
+  transition: opacity 200ms ease;
+}
+
+/* Las ondas del altavoz: 2 con el volumen alto, 1 con el bajo, 0 en silencio */
+.volume-mute,
+.volume[data-level="low"] .volume-wave-2,
+.volume:is([data-level="zero"], [data-muted="true"]) :is(.volume-wave-1, .volume-wave-2) {
+  opacity: 0;
+}
+
+.volume[data-muted="true"] .volume-mute {
+  opacity: 1;
+}
+
+.volume-bar {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+/* --volume (de 0 a 1) lo pone volume.js */
+.volume-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  transform: scaleX(var(--volume, 0));
+  transform-origin: 0 50%;
+  transition:
+    transform 200ms var(--spring),
+    background-color 200ms ease;
+}
+
+.volume[data-muted="true"] .volume-fill {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.volume-value {
+  min-width: 24px;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Aviso importante: batería baja, un error en settings.json, un atajo ocupado...
+   --tone es su color (lo eligen data-tone y la sección de colores de abajo) */
+.alert {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 24px 0 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.island[data-shape="alert"] .alert {
+  opacity: 1;
+  transition: opacity 260ms ease 150ms;
+}
+
+.alert-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tone) 18%, transparent);
+  color: var(--tone);
+}
+
+.alert-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.alert-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.alert-title {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Como mucho 2 líneas de detalle */
+.alert-body {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.island[data-shape="alert"] .alert-icon {
+  animation: pop-in 560ms var(--spring-pop) 120ms backwards;
+}
+
+.island[data-shape="alert"] .alert-text > * {
+  animation: rise-in 420ms var(--spring) backwards;
+}
+
+.island[data-shape="alert"] .alert-text > :nth-child(1) {
+  animation-delay: 200ms;
+}
+
+.island[data-shape="alert"] .alert-text > :nth-child(2) {
+  animation-delay: 260ms;
+}
+
+/* Color de cada tipo de aviso (en la isla y en la lista de avisos) */
+:is(.alert, .notice) {
+  --tone: var(--info);
+}
+
+:is(.alert, .notice)[data-tone="success"] {
+  --tone: var(--accent);
+}
+
+:is(.alert, .notice)[data-tone="warning"] {
+  --tone: var(--warning);
+}
+
+:is(.alert, .notice)[data-tone="danger"] {
+  --tone: var(--danger);
+}
+
+/* ---------- 6. Burbujas: la 2.ª y 3.ª actividad ---------- */
+/* Círculos negros a la derecha de la isla, como en el iPhone cuando hay dos
+   cosas a la vez. Salen "de dentro" de la isla con un pequeño rebote.
+   --slot (0 o 1) es su posición; lo pone island.js. */
+.bubbles {
+  position: absolute;
+  top: var(--top-gap);
+  left: calc(100% + 8px);
+  width: 0;
+  height: var(--pill-height);
+}
+
+.bubble {
+  position: absolute;
+  top: 0;
+  left: calc(var(--slot, 0) * (var(--pill-height) + 8px));
+  display: grid;
+  place-items: center;
+  width: var(--pill-height);
+  height: var(--pill-height);
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  opacity: 0;
+  scale: 0.3;
+  translate: -44px 0;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    scale 260ms var(--spring),
+    translate 300ms var(--spring),
+    left 420ms var(--spring);
+}
+
+.bubble.is-visible {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+  pointer-events: auto;
+  transition:
+    opacity 240ms ease,
+    scale 540ms var(--spring-pop),
+    translate 540ms var(--spring-bounce),
+    left 420ms var(--spring);
+}
+
+.bubble.is-visible:hover {
+  scale: 1.1;
+}
+
+.bubble-art {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.bubble-note {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  color: var(--music-accent);
+}
+
+.bubble[data-has-art="true"] .bubble-note {
+  display: none;
+}
+
+.bubble-ring {
+  width: 24px;
+  height: 24px;
+  rotate: -90deg;
+}
+
+.bubble-ring .ring-track,
+.bubble-ring .ring-progress {
+  stroke-width: 3.2;
+}
+
+/* ---------- 7. Contenido del panel ---------- */
 /* Mide siempre 720x260 y está centrado: la isla solo lo va "destapando" */
 .panel {
   position: absolute;
@@ -493,6 +908,7 @@ img:not([src]) {
   display: flex;
   flex-direction: column;
   padding: 0 16px 12px;
+  color: var(--text); /* así el tema claro cambia el color del texto */
   visibility: hidden; /* oculto de verdad: sus botones no reciben clics ni Tab */
   transition: visibility 0s linear 200ms;
 }
@@ -556,9 +972,175 @@ img:not([src]) {
   padding: 0 12px;
 }
 
+.topbar-start,
+.topbar-end {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-start {
+  position: relative;
+  min-width: 0;
+}
+
+.topbar-end {
+  gap: 12px;
+}
+
 .date {
   color: var(--text-dim);
   font-weight: 500;
+  transition:
+    opacity 160ms ease,
+    translate 280ms var(--spring);
+}
+
+/* Al cambiar el volumen con el panel abierto, la fecha deja su sitio a una
+   barrita de volumen 1,5 s (volume.js pone .is-volume en la barra superior) */
+.topbar-volume {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  scale: 0.92;
+  transform-origin: 0 50%;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    scale 300ms var(--spring);
+}
+
+.topbar-volume svg {
+  width: 16px;
+  height: 16px;
+}
+
+.topbar-volume-bar {
+  position: relative;
+  width: 110px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(var(--ink), 0.14);
+  overflow: hidden;
+}
+
+.topbar-volume-bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--text);
+  transform: scaleX(var(--volume, 0));
+  transform-origin: 0 50%;
+  transition: transform 200ms var(--spring);
+}
+
+.topbar-volume-value {
+  min-width: 22px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.topbar.is-volume .date {
+  opacity: 0;
+  translate: 0 -6px;
+}
+
+.topbar.is-volume .topbar-volume {
+  opacity: 1;
+  scale: 1;
+}
+
+/* La campana de los avisos, con el número de avisos sin leer */
+.bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 240ms var(--spring-pop);
+}
+
+.bell svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bell:hover,
+.bell[aria-expanded="true"] {
+  background: rgba(var(--ink), 0.08);
+  color: var(--text);
+}
+
+.bell:active {
+  transform: scale(0.88);
+}
+
+.bell-count {
+  position: absolute;
+  top: -1px;
+  right: -3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  animation: pop-in 420ms var(--spring-pop);
+}
+
+/* La batería (se oculta si está cargada del todo y enchufada) */
+.battery {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.battery[hidden] {
+  display: none;
+}
+
+.battery-plug {
+  display: none;
+  width: 12px;
+  height: 12px;
+  margin-left: 1px;
+}
+
+.battery[data-state="charging"] {
+  color: var(--accent);
+}
+
+.battery[data-state="charging"] .battery-plug {
+  display: block;
+}
+
+.battery[data-state="low"] {
+  color: var(--warning);
+}
+
+.battery[data-state="critical"] {
+  color: var(--danger);
 }
 
 .clock {
@@ -572,8 +1154,172 @@ img:not([src]) {
   font-weight: 500;
 }
 
+/* Centro de avisos: una lista que se despliega desde la campana */
+.notices {
+  position: absolute;
+  top: 40px;
+  right: 24px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  max-height: 198px;
+  padding: 10px 6px 6px;
+  border-radius: 18px;
+  background: var(--popover-bg);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(var(--ink), 0.08);
+  opacity: 0;
+  scale: 0.94;
+  translate: 0 -6px;
+  transform-origin: calc(100% - 130px) 0;
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    scale 220ms var(--spring),
+    translate 220ms var(--spring),
+    visibility 0s linear 220ms;
+}
+
+.notices.is-open {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+  visibility: visible;
+  transition:
+    opacity 200ms ease,
+    scale 400ms var(--spring-bounce),
+    translate 400ms var(--spring-bounce),
+    visibility 0s;
+}
+
+.notices-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 6px 10px;
+}
+
+.text-btn {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.text-btn:hover {
+  background: rgba(var(--ink), 0.08);
+  color: var(--text);
+}
+
+.text-btn:disabled {
+  opacity: 0.4;
+  background: none;
+  cursor: default;
+}
+
+.notices-list {
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.notice {
+  display: flex;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  transition: background-color 150ms ease;
+}
+
+.notice:hover {
+  background: rgba(var(--ink), 0.05);
+}
+
+.notices.is-open .notice {
+  animation: rise-in 360ms var(--spring) backwards;
+  animation-delay: calc(60ms + var(--i, 0) * 35ms);
+}
+
+.notice-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tone) 16%, transparent);
+  color: var(--tone);
+}
+
+.notice-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.notice-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notice-title {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Los que aún no habías visto llevan un punto azul */
+.notice.is-unread .notice-title::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 6px 1px 0;
+  border-radius: 50%;
+  background: var(--info);
+}
+
+.notice-time {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 10.5px;
+}
+
+.notice-text {
+  margin: 1px 0 0;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.notices-empty {
+  margin: 12px 0 16px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
 /* Zona central: aquí se apilan las vistas y solo se ve la activa.
-   El deslizamiento al cambiar de pestaña lo hace app.js. */
+   El deslizamiento al cambiar de pestaña lo hace tabs.js. */
 .views {
   position: relative;
   flex: 1;
@@ -609,7 +1355,7 @@ code {
   font-size: 11px;
 }
 
-/* Contenido provisional (Claude llega en la Fase 5) */
+/* Contenido provisional de las páginas que llegan más adelante (IA, Portapapeles) */
 .placeholder {
   max-width: 520px;
   text-align: center;
@@ -640,7 +1386,7 @@ code {
   margin-top: 12px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(61, 255, 143, 0.1);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent);
   font-size: 11px;
   font-weight: 600;
@@ -655,7 +1401,7 @@ code {
   }
 }
 
-/* ---------- 7. Home: tarjetas resumen ---------- */
+/* ---------- 8. Home: tarjetas resumen ---------- */
 .cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -675,8 +1421,8 @@ code {
   min-width: 0;
   padding: 12px 13px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: rgba(var(--ink), 0.045);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
   overflow: hidden;
   cursor: pointer;
   transition:
@@ -704,9 +1450,9 @@ code {
 
 .card:hover {
   transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ink), 0.07);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(var(--ink), 0.1),
     0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
@@ -719,8 +1465,8 @@ code {
   transform: translateY(-1px) scale(0.98);
 }
 
-.card-claude {
-  --card-accent: var(--claude-color);
+.card-ai {
+  --card-accent: var(--ai-color);
 }
 
 /* La tarjeta de música toma el color de la carátula mientras suena */
@@ -832,7 +1578,7 @@ code {
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ink), 0.07);
   overflow: hidden;
 }
 
@@ -893,7 +1639,7 @@ code {
 }
 
 .mini-btn[data-running="true"] {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--ink), 0.14);
   color: var(--text);
 }
 
@@ -939,7 +1685,7 @@ code {
 }
 
 .mini-link.more {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--ink), 0.1);
   color: var(--text);
   font-size: 11px;
 }
@@ -949,7 +1695,7 @@ code {
   white-space: normal;
 }
 
-/* ---------- 8. Música ---------- */
+/* ---------- 9. Música ---------- */
 .player {
   display: flex;
   align-items: center;
@@ -993,7 +1739,7 @@ code {
 .player-art-empty {
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--ink), 0.06);
   color: var(--text-faint);
 }
 
@@ -1019,7 +1765,7 @@ code {
   align-items: center;
   gap: 7px;
   height: 14px;
-  color: var(--music-accent);
+  color: var(--music-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1060,13 +1806,13 @@ code {
   text-align: right;
 }
 
-/* Barra de progreso: --progress (de 0 a 1) lo pone app.js */
+/* Barra de progreso: --progress (de 0 a 1) lo pone music.js */
 .bar {
   position: relative;
   flex: 1;
   height: 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--ink), 0.12);
   cursor: pointer;
   transition: height 200ms var(--spring);
 }
@@ -1142,7 +1888,7 @@ code {
 }
 
 .ctrl:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--ink), 0.08);
 }
 
 .ctrl:active {
@@ -1152,14 +1898,14 @@ code {
 .ctrl-main {
   width: 44px;
   height: 44px;
-  background: #fff;
-  color: #000;
+  background: var(--ctrl-main-bg);
+  color: var(--ctrl-main-fg);
 }
 
 .ctrl-main:hover {
-  background: #fff;
+  background: var(--ctrl-main-bg);
   transform: scale(1.07);
-  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 5px rgba(var(--ink), 0.08);
 }
 
 .ctrl:disabled {
@@ -1203,7 +1949,7 @@ code {
   animation-delay: 180ms;
 }
 
-/* ---------- 9. Focus: Pomodoro y links ---------- */
+/* ---------- 10. Focus: Pomodoro y links ---------- */
 .focus {
   display: flex;
   align-items: center;
@@ -1238,7 +1984,7 @@ code {
    pathLength="100" en el HTML: así el progreso va de 0 a 100. */
 .ring-track {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.09);
+  stroke: rgba(var(--ink), 0.09);
   stroke-width: 8;
 }
 
@@ -1330,7 +2076,7 @@ code {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--ink), 0.08);
   color: var(--text);
   font-size: 16px;
   line-height: 1;
@@ -1342,7 +2088,7 @@ code {
 
 .step-btn:hover {
   transform: scale(1.12);
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(var(--ink), 0.16);
 }
 
 .step-btn:active {
@@ -1395,18 +2141,18 @@ code {
 
 /* En marcha, el botón pasa a ser "Pausar" en gris */
 .btn-primary.is-running {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--ink), 0.12);
   color: var(--text);
 }
 
 .btn-primary.is-running:hover {
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 4px rgba(var(--ink), 0.06);
 }
 
 .btn-icon {
   width: 34px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--ink), 0.08);
   color: var(--text-dim);
 }
 
@@ -1415,7 +2161,7 @@ code {
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--ink), 0.14);
   color: var(--text);
 }
 
@@ -1444,7 +2190,7 @@ code {
   align-self: stretch;
   width: 1px;
   margin: 12px 0 18px;
-  background: linear-gradient(transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(transparent, rgba(var(--ink), 0.1), transparent);
 }
 
 .links {
@@ -1528,13 +2274,86 @@ code {
   font-size: 12px;
 }
 
-/* Los links aparecen uno a uno (--i = su posición, lo pone app.js) */
+/* Los links aparecen uno a uno (--i = su posición, lo pone links.js) */
 .island[data-shape="expanded"] .view.is-active :is(.link-btn, .mini-link) {
   animation: pop-in 460ms var(--spring-pop) backwards;
   animation-delay: calc(80ms + var(--i, 0) * 40ms);
 }
 
-/* ---------- 10. Pestañas ---------- */
+/* ---------- 11. Nota rápida ---------- */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 2px 6px 8px;
+}
+
+.note-text {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 16px;
+  outline: none;
+  background: rgba(var(--ink), 0.045);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: none;
+  caret-color: var(--accent);
+  user-select: text;
+  scrollbar-width: thin;
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.note-text::placeholder {
+  color: var(--text-faint);
+}
+
+.note-text:focus {
+  background: rgba(var(--ink), 0.06);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 0 3px var(--accent-soft);
+}
+
+.note-text:read-only {
+  color: var(--text-dim);
+}
+
+.note-foot {
+  display: flex;
+  justify-content: space-between;
+  min-height: 15px;
+  padding: 0 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.note-status {
+  transition: color 200ms ease;
+}
+
+.note[data-state="saved"] .note-status {
+  color: var(--accent);
+}
+
+.note:is([data-state="error"], [data-state="readonly"]) .note-status {
+  color: var(--danger);
+}
+
+.note-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 12. Pestañas ---------- */
 .tabbar {
   position: relative;
   flex: none;
@@ -1543,7 +2362,7 @@ code {
   margin: 0 auto;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--ink), 0.05);
 }
 
 /* El fondo de la pestaña activa: se desliza de una a otra con rebote */
@@ -1555,7 +2374,7 @@ code {
   height: 32px;
   border-radius: 999px;
   background: var(--selected);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
   translate: var(--indicator-x, 0px) 0;
   pointer-events: none;
   transition:
@@ -1574,7 +2393,7 @@ code {
   align-items: center;
   gap: 7px;
   height: 32px;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1600,14 +2419,14 @@ code {
 
 .tab.is-active {
   background: transparent;
-  color: #fff;
+  color: var(--text-strong);
 }
 
 .tab.is-active svg {
   scale: 1.12; /* el icono "salta" un poco al activarse */
 }
 
-/* ---------- 11. Barras de ecualizador ---------- */
+/* ---------- 13. Barras de ecualizador ---------- */
 /* Cuatro barritas que bailan mientras suena la música. Es la ÚNICA animación
    continua del notch: solo corre cuando suena música y las barras se ven. */
 .eq {
@@ -1680,7 +2499,83 @@ code {
   }
 }
 
-/* ---------- 12. Accesibilidad ---------- */
+/* ---------- 14. Tema claro ---------- */
+/* Con "theme": "light" (o "auto" y Windows en modo claro), el panel abierto se
+   vuelve claro. La isla compacta, las burbujas y los avisos siguen negros.
+   main/theme.js decide el tema y theme.js lo pone en <html data-theme>. */
+:root[data-theme="light"] {
+  --glass: rgba(243, 243, 246, 0.96);
+  --stroke: rgba(0, 0, 0, 0.08);
+  --panel-shadow: rgba(0, 0, 0, 0.3);
+}
+
+/* Variables solo dentro del panel: textos oscuros, tinta negra... */
+:root[data-theme="light"] .panel {
+  --ink: 0, 0, 0;
+  --text: rgba(0, 0, 0, 0.87);
+  --text-dim: rgba(0, 0, 0, 0.58);
+  --text-faint: rgba(0, 0, 0, 0.42);
+  --text-strong: #000;
+  --hover: rgba(0, 0, 0, 0.05);
+  --selected: #fff;
+  --accent: #12b85b; /* el verde claro no se lee sobre blanco */
+  --accent-soft: rgba(18, 184, 91, 0.18);
+  --warning: #c98600;
+  --danger: #e0352b;
+  --info: #1a7fd6;
+  --music-text: color-mix(in oklab, var(--music-accent) 60%, #000);
+  --ctrl-main-bg: #18181c;
+  --ctrl-main-fg: #fff;
+  --popover-bg: #fff;
+}
+
+/* Los ojos, un verde más oscuro para que se vean sobre el panel claro */
+:root[data-theme="light"] .island[data-shape="expanded"] .eye {
+  --eye-color: #16b85d;
+  --eye-glow: rgba(22, 184, 93, 0.35);
+}
+
+/* Tarjetas blancas con un borde finito */
+:root[data-theme="light"] .card {
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .card:hover {
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .tab-indicator {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .notices {
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* La nota, como una hoja blanca */
+:root[data-theme="light"] .note-text {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+:root[data-theme="light"] .note-text:focus {
+  background: #fff;
+}
+
+:root[data-theme="light"] .big-ring .ring-progress {
+  filter: none;
+}
+
+/* ---------- 15. Accesibilidad ---------- */
 /* Si en Windows desactivas "Efectos de animación", el notch no anima */
 @media (prefers-reduced-motion: reduce) {
   *,

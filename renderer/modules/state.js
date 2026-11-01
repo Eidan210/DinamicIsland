@@ -10,12 +10,15 @@ export const state = {
   // config/settings.json (main.js lo rellena al arrancar y cada vez que lo guardas)
   settings: {
     shortcut: 'Control+Alt+T',
+    pageShortcuts: {},
+    theme: 'auto',
     locale: 'es-ES',
     hour12: false,
     autoHide: true,
     revealOnHover: true,
     pomodoroMinutes: 25,
     musicActivity: true,
+    volumeIndicator: true,
   },
   isExpanded: false, // ¿el panel está abierto?
   initialized: false, // ¿terminó el arranque?
@@ -25,7 +28,8 @@ export const state = {
   pointerInside: false, // ¿el ratón está dentro de la zona de la ventana?
   lastPointer: { x: 0, y: 0 }, // última posición conocida
 
-  // Forma actual de la isla: 'mini' | 'pill' | 'activity' | 'banner' | 'expanded'
+  // Forma actual de la isla:
+  // 'mini' | 'pill' | 'activity' | 'volume' | 'banner' | 'alert' | 'expanded'
   shape: 'mini',
 
   // Pomodoro (lo actualiza pomodoro.js con lo que manda main)
@@ -57,4 +61,10 @@ export const state = {
     canSeek: false,
   },
   musicGraceUntil: 0, // la actividad de música aguanta un momento al dejar de sonar
+
+  // Volumen de Windows (lo actualiza volume.js), de 0 a 1
+  volume: { level: 0, muted: false },
+
+  // Batería (la actualiza battery.js). En un PC de sobremesa: llena y "cargando".
+  battery: { level: 1, charging: true },
 };

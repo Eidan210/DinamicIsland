@@ -2,13 +2,14 @@
 //  renderer/modules/pomodoro.js — Dibujar el Pomodoro
 // -----------------------------------------------------------------------------
 //  El temporizador "de verdad" vive en main/pomodoro.js. Aquí solo lo dibujamos
-//  en tres sitios: la pestaña Focus, la tarjeta de Home y la isla (actividad en
-//  vivo). Con `endsAt` calculamos el tiempo restante nosotros mismos.
+//  en cuatro sitios: la pestaña Focus, la tarjeta de Home, la isla (actividad
+//  en vivo) y su burbuja (si otra actividad ocupa la isla). Con `endsAt`
+//  calculamos el tiempo restante nosotros mismos.
 // =============================================================================
 
 import { $, animate, setText, formatCountdown, plural, SPRING, SPRING_POP } from './utils.js';
 import { state } from './state.js';
-import { getActivity, onShapeChange, updateShape } from './island.js';
+import { getActivities, onShapeChange, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
 
 const POMODORO_LABELS = { idle: 'Listo', running: 'Enfocado', paused: 'En pausa', finished: '¡Hecho!' };
@@ -36,9 +37,10 @@ const homePomoProgress = $('home-pomo-progress');
 const homePomoTime = $('home-pomo-time');
 const homePomoLabel = $('home-pomo-label');
 const homePomoToggle = $('home-pomo-toggle');
-// ...y la isla.
+// ...la isla y su burbuja.
 const activityProgress = $('activity-progress');
 const activityText = $('activity-text');
+const bubbleProgress = $('bubble-pomo-progress');
 
 let pomodoroTicker = null;
 
@@ -109,7 +111,9 @@ function renderPomodoroTick() {
 }
 
 function setRings(progress, withAnimation) {
-  [pomoProgress, homePomoProgress, activityProgress].forEach((ring) => setRing(ring, progress, withAnimation));
+  [pomoProgress, homePomoProgress, activityProgress, bubbleProgress].forEach((ring) =>
+    setRing(ring, progress, withAnimation)
+  );
 }
 
 /**
@@ -139,10 +143,10 @@ function setRing(circle, progress, withAnimation) {
 
 /**
  * Cuenta atrás en pantalla. Solo funciona si el Pomodoro está en marcha Y se
- * ve (panel abierto o isla con la actividad): si no se ve, no gasta nada.
+ * ve (panel abierto, o la isla o una burbuja con él): si no se ve, no gasta nada.
  */
 function updatePomodoroTicker() {
-  const visible = state.isExpanded || (state.shape === 'activity' && getActivity() === 'pomodoro');
+  const visible = state.isExpanded || (state.shape === 'activity' && getActivities().includes('pomodoro'));
   if (state.pomodoro.status !== 'running' || !visible) {
     clearTimeout(pomodoroTicker);
     pomodoroTicker = null;

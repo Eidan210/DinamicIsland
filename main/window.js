@@ -100,6 +100,11 @@ function createWindow() {
     }
   });
 
+  // Clic derecho en un cuadro de texto (la nota): menú de edición.
+  win.webContents.on('context-menu', (_event, params) => {
+    if (params.isEditable) showEditMenu();
+  });
+
   // Seguridad: la página nunca navega a otra URL ni abre ventanas nuevas.
   win.webContents.on('will-navigate', (event) => event.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -151,10 +156,22 @@ function toggleExpanded() {
   setExpanded(!state.isExpanded, { restoreFocus: true });
 }
 
-/** Abre el panel directamente en una pestaña (p. ej. al pulsar la notificación). */
+/** Abre el panel directamente en una página (atajos Ctrl+Alt+1…6, la notificación...). */
 function openTab(tabName) {
-  setExpanded(true);
+  const { win } = state;
+  if (!win || win.isDestroyed()) return;
+  state.currentTab = tabName;
+  // Primero cambiamos de página y después abrimos: así el panel se abre ya en
+  // ella, sin verse antes la anterior.
   sendToRenderer('notch:show-tab', tabName);
+  if (state.isExpanded) win.focus(); // ya abierto: el foco, para poder escribir (p. ej. en la Nota)
+  else setExpanded(true);
+}
+
+/** Atajo de una página: la abre y, si ya se estaba viendo, cierra el panel. */
+function togglePage(tabName) {
+  if (state.isExpanded && state.currentTab === tabName) setExpanded(false, { restoreFocus: true });
+  else openTab(tabName);
 }
 
 /**
@@ -232,12 +249,27 @@ function showContextMenu() {
   });
 }
 
+/** Menú de edición para los cuadros de texto (Ctrl+C, Ctrl+V... también funcionan). */
+function showEditMenu() {
+  Menu.buildFromTemplate([
+    { role: 'undo', label: 'Deshacer' },
+    { role: 'redo', label: 'Rehacer' },
+    { type: 'separator' },
+    { role: 'cut', label: 'Cortar' },
+    { role: 'copy', label: 'Copiar' },
+    { role: 'paste', label: 'Pegar' },
+    { type: 'separator' },
+    { role: 'selectAll', label: 'Seleccionar todo' },
+  ]).popup({ window: state.win });
+}
+
 module.exports = {
   createWindow,
   repositionWindow,
   setExpanded,
   toggleExpanded,
   openTab,
+  togglePage,
   setMouseInteractive,
   showContextMenu,
 };

@@ -11,13 +11,17 @@
 //  Este archivo solo arranca la app y conecta los módulos de main/:
 //    state.js      estado compartido (la ventana, la configuración...)
 //    bridge.js     hablar con la página (IPC)
+//    notices.js    los avisos de Notch (centro de avisos)
 //    config.js     config/settings.json y su recarga automática
+//    theme.js      tema claro u oscuro del panel
 //    window.js     la ventana: posición, abrir/cerrar, foco, clics, menú
-//    shortcuts.js  atajos de teclado globales
+//    shortcuts.js  atajos de teclado globales (abrir/cerrar y uno por página)
 //    pomodoro.js   el temporizador Pomodoro y su notificación
 //    links.js      config/links.json
 //    helper.js     el helper de Windows en C# (helpers/WinHelper)
 //    music.js      la música que suena en Windows (vía el helper)
+//    volume.js     el volumen de Windows (vía el helper)
+//    note.js       la nota rápida (nota.md en tu carpeta de datos)
 //    ipc.js        todo lo que la página puede pedir
 // =============================================================================
 
@@ -27,6 +31,7 @@ const { app, Menu, powerMonitor, screen, session } = require('electron');
 const { APP_ID, state } = require('./main/state');
 const { sendToRenderer } = require('./main/bridge');
 const config = require('./main/config');
+const { applyTheme } = require('./main/theme');
 const notchWindow = require('./main/window');
 const shortcuts = require('./main/shortcuts');
 const pomodoro = require('./main/pomodoro');
@@ -34,12 +39,18 @@ const links = require('./main/links');
 const helper = require('./main/helper');
 const { registerIpcHandlers } = require('./main/ipc');
 
+/** ¿Cambió algún atajo? (comparamos el texto de todos) */
+function shortcutsKey(settings) {
+  return JSON.stringify([settings.shortcut, settings.pageShortcuts]);
+}
+
 /** Al guardar algo en config/, se aplica al momento (sin reiniciar). */
 function onConfigChanged(changedFiles) {
   if (changedFiles.has('settings.json')) {
-    const previousShortcut = state.settings.shortcut;
+    const previousShortcuts = shortcutsKey(state.settings);
     state.settings = config.loadSettings();
-    if (state.settings.shortcut !== previousShortcut) shortcuts.registerShortcuts();
+    if (shortcutsKey(state.settings) !== previousShortcuts) shortcuts.registerShortcuts();
+    applyTheme();
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();
@@ -71,9 +82,9 @@ if (!hasSingleInstanceLock) {
 
   app.whenReady().then(() => {
     // Electron trae un corrector ortográfico que, al arrancar, descarga
-    // diccionarios de servidores de Google (aunque esté desactivado). Notch no
-    // tiene campos de texto: lo apagamos y mandamos esa descarga a tu propio
-    // PC (127.0.0.1), donde falla sin salir a internet. Solo se permite LRCLIB.
+    // diccionarios de servidores de Google (aunque esté desactivado). La nota
+    // no lo usa: lo apagamos y mandamos esa descarga a tu propio PC
+    // (127.0.0.1), donde falla sin salir a internet. Solo se permite LRCLIB.
     session.defaultSession.setSpellCheckerDictionaryDownloadURL('http://127.0.0.1:9/');
     session.defaultSession.setSpellCheckerEnabled(false);
 
@@ -81,6 +92,7 @@ if (!hasSingleInstanceLock) {
     Menu.setApplicationMenu(null);
 
     state.settings = config.loadSettings();
+    applyTheme();
     links.loadLinks();
     pomodoro.resetPomodoro(); // aplica la duración de settings.json
     // Al pulsar la notificación del Pomodoro, se abre la pestaña Focus.

@@ -21,11 +21,16 @@ const APP_ID = 'com.eidancuadros.notch';
 // Carpeta raíz del proyecto (donde está main.js). Este archivo está en main/.
 const ROOT_DIR = path.join(__dirname, '..');
 
+// Las páginas del panel, en el orden de la barra de pestañas. Los nombres deben
+// coincidir con data-tab / data-view de renderer/index.html.
+const PAGES = ['home', 'music', 'ai', 'focus', 'clipboard', 'note'];
+
 const state = {
   win: null, // la única ventana de la app (la crea main/window.js)
   settings: {}, // config/settings.json ya revisado (lo rellena main/config.js)
   isExpanded: false, // ¿el panel está abierto? La "verdad" vive aquí, no en la página.
+  currentTab: 'home', // la página que se ve en el panel (la página nos avisa al cambiar)
   isQuitting: false, // pasa a true cuando el usuario elige "Salir"
 };
 
-module.exports = { IS_DEV, APP_ID, ROOT_DIR, state };
+module.exports = { IS_DEV, APP_ID, ROOT_DIR, PAGES, state };

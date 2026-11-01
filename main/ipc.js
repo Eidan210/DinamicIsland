@@ -8,20 +8,28 @@
 
 'use strict';
 
-const { state } = require('./state');
+const { PAGES, state } = require('./state');
 const { onRendererMessage, onRendererRequest } = require('./bridge');
 const notchWindow = require('./window');
 const pomodoro = require('./pomodoro');
 const links = require('./links');
 const music = require('./music');
+const volume = require('./volume');
+const note = require('./note');
+const notices = require('./notices');
+const theme = require('./theme');
 
 function registerIpcHandlers() {
   // Ventana
   onRendererRequest('settings:get', () => state.settings);
+  onRendererRequest('theme:get', () => theme.getEffectiveTheme());
   onRendererMessage('notch:set-mouse-interactive', (interactive) => notchWindow.setMouseInteractive(interactive === true));
   onRendererMessage('notch:expand', () => notchWindow.setExpanded(true));
   onRendererMessage('notch:collapse', () => notchWindow.setExpanded(false, { restoreFocus: true }));
   onRendererMessage('notch:context-menu', () => notchWindow.showContextMenu());
+  onRendererMessage('notch:tab-changed', (tab) => {
+    if (PAGES.includes(tab)) state.currentTab = tab;
+  });
 
   // Pomodoro
   onRendererRequest('pomodoro:get', () => pomodoro.getPomodoroState());
@@ -34,9 +42,18 @@ function registerIpcHandlers() {
   onRendererRequest('links:get', () => links.getLinksForRenderer());
   onRendererMessage('links:open', (index) => links.openLink(index));
 
-  // Música
+  // Música y volumen
   onRendererRequest('media:get', () => music.getMusicState());
   onRendererMessage('media:command', (command, value) => music.sendMediaCommand(String(command), Number(value)));
+  onRendererRequest('volume:get', () => volume.getVolumeState());
+
+  // Nota rápida
+  onRendererRequest('note:get', () => note.readNote());
+  onRendererRequest('note:save', (text) => note.saveNote(text));
+
+  // Centro de avisos
+  onRendererRequest('notices:get', () => notices.getNotices());
+  onRendererMessage('notices:clear', () => notices.clearAllNotices());
 }
 
 module.exports = { registerIpcHandlers };

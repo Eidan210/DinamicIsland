@@ -1,5 +1,5 @@
 // =============================================================================
-//  renderer/modules/music.js — La música (pestaña, tarjeta de Home, isla y aviso)
+//  renderer/modules/music.js — La música (pestaña, tarjeta de Home, isla, burbuja y aviso)
 // -----------------------------------------------------------------------------
 //  main.js nos pasa lo que cuenta el WinHelper: título, artista, estado,
 //  posición, duración y (solo cuando cambia) la carátula.
@@ -46,8 +46,10 @@ const homeMusicArt = $('home-music-art');
 const homeMusicTitle = $('home-music-title');
 const homeMusicArtist = $('home-music-artist');
 const homeMusicToggle = $('home-music-toggle');
-// ...isla y aviso.
+// ...isla, burbuja y aviso.
 const activityArt = $('activity-art');
+const bubbleMusic = $('bubble-music');
+const bubbleArt = $('bubble-art');
 const bannerArt = $('banner-art');
 const bannerLabel = $('banner-label');
 const bannerTitle = $('banner-title');
@@ -114,12 +116,11 @@ export function loadInitialMedia(mediaState) {
 
 function setMediaArt(dataUrl) {
   mediaArt = dataUrl || null;
-  for (const img of [playerArt, playerArtGlow, homeMusicArt, activityArt, bannerArt]) {
+  for (const img of [playerArt, playerArtGlow, homeMusicArt, activityArt, bubbleArt, bannerArt]) {
     if (mediaArt) img.src = mediaArt;
     else img.removeAttribute('src');
   }
-  playerEl.dataset.hasArt = String(Boolean(mediaArt));
-  homeMusicCard.dataset.hasArt = String(Boolean(mediaArt));
+  for (const element of [playerEl, homeMusicCard, bubbleMusic]) element.dataset.hasArt = String(Boolean(mediaArt));
   updateMusicAccent();
 }
 

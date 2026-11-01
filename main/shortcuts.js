@@ -1,34 +1,68 @@
 // =============================================================================
 //  main/shortcuts.js — Atajos de teclado globales
 // -----------------------------------------------------------------------------
-//  Funcionan aunque estés en otra app. Hoy: el atajo para abrir/cerrar
-//  (Ctrl+Alt+T por defecto, configurable en settings.json).
+//  Funcionan aunque estés en otra app (todos se cambian en settings.json):
+//    • "shortcut"       abre/cierra el panel (Ctrl+Alt+T por defecto).
+//    • "pageShortcuts"  uno por página: Ctrl+Alt+1 Home, 2 Música, 3 IA,
+//                       4 Focus, 5 Portapapeles y 6 Nota. Si esa página ya se
+//                       ve, el mismo atajo cierra el panel.
+//  Con teclado latinoamericano (Colombia), AltGr equivale a Ctrl+Alt, pero
+//  AltGr + número no escribe ningún símbolo: por eso estos atajos no molestan.
 // =============================================================================
 
 'use strict';
 
 const { globalShortcut } = require('electron');
-const { state } = require('./state');
-const { toggleExpanded } = require('./window');
+const { PAGES, state } = require('./state');
+const notchWindow = require('./window');
+const { addNotice, clearNotice } = require('./notices');
 
-/** Registra (o vuelve a registrar, si cambió settings.json) los atajos globales. */
+/** "Control+Alt+3" → "Ctrl+Alt+3" (más corto para los avisos). */
+function prettyAccelerator(accelerator) {
+  return accelerator.replace(/\b(CommandOrControl|CmdOrCtrl|Control)\b/gi, 'Ctrl');
+}
+
+/** Intenta registrar un atajo. Devuelve true si lo consiguió. */
+function tryRegister(accelerator, action) {
+  try {
+    return globalShortcut.register(accelerator, action);
+  } catch (error) {
+    // Pasa si el texto no es un atajo válido, p. ej. "Ctrl+Alt+" (falta la tecla).
+    console.error(`[atajo] "${accelerator}" no es un atajo válido: ${error.message}`);
+    return false;
+  }
+}
+
+/** Registra (o vuelve a registrar, si cambió settings.json) todos los atajos globales. */
 function registerShortcuts() {
   globalShortcut.unregisterAll();
+  const failed = [];
 
-  const { shortcut } = state.settings;
-  let registered = false;
-  try {
-    registered = globalShortcut.register(shortcut, toggleExpanded);
-  } catch (error) {
-    // Pasa si el texto del atajo no es válido, p. ej. "Ctrl+Alt+" (falta la tecla).
-    console.error(`[atajo] "${shortcut}" no es un atajo válido: ${error.message}`);
+  if (!tryRegister(state.settings.shortcut, notchWindow.toggleExpanded)) failed.push(state.settings.shortcut);
+
+  for (const page of PAGES) {
+    const accelerator = state.settings.pageShortcuts[page];
+    if (!accelerator) continue; // "" = esta página no tiene atajo
+    if (!tryRegister(accelerator, () => notchWindow.togglePage(page))) failed.push(accelerator);
   }
-  if (!registered) {
-    console.warn(
-      `[atajo] No se pudo registrar "${shortcut}". ` +
-        '¿Lo usa otra app? Cámbialo en config/settings.json. Mientras tanto, haz clic en la isla.'
-    );
+
+  if (failed.length === 0) {
+    clearNotice('shortcuts'); // si había un aviso de atajos, ya está resuelto
+    return;
   }
+
+  // Si falla, suele ser porque otra app ya usa ese atajo (Windows no deja que
+  // dos apps tengan el mismo) o porque está repetido en settings.json.
+  const list = failed.map(prettyAccelerator).join(', ');
+  console.warn(`[atajo] No se pudieron registrar: ${list}. ¿Los usa otra app o están repetidos? Cámbialos en config/settings.json.`);
+  addNotice({
+    key: 'shortcuts',
+    kind: 'keyboard',
+    tone: 'warning',
+    title: failed.length === 1 ? 'Un atajo no funciona' : `${failed.length} atajos no funcionan`,
+    text: `${list}: los usa otra app o están repetidos. Cámbialos en settings.json.`,
+    alert: true,
+  });
 }
 
 function unregisterShortcuts() {

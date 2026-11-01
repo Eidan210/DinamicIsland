@@ -2,7 +2,7 @@
 //  main/helper.js — El helper de Windows (helpers/WinHelper)
 // -----------------------------------------------------------------------------
 //  WinHelper.exe es un programa en C# que habla con Windows por nosotros (la
-//  música que suena y, en próximas fases, el volumen y el portapapeles).
+//  música que suena, el volumen y, en próximas fases, el portapapeles).
 //
 //  Lo lanzamos como proceso hijo:
 //    • Él nos escribe una línea JSON por cada novedad: {"type":"media", ...}
@@ -20,6 +20,7 @@ const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const readline = require('node:readline');
 const { ROOT_DIR, state } = require('./state');
+const { addNotice } = require('./notices');
 
 const RESTART_MIN_MS = 2000;
 const RESTART_MAX_MS = 60 * 1000;
@@ -55,8 +56,32 @@ function onHelperStatus(listener) {
 }
 
 function setStatus(status) {
+  const previous = helper.status;
   helper.status = status;
   statusListeners.forEach((listener) => listener(status));
+
+  // Avisos en la isla. Si se cae varias veces seguidas, solo avisamos la
+  // primera (la clave 'helper' hace que no se repita en la lista).
+  if (status === 'missing') {
+    addNotice({
+      key: 'helper',
+      kind: 'error',
+      tone: 'warning',
+      title: 'Falta el helper de Windows',
+      text: app.isPackaged
+        ? 'Sin él no hay música ni volumen. Reinstala Notch.'
+        : 'Sin él no hay música ni volumen. Compílalo con: npm run build:helper',
+      alert: true,
+    });
+  } else if (status === 'error' && previous !== 'error') {
+    addNotice({
+      key: 'helper',
+      kind: 'error',
+      tone: 'warning',
+      title: 'El helper de Windows se cerró',
+      text: 'Lo vuelvo a abrir solo en unos segundos.',
+    });
+  }
 }
 
 function startHelper() {

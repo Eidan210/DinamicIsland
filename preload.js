@@ -46,8 +46,17 @@ contextBridge.exposeInMainWorld('notch', {
   /** Avisa cuando guardas config/settings.json: callback(settings). */
   onSettingsChange: (callback) => subscribe('settings:changed', callback),
 
-  /** main.js pide mostrar una pestaña (p. ej. al pulsar la notificación): callback(nombre). */
+  /** Tema del panel: 'light' o 'dark' (ya resuelto: "auto" = el modo de Windows). */
+  theme: {
+    get: () => ipcRenderer.invoke('theme:get'),
+    onChange: (callback) => subscribe('theme:changed', callback),
+  },
+
+  /** main.js pide mostrar una página (atajos Ctrl+Alt+1…6, la notificación...): callback(nombre). */
   onShowTab: (callback) => subscribe('notch:show-tab', callback),
+
+  /** Le cuenta a main.js qué página se ve (para que el atajo de esa página cierre el panel). */
+  setCurrentTab: (tab) => ipcRenderer.send('notch:tab-changed', String(tab)),
 
   // ---------- Pomodoro ----------
   pomodoro: {
@@ -89,5 +98,33 @@ contextBridge.exposeInMainWorld('notch', {
      * trae la nueva (o null); si no viene "art", es la misma de antes.
      */
     onChange: (callback) => subscribe('media:state', callback),
+  },
+
+  // ---------- Volumen de Windows ----------
+  volume: {
+    /** Devuelve (Promise) el último volumen conocido: { level (0 a 1 o null), muted }. */
+    getState: () => ipcRenderer.invoke('volume:get'),
+    /** Avisa cada vez que cambias el volumen o el silencio: callback({ level, muted }). */
+    onChange: (callback) => subscribe('volume:changed', callback),
+  },
+
+  // ---------- Nota rápida ----------
+  note: {
+    /** Devuelve (Promise) { text } o, si no se pudo leer, { text: '', error }. */
+    get: () => ipcRenderer.invoke('note:get'),
+    /** Guarda el texto. Devuelve (Promise) { ok, error? }. */
+    save: (text) => ipcRenderer.invoke('note:save', String(text)),
+  },
+
+  // ---------- Centro de avisos ----------
+  notices: {
+    /** Devuelve (Promise) los avisos del proceso principal (Pomodoro, errores...). */
+    getAll: () => ipcRenderer.invoke('notices:get'),
+    /** Avisa de cada aviso nuevo: callback(aviso). */
+    onAdd: (callback) => subscribe('notice:add', callback),
+    /** Avisa cuando un aviso ya no hace falta (p. ej. el error se arregló): callback(clave). */
+    onRemove: (callback) => subscribe('notice:remove', callback),
+    /** "Borrar todo". */
+    clear: () => ipcRenderer.send('notices:clear'),
   },
 });

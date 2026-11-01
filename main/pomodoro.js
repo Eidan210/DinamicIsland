@@ -13,6 +13,7 @@ const path = require('node:path');
 const { ROOT_DIR, state } = require('./state');
 const { sendToRenderer } = require('./bridge');
 const { clampMinutes, saveSetting } = require('./config');
+const { addNotice } = require('./notices');
 
 const MINUTE_MS = 60 * 1000;
 
@@ -111,6 +112,13 @@ function finishPomodoro() {
 
   sendPomodoroState();
   notifyPomodoroFinished();
+  // También queda en el centro de avisos (la isla ya lo celebra por su cuenta).
+  addNotice({
+    kind: 'pomodoro',
+    tone: 'success',
+    title: 'Pomodoro terminado',
+    text: `${Math.round(pomodoro.durationMs / MINUTE_MS)} min de foco · ${pomodoro.completedCount} hoy`,
+  });
 }
 
 /** Cambia la duración (botones − / + de la pestaña Focus) y la guarda en settings.json. */

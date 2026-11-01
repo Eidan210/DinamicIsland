@@ -3,6 +3,8 @@
 // -----------------------------------------------------------------------------
 //  Lee y revisa la configuración, guarda cambios sueltos (p. ej. la duración del
 //  Pomodoro) y vigila la carpeta para aplicar al momento lo que guardes.
+//  Si un archivo tiene un error, se usa lo de por defecto y sale un aviso en la
+//  isla (y en el centro de avisos) diciendo qué pasa.
 // =============================================================================
 
 'use strict';
@@ -10,19 +12,32 @@
 const { app } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const { ROOT_DIR } = require('./state');
+const { ROOT_DIR, PAGES } = require('./state');
+const { addNotice, clearNotice } = require('./notices');
 
 // Valores por defecto de config/settings.json (si falta una clave, se usa esta).
 const DEFAULT_SETTINGS = {
   shortcut: 'Control+Alt+T', // atajo global para abrir/cerrar
+  // Un atajo por página del panel. "" = esa página sin atajo.
+  pageShortcuts: {
+    home: 'Control+Alt+1',
+    music: 'Control+Alt+2',
+    ai: 'Control+Alt+3',
+    focus: 'Control+Alt+4',
+    clipboard: 'Control+Alt+5',
+    note: 'Control+Alt+6',
+  },
+  theme: 'auto', // tema del panel: "auto" (como Windows), "light" (claro) o "dark" (oscuro)
   locale: 'es-ES', // idioma para la fecha y la hora
   hour12: false, // true = reloj de 12 horas (a. m. / p. m.)
   autoHide: true, // cuando no lo usas, se encoge a una mini-muesca (no tapa pestañas)
   revealOnHover: true, // pasar el ratón por la mini-muesca la despierta
   pomodoroMinutes: 25, // duración del Pomodoro
   musicActivity: true, // mostrar la música en la isla mientras suena (y avisar al cambiar de canción)
+  volumeIndicator: true, // al cambiar el volumen, la isla enseña una barra 1,5 s
 };
 
+const THEMES = ['auto', 'light', 'dark'];
 const POMODORO_MIN_MINUTES = 1;
 const POMODORO_MAX_MINUTES = 180;
 
@@ -47,11 +62,25 @@ function parseJsonFile(filePath) {
 /** Lee un JSON de config/. Si falta o está mal escrito, avisa y devuelve undefined. */
 function readConfigJson(fileName) {
   const filePath = path.join(getConfigDir(), fileName);
+  const noticeKey = `config:${fileName}`;
   try {
-    return parseJsonFile(filePath);
+    const data = parseJsonFile(filePath);
+    clearNotice(noticeKey); // si había un aviso de error, ya está arreglado
+    return data;
   } catch (error) {
-    const reason = error.code === 'ENOENT' ? 'no existe' : `tiene un error: ${error.message}`;
-    console.warn(`[config] ${filePath} ${reason}. Uso valores por defecto.`);
+    if (error.code === 'ENOENT') {
+      console.warn(`[config] ${filePath} no existe. Uso valores por defecto.`);
+    } else {
+      console.warn(`[config] ${filePath} tiene un error: ${error.message}. Uso valores por defecto.`);
+      addNotice({
+        key: noticeKey,
+        kind: 'error',
+        tone: 'danger',
+        title: `${fileName} tiene un error`,
+        text: `${error.message}. Mientras tanto uso lo de por defecto.`,
+        alert: true,
+      });
+    }
     return undefined;
   }
 }
@@ -63,6 +92,23 @@ function clampMinutes(value) {
   return Math.min(POMODORO_MAX_MINUTES, Math.max(POMODORO_MIN_MINUTES, minutes));
 }
 
+/**
+ * Atajos de las páginas: los de settings.json encima de los de por defecto.
+ * "" (o false/null) deja esa página sin atajo; las páginas que no pongas
+ * conservan el suyo.
+ */
+function normalizePageShortcuts(value) {
+  const result = { ...DEFAULT_SETTINGS.pageShortcuts };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return result;
+  for (const page of PAGES) {
+    if (!(page in value)) continue;
+    const accelerator = value[page];
+    if (accelerator === '' || accelerator === false || accelerator === null) result[page] = '';
+    else if (typeof accelerator === 'string' && accelerator.trim()) result[page] = accelerator.trim();
+  }
+  return result;
+}
+
 /** settings.json mezclado con los valores por defecto y revisado. */
 function loadSettings() {
   const data = readConfigJson('settings.json');
@@ -71,12 +117,16 @@ function loadSettings() {
 
   // Corregimos valores con el tipo equivocado para que nada falle más adelante.
   if (typeof result.shortcut !== 'string' || !result.shortcut.trim()) result.shortcut = DEFAULT_SETTINGS.shortcut;
+  result.shortcut = result.shortcut.trim();
+  result.pageShortcuts = normalizePageShortcuts(result.pageShortcuts);
+  if (!THEMES.includes(result.theme)) result.theme = DEFAULT_SETTINGS.theme;
   if (typeof result.locale !== 'string') result.locale = DEFAULT_SETTINGS.locale;
   result.hour12 = result.hour12 === true;
   result.autoHide = result.autoHide !== false;
   result.revealOnHover = result.revealOnHover !== false;
   result.pomodoroMinutes = clampMinutes(result.pomodoroMinutes);
   result.musicActivity = result.musicActivity !== false;
+  result.volumeIndicator = result.volumeIndicator !== false;
   return result;
 }
 
@@ -132,6 +182,7 @@ function watchConfigFolder(onChange) {
 module.exports = {
   DEFAULT_SETTINGS,
   clampMinutes,
+  stripBom,
   readConfigJson,
   loadSettings,
   saveSetting,

@@ -52,3 +52,8 @@ export function plural(count, singular, pluralWord) {
 export function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** "Control+Alt+3" → "Ctrl+Alt+3" (atajos de settings.json, más cortos para leer). */
+export function prettyAccelerator(accelerator) {
+  return String(accelerator).replace(/\b(CommandOrControl|CmdOrCtrl|Control)\b/gi, 'Ctrl');
+}

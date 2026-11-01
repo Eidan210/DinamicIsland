@@ -1,22 +1,39 @@
 // =============================================================================
-//  renderer/modules/tabs.js — Pestañas (Home, Música, Focus, Claude)
+//  renderer/modules/tabs.js — Las páginas del panel
 // -----------------------------------------------------------------------------
+//  Home, Música, IA, Focus, Portapapeles y Nota (Ctrl+Alt+1…6).
 //  El fondo de la pestaña activa se desliza de una a otra, y la vista nueva
 //  entra por el lado hacia el que avanzas (como pasar páginas).
+//  Cada cambio se le cuenta a main.js: así sabe que, si pulsas el atajo de la
+//  página que ya se ve, debe cerrar el panel.
 // =============================================================================
 
-import { $, animate, SPRING } from './utils.js';
+import { $, animate, prettyAccelerator, SPRING } from './utils.js';
 import { state } from './state.js';
 
-const TAB_ORDER = ['home', 'music', 'focus', 'claude'];
+// ⚠️ Mismos nombres y orden que PAGES en main/state.js y que index.html.
+const TAB_ORDER = ['home', 'music', 'ai', 'focus', 'clipboard', 'note'];
+const TAB_NAMES = { home: 'Home', music: 'Música', ai: 'IA', focus: 'Focus', clipboard: 'Portapapeles', note: 'Nota' };
+
 const tabbar = $('tabbar');
 const tabIndicator = $('tab-indicator');
 const tabButtons = document.querySelectorAll('.tab');
+const tabListeners = [];
 
 let currentTab = 'home';
 
 function getView(name) {
   return document.querySelector(`.view[data-view="${name}"]`);
+}
+
+/** La página que se ve ahora. */
+export function getCurrentTab() {
+  return currentTab;
+}
+
+/** Avisa a `listener(nueva, anterior)` cada vez que cambia la página. */
+export function onTabChange(listener) {
+  tabListeners.push(listener);
 }
 
 export function showTab(name) {
@@ -32,32 +49,36 @@ export function showTab(name) {
 
   const previousTab = currentTab;
   currentTab = name;
+  window.notch.setCurrentTab(name);
   const oldView = getView(previousTab);
   const newView = getView(name);
   oldView.classList.remove('is-active');
   newView.classList.add('is-active');
-  if (!state.isExpanded) return; // con el panel cerrado no hace falta animar
 
-  // La vista nueva entra por el lado hacia el que avanzas y la vieja sale por
-  // el contrario (como pasar páginas).
-  const direction = TAB_ORDER.indexOf(name) > TAB_ORDER.indexOf(previousTab) ? 1 : -1;
-  animate(
-    newView,
-    [
-      { opacity: 0, transform: `translateX(${30 * direction}px)` },
-      { opacity: 1, transform: 'translateX(0)' },
-    ],
-    { duration: 420, easing: SPRING }
-  );
-  animate(
-    oldView,
-    [
-      // visibility: 'visible' mantiene la vista vieja a la vista mientras se va
-      { opacity: 1, transform: 'translateX(0)', visibility: 'visible' },
-      { opacity: 0, transform: `translateX(${-30 * direction}px)`, visibility: 'visible' },
-    ],
-    { duration: 200, easing: 'ease-in' }
-  );
+  if (state.isExpanded) {
+    // La vista nueva entra por el lado hacia el que avanzas y la vieja sale por
+    // el contrario (como pasar páginas). Con el panel cerrado no hace falta.
+    const direction = TAB_ORDER.indexOf(name) > TAB_ORDER.indexOf(previousTab) ? 1 : -1;
+    animate(
+      newView,
+      [
+        { opacity: 0, transform: `translateX(${30 * direction}px)` },
+        { opacity: 1, transform: 'translateX(0)' },
+      ],
+      { duration: 420, easing: SPRING }
+    );
+    animate(
+      oldView,
+      [
+        // visibility: 'visible' mantiene la vista vieja a la vista mientras se va
+        { opacity: 1, transform: 'translateX(0)', visibility: 'visible' },
+        { opacity: 0, transform: `translateX(${-30 * direction}px)`, visibility: 'visible' },
+      ],
+      { duration: 200, easing: 'ease-in' }
+    );
+  }
+
+  tabListeners.forEach((listener) => listener(name, previousTab));
 }
 
 /** Pestaña siguiente (+1) o anterior (-1), dando la vuelta al llegar al final. */
@@ -75,16 +96,29 @@ export function moveTabIndicator(withAnimation) {
   tabIndicator.style.setProperty('--indicator-width', `${activeButton.offsetWidth}px`);
 }
 
+/** Al pasar el ratón por una pestaña se ve su atajo: "Música · Ctrl+Alt+2". */
+export function applyTabShortcuts() {
+  const shortcuts = state.settings.pageShortcuts || {};
+  tabButtons.forEach((button) => {
+    const name = TAB_NAMES[button.dataset.tab];
+    const accelerator = shortcuts[button.dataset.tab];
+    button.title = accelerator ? `${name} · ${prettyAccelerator(accelerator)}` : name;
+  });
+}
+
 export function initTabs() {
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => showTab(button.dataset.tab));
   });
 
-  // Las tarjetas de Home llevan a su pestaña.
+  // Las tarjetas de Home llevan a su página.
   document.querySelectorAll('.card[data-goto]').forEach((card) => {
     card.addEventListener('click', () => showTab(card.dataset.goto));
   });
 
-  // main.js puede pedir una pestaña (p. ej. al pulsar la notificación del Pomodoro).
+  // main.js puede pedir una página (atajos Ctrl+Alt+1…6, la notificación del Pomodoro...).
   window.notch.onShowTab((name) => showTab(name));
+
+  // Si la página se recarga, empieza en Home: se lo decimos a main.js.
+  window.notch.setCurrentTab(currentTab);
 }
