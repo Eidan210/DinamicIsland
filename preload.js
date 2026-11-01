@@ -98,6 +98,28 @@ contextBridge.exposeInMainWorld('notch', {
      * trae la nueva (o null); si no viene "art", es la misma de antes.
      */
     onChange: (callback) => subscribe('media:state', callback),
+    /** Mostrar (true) u ocultar (false) la música en la isla. Se guarda en settings.json. */
+    setActivity: (enabled) => ipcRenderer.send('media:set-activity', enabled === true),
+  },
+
+  // ---------- Letras (LRCLIB) ----------
+  lyrics: {
+    /** Devuelve (Promise) la letra de la canción: { status, lines, plain }. */
+    get: () => ipcRenderer.invoke('lyrics:get'),
+    /** Vuelve a buscarla (tras un error de conexión). */
+    retry: () => ipcRenderer.send('lyrics:retry'),
+    /** Avisa cuando cambia (otra canción, ya llegó...): callback(estado). */
+    onChange: (callback) => subscribe('lyrics:state', callback),
+  },
+
+  // ---------- Salidas de audio ----------
+  audio: {
+    /** Devuelve (Promise) { devices: [{ id, name, isDefault }], pendingId }. */
+    getState: () => ipcRenderer.invoke('audio:get'),
+    /** Pide usar otra salida (el id viene de la lista). */
+    setOutput: (id) => ipcRenderer.send('audio:set-output', String(id)),
+    /** Avisa cuando cambia la lista o la salida: callback(estado). */
+    onChange: (callback) => subscribe('audio:state', callback),
   },
 
   // ---------- Volumen de Windows ----------

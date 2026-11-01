@@ -235,6 +235,12 @@ function showContextMenu() {
       enabled: music.canToggleMusic(),
       click: () => music.sendMediaCommand('toggle'),
     },
+    {
+      label: 'Música en la isla',
+      type: 'checkbox',
+      checked: state.settings.musicActivity,
+      click: (item) => music.setMusicActivity(item.checked),
+    },
     { type: 'separator' },
     { label: 'Salir de Notch', click: () => app.quit() },
   ]);

@@ -116,6 +116,7 @@ export function updateShape() {
   const next = computeShape(activities);
   activityEl.dataset.kind = activities[0] || '';
   activityEl.dataset.status = Date.now() < state.celebrateUntil ? 'finished' : state.pomodoro.status;
+  island.dataset.activity = activities[0] || ''; // p. ej. con música se tiñe con la carátula
 
   if (next !== state.shape) {
     const previous = state.shape;

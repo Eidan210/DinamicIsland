@@ -3,13 +3,16 @@
 // -----------------------------------------------------------------------------
 //  Notch (Electron) no puede usar ciertas APIs de Windows directamente, así que
 //  este pequeño programa lo hace por él. Cada parte vive en su archivo:
-//    MediaModule.cs   la música que suena (sesión multimedia de Windows)
-//    VolumeModule.cs  el volumen (Core Audio; declaraciones en CoreAudio.cs)
+//    MediaModule.cs         la música que suena (sesión multimedia de Windows)
+//    VolumeModule.cs        el volumen (Core Audio; declaraciones en CoreAudio.cs)
+//    AudioDevicesModule.cs  las salidas de audio y cambiar la predeterminada
 //
 //  Protocolo con Electron (una línea de texto por mensaje):
 //    stdout → {"type":"ready"}                  al arrancar
 //             {"type":"media", ...}              cambió la música
 //             {"type":"volume", ...}             cambió el volumen
+//             {"type":"audio-devices", ...}      cambiaron las salidas de audio
+//             {"type":"audio-output-result", ...} resultado de "set-output"
 //             {"type":"error","message":"..."}   algo no se pudo iniciar
 //    stdin  ← órdenes, p. ej. "play", "next", "seek 83.5" (ver cada módulo)
 //    stderr → avisos para depurar (Electron los muestra en la terminal)
@@ -44,6 +47,7 @@ internal static class Program
         // Cada módulo arranca por su cuenta: si uno falla, los demás siguen.
         var mediaStarted = await MediaModule.StartAsync();
         VolumeModule.Start();
+        AudioDevicesModule.Start();
 
         Send(new { type = "ready" });
         if (mediaStarted) MediaModule.RequestFullRefresh();
@@ -70,7 +74,8 @@ internal static class Program
             try
             {
                 // Cada módulo dice si la orden es suya.
-                if (!await MediaModule.TryRunCommandAsync(command, argument))
+                if (!await MediaModule.TryRunCommandAsync(command, argument)
+                    && !AudioDevicesModule.TryRunCommand(command, argument))
                 {
                     LogError($"Orden desconocida: {command}");
                 }

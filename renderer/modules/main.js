@@ -14,6 +14,10 @@
 //    eyes.js      los ojos
 //    pomodoro.js  el Pomodoro (página, tarjeta, isla y burbuja)
 //    music.js     la música (página, tarjeta, isla, burbuja y aviso)
+//    colors.js    los colores de la carátula (k-means)
+//    swipe.js     deslizar para cambiar de canción
+//    lyrics.js    la letra sincronizada
+//    outputs.js   elegir la salida de audio
 //    links.js     los links
 //    volume.js    la barra de volumen
 //    notices.js   el centro de avisos (y los avisos en la isla)
@@ -30,7 +34,9 @@ import { initTabs, moveTabIndicator, applyTabShortcuts } from './tabs.js';
 import { initClock, applyClockSettings } from './clock.js';
 import { startEyes } from './eyes.js';
 import { initPomodoro, renderPomodoro } from './pomodoro.js';
-import { initMusic, loadInitialMedia, renderMedia } from './music.js';
+import { initMusic, loadInitialMedia, renderMedia, renderIslandToggle } from './music.js';
+import { initLyrics, setLyrics } from './lyrics.js';
+import { initOutputs, setAudioState } from './outputs.js';
 import { initLinks, setLinks } from './links.js';
 import { initVolume, loadInitialVolume } from './volume.js';
 import { initNotices, loadInitialNotices } from './notices.js';
@@ -48,6 +54,8 @@ async function loadInitialState() {
     pomodoro: window.notch.pomodoro.getState(),
     links: window.notch.links.getAll(),
     media: window.notch.media.getState(),
+    lyrics: window.notch.lyrics.get(),
+    audio: window.notch.audio.getState(),
     volume: window.notch.volume.getState(),
     notices: window.notch.notices.getAll(),
     note: window.notch.note.get(),
@@ -75,6 +83,8 @@ async function init() {
   initClock();
   initPomodoro();
   initMusic();
+  initLyrics();
+  initOutputs();
   initLinks();
   initVolume();
   initNotices();
@@ -85,6 +95,7 @@ async function init() {
     state.settings = { ...state.settings, ...newSettings };
     applyClockSettings();
     applyTabShortcuts();
+    renderIslandToggle();
     updateShape();
   });
 
@@ -94,6 +105,8 @@ async function init() {
   if (loaded.theme) setTheme(loaded.theme);
   if (loaded.pomodoro) state.pomodoro = loaded.pomodoro;
   if (loaded.media) loadInitialMedia(loaded.media);
+  if (loaded.lyrics) setLyrics(loaded.lyrics);
+  if (loaded.audio) setAudioState(loaded.audio);
   setLinks(loaded.links);
   loadInitialVolume(loaded.volume);
   loadNote(loaded.note); // si no se pudo leer, la nota queda en solo lectura
@@ -101,6 +114,7 @@ async function init() {
   // 3. Lo dibujamos todo.
   applyClockSettings();
   applyTabShortcuts();
+  renderIslandToggle();
   renderPomodoro();
   renderMedia();
   moveTabIndicator(false);

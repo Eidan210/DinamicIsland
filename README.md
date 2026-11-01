@@ -1,8 +1,8 @@
 # Notch
 
-Isla dinámica estilo iPhone para **Windows 11**. En reposo es una mini-muesca negra con dos ojos verdes, pegada al borde superior de la pantalla. Cuando pasa algo (un Pomodoro, una canción, cambias el volumen, se acaba la batería), se convierte en una píldora con información en vivo, como la isla dinámica de Apple; si pasan dos cosas a la vez, la segunda sale en una burbuja a su lado. Con **Ctrl + Alt + T** se despliega en un panel con 6 páginas (Home, Música, IA, Focus, Portapapeles y Nota), y con **Ctrl + Alt + 1…6** vas directo a cada una.
+Isla dinámica estilo iPhone para **Windows 11**. En reposo es una mini-muesca negra con dos ojos verdes, pegada al borde superior de la pantalla. Cuando pasa algo (un Pomodoro, una canción, cambias el volumen, se acaba la batería), se convierte en una píldora con información en vivo, como la isla dinámica de Apple; si pasan dos cosas a la vez, la segunda sale en una burbuja a su lado. Con **Ctrl + Alt + T** se despliega en un panel con 6 páginas (Home, Música, IA, Focus, Portapapeles y Nota), y con **Ctrl + Alt + 1…6** vas directo a cada una. En la página Música ves la **letra sincronizada**, los colores de la carátula y puedes cambiar la **salida de audio**; para pasar de canción basta con **deslizar** a los lados.
 
-Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en **C#** (WinHelper) que habla con Windows; hoy, para leer la música y el volumen. Código comentado en español.
+Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en **C#** (WinHelper) que habla con Windows: la música, el volumen y las salidas de audio. Código comentado en español.
 
 ## Estado
 
@@ -20,7 +20,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | --- | --- | --- |
 | 0 | Cimientos: código repartido en módulos y helper renombrado a WinHelper | ✅ Hecha |
 | 1 | Base: 6 páginas, atajos Ctrl+Alt+1…6, varias actividades, tema, volumen, batería, avisos y nota rápida | ✅ Hecha |
-| 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ⏳ Pendiente |
+| 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ✅ Hecha |
 | 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ⏳ Pendiente |
 | 4 | Glow: colores que avisan de lo que pasa | ⏳ Pendiente |
 | 5 | Clawd, la mascota, en la isla | ⏳ Pendiente |
@@ -70,7 +70,7 @@ La isla cambia de forma según lo que pasa:
 | --- | --- |
 | **Mini-muesca** | En reposo. Es pequeña, está pegada al borde de arriba y deja pasar los clics: no molesta a las pestañas del navegador. Un **punto azul** a la izquierda indica que hay avisos sin ver, y a la derecha aparece la **pila** cuando queda poca batería. |
 | **Píldora** | Al dejar el ratón un instante sobre la mini-muesca (y 2 segundos al arrancar). Si te alejas, vuelve a encogerse. |
-| **Actividad en vivo** | Mientras hay un Pomodoro en marcha (anillo y cuenta atrás) o suena música (carátula y ecualizador). Puede haber hasta 3 a la vez: la más importante en la isla y las demás en **burbujas** a su derecha, como en el iPhone. Hoy manda el Pomodoro; con él en marcha, la música pasa a una burbuja con su carátula. |
+| **Actividad en vivo** | Mientras hay un Pomodoro en marcha (anillo y cuenta atrás) o suena música (carátula y ecualizador, con la isla teñida de los colores de la carátula). Puede haber hasta 3 a la vez: la más importante en la isla y las demás en **burbujas** a su derecha, como en el iPhone. Hoy manda el Pomodoro; con él en marcha, la música pasa a una burbuja con su carátula. |
 | **Volumen** | Al cambiar el volumen de Windows: una barra con el nivel durante 1,5 segundos (con el panel abierto, sale en lugar de la fecha). |
 | **Aviso** | Cuando empieza una canción nueva: «Ahora suena», con carátula, título y artista, durante 4 segundos. |
 | **Aviso importante** | Batería baja (20 % y 10 %), un error en `settings.json`, un atajo que no funciona, el helper que falta… Si lo pulsas, se abre el panel con la lista de avisos. |
@@ -84,7 +84,8 @@ La isla cambia de forma según lo que pasa:
 | `Esc` | Cierra el panel (o antes, la lista de avisos) y devuelve el foco a la app que estabas usando |
 | Clic fuera del panel | Cierra el panel |
 | `←` `→` con el panel abierto | Cambian de página (no mientras escribes en la nota) |
-| Clic derecho en la isla | Menú: abrir/cerrar, Pomodoro, pausar/reanudar música y **Salir de Notch** |
+| Deslizar sobre la música | Con dos dedos en el touchpad, o arrastrando con el ratón y soltando, sobre la isla (con la música), su burbuja o la carátula de la página Música: hacia la izquierda, **siguiente canción**; hacia la derecha, **anterior** |
+| Clic derecho en la isla | Menú: abrir/cerrar, Pomodoro, pausar/reanudar música, **Música en la isla** (sí/no) y **Salir de Notch** |
 | Clic derecho en la nota | Cortar, copiar, pegar… |
 | `Alt + F4` con el panel abierto | Solo cierra el panel (no sale de la app) |
 
@@ -98,7 +99,10 @@ En la barra de arriba del panel están la **campana** (con el número de avisos 
 - **Música**: lo que suena en **cualquier app** que se integre con Windows (Apple Music, Spotify, el navegador…).
   - Carátula, título, artista, app de origen, barra de progreso y controles (anterior, reproducir/pausar, siguiente).
   - Haz clic en la barra para saltar a ese punto, si la app lo permite.
-  - Los colores (barra, ecualizador, brillo) se sacan de la carátula.
+  - **Letra** a la derecha, de [LRCLIB](https://lrclib.net): la línea que suena va en el centro, resaltada, y la letra avanza sola. Pulsa una línea para saltar a ese momento. Si la letra no tiene tiempos, se ve entera; si no la hay, pone «Sin letra disponible».
+  - Los **colores** de la carátula tiñen el fondo de la página (un degradado con sus 3 colores principales), la tarjeta de Home, la isla, la barra y el ecualizador.
+  - El botón de la **píldora** decide si la música se muestra en la isla (se guarda en `musicActivity`).
+  - El botón del **altavoz** abre la lista de **salidas de audio** (altavoces, auriculares, la tele…): la que eliges pasa a ser la predeterminada de Windows.
 - **Focus**: el **Pomodoro** y todos tus **links**.
   - **Iniciar / Pausar / Seguir** y **↺ Reiniciar**.
   - `−` / `+` cambian la duración de 5 en 5 minutos (con el Pomodoro parado). La duración se guarda en `settings.json`.
@@ -134,6 +138,7 @@ Todo está en la carpeta `config/`. **Al guardar un archivo, Notch lo aplica al 
   "revealOnHover": true,
   "pomodoroMinutes": 25,
   "musicActivity": true,
+  "lyrics": true,
   "volumeIndicator": true
 }
 ```
@@ -150,7 +155,8 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `autoHide` | `true` | `true`: en reposo se encoge a la mini-muesca. `false`: la píldora siempre está a la vista. |
 | `revealOnHover` | `true` | `true`: pasar el ratón por la mini-muesca la despierta. `false`: solo se abre con el atajo. |
 | `pomodoroMinutes` | `25` | Duración del Pomodoro, entre 1 y 180 minutos. También la cambian los botones `−` / `+`. |
-| `musicActivity` | `true` | `true`: mientras suena música, la isla la muestra y avisa al cambiar de canción. `false`: la música solo aparece en el panel. |
+| `musicActivity` | `true` | `true`: mientras suena música, la isla la muestra y avisa al cambiar de canción. `false`: la música solo aparece en el panel. También lo cambia el botón de la píldora de la página Música. |
+| `lyrics` | `true` | `true`: busca las letras en LRCLIB (la única conexión a internet de Notch). `false`: sin letras y sin ninguna conexión. |
 | `volumeIndicator` | `true` | `true`: al cambiar el volumen, la isla enseña una barra 1,5 s. `false`: solo se ve el indicador de Windows. |
 
 ### `config/links.json`
@@ -208,6 +214,9 @@ main/                    Proceso principal (Node.js), un archivo por tema:
   links.js               config/links.json
   helper.js              lanza WinHelper.exe y reparte sus mensajes
   music.js               la música que suena en Windows
+  lrc.js                 leer letras sincronizadas (formato LRC) y elegir la mejor
+  lyrics.js              las letras: LRCLIB y su caché
+  audio.js               las salidas de audio
   volume.js              el volumen de Windows
   note.js                la nota rápida (nota.md)
   ipc.js                 TODO lo que la página puede pedir (una lista)
@@ -226,13 +235,18 @@ renderer/
     battery.js           la batería
     note.js              la nota rápida
     theme.js             tema claro u oscuro
+    lyrics.js            la letra sincronizada
+    colors.js            los colores de la carátula (k-means)
+    swipe.js             deslizar para cambiar de canción
+    outputs.js           la lista de salidas de audio
     clock.js, eyes.js, pomodoro.js, music.js, links.js, utils.js
 helpers/WinHelper/
   WinHelper.csproj       Proyecto C# (.NET 8, Windows 10 2004 o superior)
   Program.cs             Arranca los módulos y habla con Notch (stdin/stdout)
   MediaModule.cs         La música (sesión multimedia de Windows)
   VolumeModule.cs        El volumen (Core Audio)
-  CoreAudio.cs           Las declaraciones de Core Audio que usa VolumeModule
+  AudioDevicesModule.cs  Las salidas de audio y cambiar la predeterminada
+  CoreAudio.cs           Las declaraciones de Core Audio (y de IPolicyConfig)
 config/
   settings.json          Tu configuración
   links.json             Tus links
@@ -247,11 +261,16 @@ assets/
 - **Clics que atraviesan.** La ventana ignora el ratón con `setIgnoreMouseEvents(true, { forward: true })`, así que los clics pasan a lo que hay debajo. Gracias a `forward`, la página sigue recibiendo los movimientos del ratón dentro de su zona. Así sabe cuándo dejas el ratón sobre la mini-muesca, para despertarla, y cuándo entras en la isla, para que `main.js` vuelva a aceptar clics. La mini-muesca nunca atrapa clics.
 - **Foco.** Al abrirse, el notch toma el foco para recibir `Esc` y para saber, con el evento `blur`, cuándo haces clic fuera. Al cerrarse con `Esc` o con el atajo, devuelve el foco a la app que estabas usando.
 - **Música con un helper en C#.** `WinHelper.exe` usa `GlobalSystemMediaTransportControlsSessionManager` de Windows: la misma sesión que ves en el panel de volumen. Por eso funciona con cualquier app, sin conectarse a ninguna en concreto.
-  - Electron lo lanza como proceso hijo. El helper escribe en su salida estándar (stdout) **una línea JSON por cada cambio**, con un campo `type` que dice de qué trata (`media` o `volume`), y `main/helper.js` la reparte al módulo que corresponde. Para la música trae título, artista, álbum, estado, posición, duración, app y carátula. Recibe órdenes por su entrada estándar (stdin): `play`, `pause`, `toggle`, `next`, `previous`, `seek` y `refresh`.
+  - Electron lo lanza como proceso hijo. El helper escribe en su salida estándar (stdout) **una línea JSON por cada cambio**, con un campo `type` que dice de qué trata (`media`, `volume`, `audio-devices` o `audio-output-result`), y `main/helper.js` la reparte al módulo que corresponde. Para la música trae título, artista, álbum, estado, posición, duración, app y carátula. Recibe órdenes por su entrada estándar (stdin): `play`, `pause`, `toggle`, `next`, `previous`, `seek`, `refresh`, `audio-devices` y `set-output`.
+  - Apple Music manda «Artista — Álbum» juntos en el artista: Notch los separa.
   - Funciona solo por avisos de Windows: no comprueba nada periódicamente.
   - La carátula se reduce a 300 px en JPEG y **solo viaja cuando cambia**.
   - Si el helper se cierra, Electron lo reinicia esperando cada vez más (2 s, 4 s… hasta 1 minuto). Al salir de Notch, el helper se cierra con él.
 - **Volumen con Core Audio.** El mismo helper escucha el volumen de tu salida de audio con las interfaces COM de Windows (`IAudioEndpointVolumeCallback` y, para cuando cambias de altavoces a auriculares, `IMMNotificationClient`). Windows le avisa en cada cambio; al arrastrar el control llegan decenas de avisos seguidos y los junta en uno cada 40 ms. Windows 11 no deja ocultar su propio indicador de volumen, así que se ven los dos (o pon `"volumeIndicator": false`).
+- **Letras de LRCLIB.** Al cambiar de canción, `main/lyrics.js` mira primero su caché (`%APPDATA%\Notch\lyrics\`, un archivo por canción). Si no la tiene, espera 1,5 s (por si estás pasando canciones) y pregunta a LRCLIB: primero la búsqueda exacta (`/api/get`, con título, artista, álbum y duración) y, si no la encuentra, la aproximada (`/api/search`, quitando cosas como «(feat. …)» o «- Remastered»). Guarda la respuesta, también el «no hay letra» (lo vuelve a intentar a los 7 días). Si LRCLIB no contesta en 10 s o no hay internet, la página ofrece «Reintentar». Sin artista (un vídeo cualquiera) no busca, para no traer la letra de otra canción.
+- **La línea que suena, sin sondeos.** La página calcula en qué línea vas con la posición interpolada y programa **un solo temporizador** para el instante exacto de la siguiente; si pausas, saltas o cambias de canción, lo recalcula. Solo funciona con la página Música a la vista.
+- **Colores con k-means.** La carátula se reduce a 16 × 16 píxeles y se agrupan los píxeles parecidos en 3 grupos; el color medio de cada uno pinta los degradados y el más vivo es el color de acento. Son variables CSS registradas con `@property`, así que cambian de una canción a otra con una transición suave.
+- **Salida de audio.** El helper lista las salidas con Core Audio (`IMMDeviceEnumerator`) y se entera de los cambios por avisos de Windows. Para cambiar la predeterminada usa `IPolicyConfig`, la interfaz que usa la propia configuración de sonido de Windows. ⚠️ Microsoft no la documenta: funciona de Windows 7 a Windows 11, pero si algún día cambia, Notch solo mostrará el aviso «No se pudo cambiar la salida de audio».
 - **Batería por eventos.** La página usa la API de batería de Chromium (`navigator.getBattery()`), que avisa cuando cambia el nivel o enchufas el cargador. Avisa una vez al bajar del 20 % y otra del 10 %, y vuelve a avisar tras cargarlo.
 - **Centro de avisos.** Solo los de Notch (Pomodoro, batería, errores de configuración, atajos, helper; más adelante, la IA). Viven en memoria: al cerrar Notch se olvidan. Notch no puede leer las notificaciones de otras apps (Windows solo lo permite a las instaladas desde la Microsoft Store).
 - **Tema.** `main/theme.js` aplica `theme` con `nativeTheme` (así el menú del clic derecho también cambia) y le dice a la página qué tema toca; la página lo pone en `<html data-theme>`. Con `"auto"`, si cambias el modo de Windows, el panel cambia solo.
@@ -269,7 +288,9 @@ assets/
 
 ## Privacidad
 
-Sin telemetría ni analíticas, y Notch no se conecta a **ningún** servidor. El corrector ortográfico que trae Electron descargaba diccionarios de Google al arrancar: está desactivado (la nota no lo usa) y esa descarga se redirige a tu propio PC. Tu nota, tus avisos y tu configuración se quedan en tu PC. La única conexión externa del proyecto llegará en la Fase 2: LRCLIB, para descargar letras.
+Sin telemetría ni analíticas. La **única** conexión a internet de Notch es **LRCLIB** (<https://lrclib.net>), una base de datos libre de letras: por cada canción nueva le manda el **título, el artista, el álbum y la duración** (nada más: ni quién eres ni qué más haces), y solo si no tenía ya la letra guardada. Con `"lyrics": false` en `settings.json` no hay ninguna conexión.
+
+El corrector ortográfico que trae Electron descargaba diccionarios de Google al arrancar: está desactivado (la nota no lo usa) y esa descarga se redirige a tu propio PC. Tu nota, tus avisos, tu configuración y la caché de letras (`%APPDATA%\Notch\lyrics\`, se puede borrar cuando quieras) se quedan en tu PC.
 
 ## Solución de problemas
 
@@ -285,6 +306,11 @@ Sin telemetría ni analíticas, y Notch no se conecta a **ningún** servidor. El
 - **Salen dos indicadores de volumen.** El de Windows 11 no se puede ocultar. Si prefieres solo ese, pon `"volumeIndicator": false`.
 - **No aparece la barra de volumen.** Vuelve a compilar el helper (`npm run build:helper`) y reinicia Notch: el volumen es nuevo en la Fase 1.
 - **El panel se ve claro (u oscuro) y no lo quiero así.** Con `"theme": "auto"` sigue el modo de las apps de Windows (*Configuración → Personalización → Colores*). Pon `"theme": "dark"` o `"light"` para fijarlo.
+- **No sale la letra.** LRCLIB no tiene todas las canciones (sobre todo las muy nuevas o poco conocidas): entonces pone «Sin letra disponible». Si pone «No se pudo buscar la letra», no hay internet o LRCLIB no contesta: pulsa «Reintentar». Si pusiste `"lyrics": false`, la columna de la letra no aparece.
+- **La letra va adelantada o atrasada.** Depende de la posición que la app le cuenta a Windows: si al saltar con la barra la canción va al sitio correcto, la letra también debería. Algunas letras de LRCLIB tienen los tiempos un poco desfasados.
+- **No aparece el botón de la salida de audio.** Vuelve a compilar el helper (`npm run build:helper`) y reinicia Notch: las salidas de audio son nuevas en la Fase 2.
+- **No se pudo cambiar la salida de audio.** Windows no lo permitió (la interfaz que usa Notch no está documentada). Cámbiala en *Configuración → Sistema → Sonido*; la lista de Notch se actualiza sola.
+- **Deslizar con el touchpad va al revés.** Depende de la dirección de desplazamiento de Windows (*Configuración → Bluetooth y dispositivos → Panel táctil → Desplazar y hacer zoom*). Con el ratón (arrastrar y soltar) siempre es: izquierda = siguiente.
 - **No veo la batería.** Solo sale si el equipo tiene batería y no está llena y enchufada a la vez. En la mini-muesca, solo cuando queda poca (20 % o menos) y no está cargando.
 - **No llega la notificación del Pomodoro.** Revisa que «No molestar» esté desactivado (*Configuración → Sistema → Notificaciones*). Windows también silencia las notificaciones mientras juegas a pantalla completa. Con `npm start`, la notificación aparece con un nombre técnico (`com.eidancuadros.notch`); en la versión instalada, como «Notch».
 - **Un link no aparece.** Mira la terminal: dice qué link se ignoró y por qué.

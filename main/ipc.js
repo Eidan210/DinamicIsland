@@ -14,6 +14,8 @@ const notchWindow = require('./window');
 const pomodoro = require('./pomodoro');
 const links = require('./links');
 const music = require('./music');
+const lyrics = require('./lyrics');
+const audio = require('./audio');
 const volume = require('./volume');
 const note = require('./note');
 const notices = require('./notices');
@@ -42,9 +44,14 @@ function registerIpcHandlers() {
   onRendererRequest('links:get', () => links.getLinksForRenderer());
   onRendererMessage('links:open', (index) => links.openLink(index));
 
-  // Música y volumen
+  // Música, letras, salidas de audio y volumen
   onRendererRequest('media:get', () => music.getMusicState());
   onRendererMessage('media:command', (command, value) => music.sendMediaCommand(String(command), Number(value)));
+  onRendererMessage('media:set-activity', (enabled) => music.setMusicActivity(enabled === true));
+  onRendererRequest('lyrics:get', () => lyrics.getLyricsState());
+  onRendererMessage('lyrics:retry', () => lyrics.retryLyrics());
+  onRendererRequest('audio:get', () => audio.getAudioState());
+  onRendererMessage('audio:set-output', (id) => audio.setOutputDevice(String(id)));
   onRendererRequest('volume:get', () => volume.getVolumeState());
 
   // Nota rápida

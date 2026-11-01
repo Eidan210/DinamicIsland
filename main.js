@@ -20,6 +20,9 @@
 //    links.js      config/links.json
 //    helper.js     el helper de Windows en C# (helpers/WinHelper)
 //    music.js      la música que suena en Windows (vía el helper)
+//    lrc.js        leer letras sincronizadas y elegir la mejor
+//    lyrics.js     las letras (LRCLIB, la única conexión a internet)
+//    audio.js      las salidas de audio (vía el helper)
 //    volume.js     el volumen de Windows (vía el helper)
 //    note.js       la nota rápida (nota.md en tu carpeta de datos)
 //    ipc.js        todo lo que la página puede pedir
@@ -37,6 +40,7 @@ const shortcuts = require('./main/shortcuts');
 const pomodoro = require('./main/pomodoro');
 const links = require('./main/links');
 const helper = require('./main/helper');
+const lyrics = require('./main/lyrics');
 const { registerIpcHandlers } = require('./main/ipc');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
@@ -51,6 +55,7 @@ function onConfigChanged(changedFiles) {
     state.settings = config.loadSettings();
     if (shortcutsKey(state.settings) !== previousShortcuts) shortcuts.registerShortcuts();
     applyTheme();
+    lyrics.onSettingsChanged(); // "lyrics": encender o apagar las letras al momento
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();

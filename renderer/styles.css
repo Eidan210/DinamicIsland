@@ -75,15 +75,52 @@
   --open-duration: 560ms;
   --close-duration: 420ms;
 
-  /* Color de la música: music.js lo saca de la carátula y cambia con suavidad */
-  transition: --music-accent 800ms ease;
+  /* Colores de la música: music.js los saca de la carátula y cambian con suavidad.
+     --music-accent es el más vivo (barras, progreso) y --art-1/2/3 son los 3
+     colores principales de la carátula (degradados de fondo). */
+  transition:
+    --music-accent 800ms ease,
+    --art-1 900ms ease,
+    --art-2 900ms ease,
+    --art-3 900ms ease;
 }
 
-/* Registrar la variable permite animarla como un color (si no, cambiaría de golpe) */
+/* Registrar las variables permite animarlas como colores (si no, cambiarían de golpe) */
 @property --music-accent {
   syntax: "<color>";
   inherits: true;
   initial-value: #3dff8f;
+}
+
+@property --art-1 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1d2a3a;
+}
+
+@property --art-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #2a1d3a;
+}
+
+@property --art-3 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1d3a2e;
+}
+
+/* Tinte de la isla con los colores de la carátula (transparente si no suena música) */
+@property --island-tint-1 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --island-tint-2 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
 }
 
 /* ---------- 2. Base ---------- */
@@ -141,6 +178,12 @@ img:not([src]) {
   visibility: hidden; /* sin carátula, que no se vea el icono de imagen rota */
 }
 
+/* Las imágenes no se "arrastran" como en una web: así deslizar la carátula
+   para cambiar de canción funciona */
+img {
+  -webkit-user-drag: none;
+}
+
 /* Iconos de reproducir/pausar: se cambia uno por otro con data-running */
 .icon-play {
   fill: currentColor;
@@ -177,6 +220,7 @@ img:not([src]) {
   height: var(--pill-height);
   border-radius: var(--pill-radius);
   background-color: #000;
+  background-image: linear-gradient(100deg, var(--island-tint-1), transparent 58%, var(--island-tint-2));
   overflow: hidden; /* el contenido queda "recortado" mientras la isla crece */
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.35),
@@ -190,7 +234,16 @@ img:not([src]) {
     translate var(--size-duration) var(--size-easing),
     background-color var(--size-duration) ease,
     box-shadow var(--size-duration) ease,
-    scale 260ms var(--spring-bounce);
+    scale 260ms var(--spring-bounce),
+    --island-tint-1 600ms ease,
+    --island-tint-2 600ms ease;
+}
+
+/* Con música (en la isla o en el aviso de canción nueva), un tinte suave con
+   los colores de la carátula, como las actividades en vivo del iPhone */
+:root[data-has-art="true"] .island:is([data-shape="activity"][data-activity="music"], [data-shape="banner"]) {
+  --island-tint-1: color-mix(in srgb, var(--art-1) 42%, transparent);
+  --island-tint-2: color-mix(in srgb, var(--art-2) 30%, transparent);
 }
 
 .island[data-motion="grow"] {
@@ -354,6 +407,14 @@ img:not([src]) {
 .island[data-shape="activity"] .activity {
   opacity: 1;
   transition: opacity 260ms ease 120ms;
+}
+
+/* Al arrastrar la isla para cambiar de canción, el contenido sigue al ratón
+   (--swipe-x lo pone swipe.js, que también lo devuelve a su sitio con un rebote) */
+.activity,
+.banner,
+.player-art-wrap {
+  translate: var(--swipe-x, 0px) 0;
 }
 
 /* Lo de la izquierda y lo de la derecha salen desde el centro hacia los lados */
@@ -1154,16 +1215,13 @@ img:not([src]) {
   font-weight: 500;
 }
 
-/* Centro de avisos: una lista que se despliega desde la campana */
-.notices {
+/* Desplegables (la lista de avisos y la de salidas de audio): una tarjeta que
+   aparece con un pequeño rebote. .is-open la muestra. */
+.popover {
   position: absolute;
-  top: 40px;
-  right: 24px;
   z-index: 5;
   display: flex;
   flex-direction: column;
-  width: 340px;
-  max-height: 198px;
   padding: 10px 6px 6px;
   border-radius: 18px;
   background: var(--popover-bg);
@@ -1173,7 +1231,6 @@ img:not([src]) {
   opacity: 0;
   scale: 0.94;
   translate: 0 -6px;
-  transform-origin: calc(100% - 130px) 0;
   visibility: hidden;
   transition:
     opacity 160ms ease,
@@ -1182,7 +1239,7 @@ img:not([src]) {
     visibility 0s linear 220ms;
 }
 
-.notices.is-open {
+.popover.is-open {
   opacity: 1;
   scale: 1;
   translate: 0 0;
@@ -1194,11 +1251,20 @@ img:not([src]) {
     visibility 0s;
 }
 
-.notices-head {
+.popover-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 6px 10px;
+}
+
+/* Centro de avisos: se despliega desde la campana */
+.notices {
+  top: 40px;
+  right: 24px;
+  width: 340px;
+  max-height: 198px;
+  transform-origin: calc(100% - 130px) 0;
 }
 
 .text-btn {
@@ -1476,6 +1542,12 @@ code {
 
 .card-music[data-has-art="true"] {
   --card-accent: var(--music-accent);
+  background-image: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--art-1) 30%, transparent),
+    color-mix(in srgb, var(--art-2) 16%, transparent) 70%,
+    color-mix(in srgb, var(--art-3) 22%, transparent)
+  );
 }
 
 .card-links {
@@ -1696,20 +1768,46 @@ code {
 }
 
 /* ---------- 9. Música ---------- */
+/* Fondo de la página Música: un degradado con los 3 colores de la carátula
+   que cubre todo el panel (panel.js pone data-tab en el panel) */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--panel-radius);
+  background:
+    radial-gradient(85% 120% at 0% 0%, color-mix(in srgb, var(--art-1) 50%, transparent), transparent 65%),
+    radial-gradient(75% 110% at 100% 100%, color-mix(in srgb, var(--art-2) 42%, transparent), transparent 70%),
+    radial-gradient(60% 90% at 78% 0%, color-mix(in srgb, var(--art-3) 34%, transparent), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 500ms ease;
+}
+
+:root[data-has-art="true"] .panel[data-tab="music"]::before {
+  opacity: 1;
+}
+
 .player {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 20px;
   width: 100%;
   height: 100%;
-  padding: 0 16px 6px 12px;
+  padding: 0 12px 6px 10px;
 }
 
 .player-art-wrap {
   position: relative;
   flex: none;
-  width: 118px;
-  height: 118px;
+  width: 112px;
+  height: 112px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.player-art-wrap.is-dragging {
+  cursor: grabbing;
 }
 
 .player-art,
@@ -1913,6 +2011,245 @@ code {
   cursor: default;
   transform: none;
   box-shadow: none;
+}
+
+/* Botones pequeños a la derecha de los controles: "en la isla" y salida de audio */
+.controls-gap {
+  flex: 1;
+}
+
+.ctrl-small {
+  width: 32px;
+  height: 32px;
+  color: var(--text-dim);
+}
+
+.ctrl-small svg {
+  width: 17px;
+  height: 17px;
+}
+
+.ctrl-small:hover,
+.ctrl-small[aria-expanded="true"] {
+  color: var(--text);
+}
+
+.ctrl-small[hidden] {
+  display: none;
+}
+
+/* "En la isla": la píldora con su punto; tachada si no se muestra */
+.island-off {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+#media-island[aria-pressed="false"] .island-off {
+  opacity: 1;
+}
+
+#media-island[aria-pressed="true"] {
+  color: var(--music-text);
+}
+
+/* La letra: columna de la derecha. Se ven unas 5 líneas; la que suena va en
+   el centro, resaltada, y la lista se desliza hacia arriba al cambiar
+   (--lyrics-y lo pone lyrics.js). Los bordes se desvanecen con una máscara. */
+.lyrics {
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: 238px;
+  margin: 2px 0 8px;
+  overflow: hidden;
+  mask-image: linear-gradient(180deg, transparent 0, transparent 5%, #000 30%, #000 70%, transparent 95%, transparent 100%);
+}
+
+.lyrics[data-status="off"] {
+  display: none;
+}
+
+.lyrics-lines {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  translate: 0 var(--lyrics-y, 0px);
+  transition: translate 620ms var(--spring);
+}
+
+.lyrics-lines.no-animation {
+  transition: none;
+}
+
+.lyric {
+  margin: 0;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.32;
+  opacity: 0.32;
+  scale: 0.94;
+  transform-origin: 0 50%;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition:
+    opacity 420ms ease,
+    scale 520ms var(--spring-bounce),
+    filter 420ms ease;
+}
+
+.lyric:hover {
+  opacity: 0.6;
+}
+
+.lyric.is-current {
+  opacity: 1;
+  scale: 1;
+}
+
+/* Las líneas lejanas, un poco borrosas (como en Apple Music) */
+.lyric.is-far {
+  filter: blur(0.6px);
+}
+
+/* Letra sin tiempos: todo el texto, para leerlo deslizando la rueda */
+.lyrics[data-status="plain"] {
+  overflow-y: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(180deg, #000 0, #000 80%, transparent 100%);
+}
+
+.lyrics[data-status="plain"] .lyrics-lines {
+  position: static;
+  translate: none;
+}
+
+.lyrics[data-status="plain"] .lyric {
+  opacity: 0.75;
+  scale: 1;
+  font-weight: 500;
+  cursor: default;
+}
+
+/* Mensaje cuando no hay letra con tiempos: "Buscando letra…", "Sin letra disponible"... */
+.lyrics-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  padding-left: 2px;
+  color: var(--text-faint);
+  font-size: 13px;
+  line-height: 1.4;
+  transition: opacity 300ms ease;
+}
+
+.lyrics:is([data-status="synced"], [data-status="plain"]) .lyrics-message {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lyrics-message .text-btn {
+  margin-left: -8px;
+  color: var(--music-text);
+}
+
+/* Lista de salidas de audio: se abre hacia arriba desde su botón (outputs.js
+   pone --anchor-right y --anchor-bottom con la posición del botón) */
+.outputs {
+  right: var(--anchor-right, 24px);
+  bottom: var(--anchor-bottom, 56px);
+  width: 300px;
+  max-height: 200px;
+  translate: 0 6px;
+  transform-origin: calc(100% - 16px) 100%;
+}
+
+.outputs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.output {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.output:hover {
+  background: rgba(var(--ink), 0.06);
+}
+
+.output:disabled {
+  cursor: default;
+}
+
+.output-icon {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  color: var(--text-dim);
+}
+
+.output-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.output-check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--music-text);
+  stroke-width: 2.4;
+  opacity: 0;
+}
+
+.output.is-default .output-check {
+  opacity: 1;
+}
+
+.output.is-default .output-icon {
+  color: var(--music-text);
+}
+
+/* Mientras Windows cambia la salida: un círculo que gira (solo esos segundos) */
+.output.is-pending .output-check {
+  opacity: 1;
+  border: 2px solid rgba(var(--ink), 0.2);
+  border-top-color: var(--music-text);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+.output.is-pending .output-check use {
+  display: none;
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
 }
 
 /* Sin música (o sin helper), solo el mensaje: fuera barra y botones */
@@ -2556,7 +2893,7 @@ code {
     inset 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
-:root[data-theme="light"] .notices {
+:root[data-theme="light"] .popover {
   box-shadow:
     0 14px 34px rgba(0, 0, 0, 0.18),
     inset 0 0 0 1px rgba(0, 0, 0, 0.08);

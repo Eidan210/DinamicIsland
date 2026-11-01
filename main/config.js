@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS = {
   revealOnHover: true, // pasar el ratón por la mini-muesca la despierta
   pomodoroMinutes: 25, // duración del Pomodoro
   musicActivity: true, // mostrar la música en la isla mientras suena (y avisar al cambiar de canción)
+  lyrics: true, // buscar las letras en LRCLIB (la única conexión a internet de Notch)
   volumeIndicator: true, // al cambiar el volumen, la isla enseña una barra 1,5 s
 };
 
@@ -126,6 +127,7 @@ function loadSettings() {
   result.revealOnHover = result.revealOnHover !== false;
   result.pomodoroMinutes = clampMinutes(result.pomodoroMinutes);
   result.musicActivity = result.musicActivity !== false;
+  result.lyrics = result.lyrics !== false;
   result.volumeIndicator = result.volumeIndicator !== false;
   return result;
 }

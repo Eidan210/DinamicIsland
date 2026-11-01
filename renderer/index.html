@@ -44,6 +44,18 @@
     <symbol id="i-info" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" />
     </symbol>
+    <symbol id="i-speaker" viewBox="0 0 24 24">
+      <rect x="5" y="2.5" width="14" height="19" rx="3" /><circle cx="12" cy="14.5" r="3.5" /><path d="M12 6.5h.01" />
+    </symbol>
+    <symbol id="i-headphones" viewBox="0 0 24 24">
+      <path d="M3.5 18v-5a8.5 8.5 0 0 1 17 0v5" /><path d="M20.5 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3.5 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-3z" />
+    </symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24">
+      <rect x="2.5" y="4" width="19" height="13" rx="2.5" /><path d="M8.5 21h7M12 17v4" />
+    </symbol>
+    <symbol id="i-check-mark" viewBox="0 0 24 24">
+      <path d="m5.5 12.5 4 4 9-9.5" />
+    </symbol>
   </svg>
 
   <!--
@@ -161,13 +173,21 @@
         </header>
 
         <!-- Centro de avisos: se despliega desde la campana -->
-        <div class="notices" id="notices" role="dialog" aria-label="Avisos">
-          <header class="notices-head">
+        <div class="popover notices" id="notices" role="dialog" aria-label="Avisos">
+          <header class="popover-head">
             <span class="section-title">Avisos</span>
             <button class="text-btn" id="notices-clear" type="button">Borrar todo</button>
           </header>
           <ul class="notices-list" id="notices-list"></ul>
           <p class="notices-empty" id="notices-empty">No hay avisos</p>
+        </div>
+
+        <!-- Salidas de audio: se despliega desde el botón de la página Música -->
+        <div class="popover outputs" id="outputs" role="dialog" aria-label="Salida de audio">
+          <header class="popover-head">
+            <span class="section-title">Salida de audio</span>
+          </header>
+          <div class="outputs-list" id="outputs-list"></div>
         </div>
 
         <!-- Una vista por página. Solo se ve la que tiene .is-active -->
@@ -258,7 +278,8 @@
           <section class="view" data-view="music" role="tabpanel" aria-label="Música">
             <div class="player" id="player" data-state="starting" data-playing="false" data-has-art="false" data-can-seek="false">
 
-              <div class="player-art-wrap" id="player-art-wrap">
+              <!-- La carátula: se puede arrastrar a los lados para cambiar de canción -->
+              <div class="player-art-wrap" id="player-art-wrap" title="Desliza para cambiar de canción">
                 <!-- Copia borrosa de la carátula detrás: el "brillo" de color -->
                 <img class="player-art-glow" id="player-art-glow" alt="" aria-hidden="true" />
                 <img class="player-art" id="player-art" alt="Carátula" />
@@ -295,6 +316,24 @@
                   <button class="ctrl" id="media-next" type="button" aria-label="Siguiente">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path class="icon-fill" d="M6.5 6.2v11.6l8.1-5.8z" /><path d="M17.5 6v12" /></svg>
                   </button>
+                  <span class="controls-gap"></span>
+                  <!-- Mostrar u ocultar la música en la isla (se guarda en settings.json) -->
+                  <button class="ctrl ctrl-small" id="media-island" type="button" aria-pressed="true" title="Se muestra en la isla">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7.5" width="19" height="9" rx="4.5" /><circle class="icon-fill" cx="8" cy="12" r="1.6" /><path class="island-off" d="M4 20 20 4" /></svg>
+                  </button>
+                  <!-- Salida de audio (altavoces, auriculares...) -->
+                  <button class="ctrl ctrl-small" id="media-output" type="button" aria-expanded="false" aria-controls="outputs" title="Salida de audio" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-speaker"></use></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Letra sincronizada (LRCLIB): la línea que suena, resaltada y centrada -->
+              <div class="lyrics" id="lyrics" data-status="idle" aria-label="Letra">
+                <div class="lyrics-lines" id="lyrics-lines"></div>
+                <div class="lyrics-message">
+                  <span id="lyrics-message-text"></span>
+                  <button class="text-btn" id="lyrics-retry" type="button" hidden>Reintentar</button>
                 </div>
               </div>
 

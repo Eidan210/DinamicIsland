@@ -15,6 +15,7 @@ import { state } from './state.js';
 const TAB_ORDER = ['home', 'music', 'ai', 'focus', 'clipboard', 'note'];
 const TAB_NAMES = { home: 'Home', music: 'Música', ai: 'IA', focus: 'Focus', clipboard: 'Portapapeles', note: 'Nota' };
 
+const panelEl = document.querySelector('.panel');
 const tabbar = $('tabbar');
 const tabIndicator = $('tab-indicator');
 const tabButtons = document.querySelectorAll('.tab');
@@ -49,6 +50,7 @@ export function showTab(name) {
 
   const previousTab = currentTab;
   currentTab = name;
+  panelEl.dataset.tab = name; // p. ej. la página Música pinta el fondo con la carátula
   window.notch.setCurrentTab(name);
   const oldView = getView(previousTab);
   const newView = getView(name);
@@ -120,5 +122,6 @@ export function initTabs() {
   window.notch.onShowTab((name) => showTab(name));
 
   // Si la página se recarga, empieza en Home: se lo decimos a main.js.
+  panelEl.dataset.tab = currentTab;
   window.notch.setCurrentTab(currentTab);
 }

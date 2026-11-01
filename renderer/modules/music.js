@@ -1,5 +1,5 @@
 // =============================================================================
-//  renderer/modules/music.js — La música (pestaña, tarjeta de Home, isla, burbuja y aviso)
+//  renderer/modules/music.js — La música (página, tarjeta de Home, isla, burbuja y aviso)
 // -----------------------------------------------------------------------------
 //  main.js nos pasa lo que cuenta el WinHelper: título, artista, estado,
 //  posición, duración y (solo cuando cambia) la carátula.
@@ -8,12 +8,17 @@
 //  así que guardamos la última posición y el momento en que se midió
 //  (timestamp) y, mientras suena, calculamos nosotros la actual:
 //      posición ahora = posición + (ahora - timestamp) × velocidad
+//
+//  También: los colores de la carátula (colors.js), deslizar para cambiar de
+//  canción (swipe.js) y el botón "Mostrar en la isla".
 // =============================================================================
 
 import { $, animate, setText, formatTime, SPRING, SPRING_POP } from './utils.js';
 import { state } from './state.js';
-import { onShapeChange, showBanner, updateShape } from './island.js';
+import { getActivity, onShapeChange, showBanner, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
+import { readPalette } from './colors.js';
+import { makeSwipeable } from './swipe.js';
 
 const MEDIA_MESSAGES = {
   starting: ['Conectando…', 'Buscando qué suena en Windows'],
@@ -39,6 +44,7 @@ const playerRemaining = $('player-remaining');
 const mediaPrev = $('media-prev');
 const mediaToggle = $('media-toggle');
 const mediaNext = $('media-next');
+const mediaIsland = $('media-island');
 // ...tarjeta de Home...
 const homeMusicCard = $('home-music');
 const homeMusicArtWrap = $('home-music-art-wrap');
@@ -47,6 +53,9 @@ const homeMusicTitle = $('home-music-title');
 const homeMusicArtist = $('home-music-artist');
 const homeMusicToggle = $('home-music-toggle');
 // ...isla, burbuja y aviso.
+const island = $('island');
+const activityEl = $('activity');
+const bannerEl = $('banner');
 const activityArt = $('activity-art');
 const bubbleMusic = $('bubble-music');
 const bubbleArt = $('bubble-art');
@@ -60,6 +69,17 @@ let mediaTicker = null;
 let skipDirection = 0; // +1 siguiente / -1 anterior: para animar la carátula hacia ese lado
 let skipUntil = 0;
 let lastBannerKey = ''; // última canción anunciada con el aviso "Ahora suena"
+let artFling = null; // la carátula saliendo hacia un lado tras deslizar
+const mediaListeners = [];
+
+/** Avisa a `listener()` cada vez que cambia algo de la música (la usa la letra). */
+export function onMediaChange(listener) {
+  mediaListeners.push(listener);
+}
+
+function notifyMediaChange() {
+  mediaListeners.forEach((listener) => listener());
+}
 
 function isPlaying() {
   return state.media.status === 'playing';
@@ -104,6 +124,7 @@ function onMediaState(newState) {
     if (state.initialized && state.settings.musicActivity && !state.isExpanded) showBanner(BANNER_MS);
   }
   updateShape();
+  notifyMediaChange();
 }
 
 /** Estado inicial al arrancar (lo que ya sonaba no se anuncia otra vez). */
@@ -121,7 +142,7 @@ function setMediaArt(dataUrl) {
     else img.removeAttribute('src');
   }
   for (const element of [playerEl, homeMusicCard, bubbleMusic]) element.dataset.hasArt = String(Boolean(mediaArt));
-  updateMusicAccent();
+  updateMusicColors();
 }
 
 /** Dibuja la música en la pestaña, la tarjeta de Home y el aviso. */
@@ -189,10 +210,12 @@ function updateMediaTicker() {
   tick();
 }
 
-/** Canción nueva: la carátula llega desde el lado del botón que pulsaste. */
+/** Canción nueva: la carátula llega desde el lado del botón que pulsaste (o del gesto). */
 function animateTrackChange() {
   const direction = Date.now() < skipUntil ? skipDirection : 0;
   skipDirection = 0;
+  artFling?.cancel(); // la carátula que salió al deslizar deja paso a la nueva
+  artFling = null;
   const from = direction ? `translateX(${direction * 28}px) scale(0.92)` : 'scale(0.86)';
   animate(playerArtWrap, [{ opacity: 0, transform: from }, { opacity: 1, transform: 'none' }], {
     duration: 560,
@@ -215,58 +238,28 @@ function animateTrackChange() {
 }
 
 /**
- * Saca el color "protagonista" de la carátula: la dibujamos en un canvas de
- * 16x16 y promediamos sus píxeles, dando más peso a los colores vivos que a
- * los grises. Ese color tiñe las barras, la barra de progreso y el brillo.
+ * Los colores de la carátula (colors.js): --music-accent (el más vivo: barras,
+ * progreso, ecualizador) y --art-1/2/3 (los 3 principales: degradados de
+ * fondo). Las variables están registradas con @property en styles.css, así
+ * que pasan de una canción a otra con suavidad.
  */
-function updateMusicAccent() {
+function updateMusicColors() {
   const root = document.documentElement;
+  root.dataset.hasArt = String(Boolean(mediaArt));
   if (!mediaArt) {
-    root.style.removeProperty('--music-accent');
+    ['--music-accent', '--art-1', '--art-2', '--art-3'].forEach((name) => root.style.removeProperty(name));
     return;
   }
+  const art = mediaArt;
   const image = new Image();
   image.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 16;
-    canvas.height = 16;
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    context.drawImage(image, 0, 0, 16, 16);
-    const pixels = context.getImageData(0, 0, 16, 16).data;
-
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    let total = 0;
-    for (let i = 0; i < pixels.length; i += 4) {
-      const max = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
-      const min = Math.min(pixels[i], pixels[i + 1], pixels[i + 2]);
-      const weight = (max - min) / 255 + 0.05; // cuanto más vivo el color, más cuenta
-      r += pixels[i] * weight;
-      g += pixels[i + 1] * weight;
-      b += pixels[i + 2] * weight;
-      total += weight;
-    }
-    root.style.setProperty('--music-accent', vividColor(r / total, g / total, b / total));
+    if (art !== mediaArt) return; // mientras cargaba, ya cambió la carátula
+    const palette = readPalette(image);
+    if (!palette) return;
+    root.style.setProperty('--music-accent', palette.accent);
+    palette.art.forEach((color, index) => root.style.setProperty(`--art-${index + 1}`, color));
   };
-  image.src = mediaArt;
-}
-
-/** Convierte un color RGB en una versión viva y clara (para que se vea sobre negro). */
-function vividColor(r, g, b) {
-  const max = Math.max(r, g, b) / 255;
-  const min = Math.min(r, g, b) / 255;
-  const delta = max - min;
-  let hue = 0;
-  if (delta > 0) {
-    if (max === r / 255) hue = ((g - b) / 255 / delta) % 6;
-    else if (max === g / 255) hue = (b - r) / 255 / delta + 2;
-    else hue = (r - g) / 255 / delta + 4;
-  }
-  hue = Math.round(hue * 60 + 360) % 360;
-  // Carátulas casi grises (blanco y negro) → el verde de siempre.
-  if (delta < 0.08) return '#3dff8f';
-  return `hsl(${hue} 85% 66%)`;
+  image.src = art;
 }
 
 /** Al pulsar play/pausa cambiamos el botón al momento; el helper lo confirma enseguida. */
@@ -279,6 +272,7 @@ function toggleMediaOptimistic() {
   window.notch.media.toggle();
   renderMedia();
   updateShape();
+  notifyMediaChange();
 }
 
 function skipTrack(direction) {
@@ -286,6 +280,74 @@ function skipTrack(direction) {
   skipUntil = Date.now() + 4000;
   if (direction > 0) window.notch.media.next();
   else window.notch.media.previous();
+}
+
+/** Salta al segundo indicado (barra de progreso o una línea de la letra), si la app lo permite. */
+export function seekTo(seconds) {
+  const { media } = state;
+  if (!media.canSeek || !Number.isFinite(seconds)) return;
+  media.position = media.duration > 0 ? Math.min(Math.max(seconds, 0), media.duration) : Math.max(seconds, 0);
+  media.timestamp = Date.now();
+  renderMediaProgress();
+  window.notch.media.seek(media.position);
+  notifyMediaChange();
+}
+
+/**
+ * Deslizar (swipe) para cambiar de canción, en la isla, en la burbuja o en la
+ * página. En la página, la carátula sale hacia el lado del gesto y la nueva
+ * entra por el otro (animateTrackChange); en la isla, la isla da un pequeño
+ * empujón hacia ese lado y luego llega el aviso "Ahora suena".
+ */
+function swipeTrack(direction) {
+  const { media } = state;
+  const allowed = direction > 0 ? media.canNext : media.canPrevious;
+  const target = state.isExpanded ? playerArtWrap : island;
+  if (!allowed) {
+    // La app no deja: un pequeño "no" con la cabeza.
+    animate(target, [{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '5px 0' }, { translate: '0 0' }], {
+      duration: 320,
+      easing: 'ease-in-out',
+    });
+    return;
+  }
+  skipTrack(direction);
+  if (state.isExpanded) {
+    artFling?.cancel();
+    const fling = animate(
+      playerArtWrap,
+      [
+        { opacity: 1, transform: 'translateX(0)' },
+        { opacity: 0, transform: `translateX(${-40 * direction}px) scale(0.9)` },
+      ],
+      { duration: 220, easing: 'ease-in', fill: 'forwards' }
+    );
+    artFling = fling;
+    // Si la app tarda en mandar la canción nueva, la carátula vuelve igualmente.
+    setTimeout(() => {
+      if (artFling !== fling) return;
+      fling?.cancel();
+      artFling = null;
+    }, 1500);
+  } else {
+    animate(island, [{ translate: '0 0' }, { translate: `${-12 * direction}px 0` }, { translate: '0 0' }], {
+      duration: 420,
+      easing: SPRING_POP,
+    });
+  }
+}
+
+/** ¿Se ve la música en la isla (o en el aviso), para poder deslizarla ahí? */
+function canSwipeIsland() {
+  if (state.isExpanded || !hasTrack()) return false;
+  return state.shape === 'banner' || (state.shape === 'activity' && getActivity() === 'music');
+}
+
+/** El botón "Mostrar en la isla" refleja el ajuste musicActivity. */
+export function renderIslandToggle() {
+  const on = state.settings.musicActivity;
+  mediaIsland.setAttribute('aria-pressed', String(on));
+  mediaIsland.title = on ? 'Se muestra en la isla (pulsa para ocultarla)' : 'No se muestra en la isla (pulsa para mostrarla)';
 }
 
 export function initMusic() {
@@ -303,10 +365,29 @@ export function initMusic() {
     if (!media.canSeek || media.duration <= 0) return;
     const rect = playerBar.getBoundingClientRect();
     const fraction = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-    media.position = fraction * media.duration;
-    media.timestamp = Date.now();
-    renderMediaProgress();
-    window.notch.media.seek(media.position);
+    seekTo(fraction * media.duration);
+  });
+
+  // "Mostrar en la isla": se guarda en settings.json (musicActivity).
+  mediaIsland.addEventListener('click', () => {
+    state.settings.musicActivity = !state.settings.musicActivity;
+    renderIslandToggle();
+    window.notch.media.setActivity(state.settings.musicActivity);
+    updateShape();
+  });
+
+  // Deslizar para cambiar de canción: en la isla, en la burbuja y en la página.
+  makeSwipeable(island, { enabled: canSwipeIsland, onSwipe: swipeTrack, moving: () => [activityEl, bannerEl] });
+  makeSwipeable(bubbleMusic, {
+    enabled: () => !state.isExpanded && bubbleMusic.classList.contains('is-visible') && hasTrack(),
+    onSwipe: swipeTrack,
+  });
+  makeSwipeable(playerEl, {
+    enabled: () => state.isExpanded && hasTrack(),
+    onSwipe: swipeTrack,
+    moving: () => [playerArtWrap],
+    // Desde un botón, la barra o la letra no se arrastra (ahí se hace clic).
+    ignoreDragFrom: (target) => Boolean(target.closest('button, .bar, .lyrics')),
   });
 
   window.notch.media.onChange(onMediaState);

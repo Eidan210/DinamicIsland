@@ -9,6 +9,8 @@
 //
 //  [PreserveSig] = el método devuelve el código de resultado de Windows
 //  (HRESULT, 0 = todo bien) en vez de lanzar una excepción.
+//
+//  Lo usan VolumeModule.cs (el volumen) y AudioDevicesModule.cs (las salidas).
 // =============================================================================
 
 using System.Runtime.InteropServices;
@@ -41,7 +43,7 @@ internal class MMDeviceEnumeratorComObject
 internal interface IMMDeviceEnumerator
 {
     [PreserveSig]
-    int EnumAudioEndpoints(EDataFlow dataFlow, uint stateMask, out IntPtr devices);
+    int EnumAudioEndpoints(EDataFlow dataFlow, uint stateMask, out IMMDeviceCollection devices);
 
     [PreserveSig]
     int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice endpoint);
@@ -56,11 +58,44 @@ internal interface IMMDeviceEnumerator
     int UnregisterEndpointNotificationCallback(IMMNotificationClient client);
 }
 
+/// <summary>Una lista de dispositivos de audio.</summary>
+[ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IMMDeviceCollection
+{
+    [PreserveSig]
+    int GetCount(out uint count);
+
+    [PreserveSig]
+    int Item(uint index, out IMMDevice device);
+}
+
+/// <summary>Un dispositivo de audio (unos altavoces, unos auriculares...).</summary>
 [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMMDevice
 {
     [PreserveSig]
     int Activate(ref Guid iid, uint clsCtx, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object instance);
+
+    [PreserveSig]
+    int OpenPropertyStore(uint access, out IPropertyStore properties);
+
+    /// <summary>Identificador del dispositivo, p. ej. "{0.0.0.00000000}.{...}".</summary>
+    [PreserveSig]
+    int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
+}
+
+/// <summary>Las propiedades de un dispositivo (su nombre, entre otras).</summary>
+[ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IPropertyStore
+{
+    [PreserveSig]
+    int GetCount(out uint count);
+
+    [PreserveSig]
+    int GetAt(uint index, out PropertyKey key);
+
+    [PreserveSig]
+    int GetValue(ref PropertyKey key, out PropVariant value);
 }
 
 [ComImport, Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -141,6 +176,82 @@ internal struct PropertyKey
 {
     public Guid FormatId;
     public uint PropertyId;
+
+    public PropertyKey(Guid formatId, uint propertyId)
+    {
+        FormatId = formatId;
+        PropertyId = propertyId;
+    }
+}
+
+/// <summary>
+/// Un valor de una propiedad (PROPVARIANT). Solo leemos textos: si ValueType es
+/// VT_LPWSTR, Pointer apunta al texto. Mide 24 bytes en Windows de 64 bits.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct PropVariant
+{
+    public ushort ValueType;
+    public ushort Reserved1;
+    public ushort Reserved2;
+    public ushort Reserved3;
+    public IntPtr Pointer;
+    public IntPtr Pointer2;
+}
+
+/// <summary>
+/// El "creador" de IPolicyConfig (CLSID CPolicyConfigClient). Es lo que usa la
+/// configuración de sonido de Windows para cambiar la salida predeterminada.
+/// </summary>
+[ComImport, Guid("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9")]
+internal class PolicyConfigClientComObject
+{
+}
+
+/// <summary>
+/// ⚠️ Interfaz NO documentada de Windows (existe desde Windows 7 y sigue en
+/// Windows 11). Es la única forma de cambiar la salida de audio predeterminada;
+/// si algún día Windows la cambia, Notch avisará de que no pudo y nada más.
+/// Solo usamos SetDefaultEndpoint; los demás métodos están para respetar el orden.
+/// </summary>
+[ComImport, Guid("F8679F50-850A-41CF-9C72-430F290290C8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IPolicyConfig
+{
+    [PreserveSig]
+    int GetMixFormat(IntPtr deviceId, IntPtr format);
+
+    [PreserveSig]
+    int GetDeviceFormat(IntPtr deviceId, int useDefault, IntPtr format);
+
+    [PreserveSig]
+    int ResetDeviceFormat(IntPtr deviceId);
+
+    [PreserveSig]
+    int SetDeviceFormat(IntPtr deviceId, IntPtr endpointFormat, IntPtr mixFormat);
+
+    [PreserveSig]
+    int GetProcessingPeriod(IntPtr deviceId, int useDefault, IntPtr defaultPeriod, IntPtr minimumPeriod);
+
+    [PreserveSig]
+    int SetProcessingPeriod(IntPtr deviceId, IntPtr period);
+
+    [PreserveSig]
+    int GetShareMode(IntPtr deviceId, IntPtr mode);
+
+    [PreserveSig]
+    int SetShareMode(IntPtr deviceId, IntPtr mode);
+
+    [PreserveSig]
+    int GetPropertyValue(IntPtr deviceId, IntPtr key, IntPtr value);
+
+    [PreserveSig]
+    int SetPropertyValue(IntPtr deviceId, IntPtr key, IntPtr value);
+
+    [PreserveSig]
+    int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string deviceId, ERole role);
+
+    [PreserveSig]
+    int SetEndpointVisibility(IntPtr deviceId, int visible);
 }
 
 internal static class CoreAudio
@@ -150,4 +261,23 @@ internal static class CoreAudio
 
     /// <summary>Error de Windows "no encontrado" (p. ej. no hay altavoces conectados).</summary>
     public const int ErrorNotFound = unchecked((int)0x80070490);
+
+    /// <summary>DEVICE_STATE_ACTIVE: dispositivos conectados y funcionando.</summary>
+    public const uint DeviceStateActive = 1;
+
+    /// <summary>STGM_READ: abrir las propiedades solo para leer.</summary>
+    public const uint StgmRead = 0;
+
+    /// <summary>VT_LPWSTR: el valor es un texto.</summary>
+    public const ushort VtLpwstr = 31;
+
+    /// <summary>Grupo de propiedades con el nombre del dispositivo (PKEY_Device_*).</summary>
+    public static readonly Guid DeviceNameProperties = new("A45C254E-DF1C-4EFD-8020-67D146A850E0");
+
+    /// <summary>PKEY_Device_FriendlyName: el nombre que ves en Windows, p. ej. "Altavoces (Realtek Audio)".</summary>
+    public static readonly PropertyKey FriendlyName = new(DeviceNameProperties, 14);
+
+    /// <summary>Libera la memoria de un PROPVARIANT (p. ej. el texto que trae).</summary>
+    [DllImport("ole32.dll")]
+    public static extern int PropVariantClear(ref PropVariant value);
 }
