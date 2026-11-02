@@ -81,6 +81,12 @@
     <symbol id="i-terminal" viewBox="0 0 24 24">
       <rect x="3" y="4.5" width="18" height="15" rx="3" /><path d="m7.5 9.5 3 2.5-3 2.5M12.5 15h4" />
     </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24">
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2.5" /><path d="M15.5 8.5V6.8a2.3 2.3 0 0 0-2.3-2.3H6.8a2.3 2.3 0 0 0-2.3 2.3v6.4a2.3 2.3 0 0 0 2.3 2.3h1.7" />
+    </symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24">
+      <path d="m7 10 5 5 5-5" stroke-width="2.3" />
+    </symbol>
     <!-- Widgets de Home (catálogo) y modo edición -->
     <symbol id="i-w-clock" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.2 2" />
@@ -641,32 +647,57 @@
 
           <!-- ===================== IA: sesiones en vivo y chat ===================== -->
           <section class="view" data-view="ai" role="tabpanel" aria-label="IA">
-            <div class="ai" id="ai" data-mode="sessions">
+            <div class="ai" id="ai" data-mode="sessions" data-provider="gemini">
               <header class="ai-head">
-                <div class="segmented" role="tablist" aria-label="Sesiones o chat">
-                  <button class="seg" type="button" role="tab" data-mode="sessions" aria-selected="true">
-                    Sesiones<span class="seg-count" id="ai-count" hidden>0</span>
+                <div class="segmented" id="ai-modes" role="tablist" aria-label="Sesiones o chat">
+                  <span class="segmented-indicator" id="ai-mode-indicator" aria-hidden="true"></span>
+                  <button class="segment is-active" type="button" role="tab" data-mode="sessions" aria-selected="true">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-terminal"></use></svg>
+                    <span>Sesiones</span>
+                    <span class="segment-count ai-live-count" id="ai-count" hidden>0</span>
                   </button>
-                  <button class="seg" type="button" role="tab" data-mode="chat" aria-selected="false">Chat</button>
+                  <button class="segment" type="button" role="tab" data-mode="chat" aria-selected="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-w-ai"></use></svg>
+                    <span>Chat</span>
+                  </button>
                 </div>
-                <!-- Con "Sesiones": si Notch está escuchando y copiar la configuración -->
+                <!-- Con "Sesiones": si Notch está escuchando y copiar los hooks -->
                 <div class="ai-head-end ai-head-sessions">
                   <span class="ai-server" id="ai-server" data-state="off"></span>
-                  <button class="text-btn" id="ai-copy-head" type="button" title="Copia el bloque para ~/.claude/settings.json">Copiar configuración</button>
+                  <button class="text-btn ai-hook-btn" id="ai-copy-head" type="button" title="Copia el bloque hooks para ~/.claude/settings.json">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-claude"></use></svg>
+                    <span>Hooks Claude</span>
+                  </button>
+                  <button class="text-btn ai-hook-btn" id="ai-copy-agy-head" type="button" title="Copia el bloque hooks para ~/.gemini/config/hooks.json">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gemini"></use></svg>
+                    <span>Antigravity</span>
+                  </button>
                 </div>
                 <!-- Con "Chat": con quién hablas, el modelo de Claude y empezar de cero -->
                 <div class="ai-head-end ai-head-chat">
-                  <div class="segmented segmented-small" id="chat-provider" role="radiogroup" aria-label="Con quién hablas">
-                    <button class="seg" type="button" role="radio" data-provider="gemini" aria-checked="true">Gemini</button>
-                    <button class="seg" type="button" role="radio" data-provider="claude" aria-checked="false">Claude</button>
-                    <button class="seg" type="button" role="radio" data-provider="both" aria-checked="false">Ambos</button>
+                  <div class="segmented segmented-compact" id="chat-provider" role="radiogroup" aria-label="Con quién hablas">
+                    <span class="segmented-indicator" id="chat-provider-indicator" aria-hidden="true"></span>
+                    <button class="segment is-active" type="button" role="radio" data-provider="gemini" aria-checked="true">
+                      <svg class="provider-glyph is-gemini" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gemini"></use></svg>
+                      <span>Gemini</span>
+                    </button>
+                    <button class="segment" type="button" role="radio" data-provider="claude" aria-checked="false">
+                      <svg class="provider-glyph is-claude" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-claude"></use></svg>
+                      <span>Claude</span>
+                    </button>
+                    <button class="segment" type="button" role="radio" data-provider="both" aria-checked="false">
+                      <span>Ambos</span>
+                    </button>
                   </div>
-                  <select class="chat-model" id="chat-model" aria-label="Modelo de Claude">
-                    <option value="opus">Opus</option>
-                    <option value="sonnet">Sonnet</option>
-                    <option value="haiku">Haiku</option>
-                    <option value="fable">Fable</option>
-                  </select>
+                  <div class="chat-model-wrap">
+                    <select class="chat-model" id="chat-model" aria-label="Modelo de Claude">
+                      <option value="opus">Opus</option>
+                      <option value="sonnet">Sonnet</option>
+                      <option value="haiku">Haiku</option>
+                      <option value="fable">Fable</option>
+                    </select>
+                    <svg class="chat-model-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chevron"></use></svg>
+                  </div>
                   <button class="icon-btn" id="chat-new" type="button" aria-label="Nueva conversación" title="Nueva conversación">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-compose"></use></svg>
                   </button>
@@ -674,32 +705,51 @@
               </header>
 
               <!-- Sesiones de Claude Code y Antigravity (ai.js) -->
-              <div class="ai-body ai-sessions-body">
+              <div class="ai-body ai-sessions-body" data-ai-pane="sessions">
                 <div class="sessions" id="ai-sessions"></div>
                 <div class="ai-setup" id="ai-setup">
-                  <div class="ai-setup-text">
-                    <strong>Conecta Claude Code</strong>
-                    <span>Copia la configuración y pégala en <code>~/.claude/settings.json</code>, dentro de <code>"hooks"</code>. Notch no toca tus archivos.</span>
+                  <div class="ai-setup-main">
+                    <div class="ai-setup-icons" aria-hidden="true">
+                      <span class="ai-setup-badge is-claude"><svg viewBox="0 0 24 24"><use href="#i-claude"></use></svg></span>
+                      <span class="ai-setup-badge is-agy"><svg viewBox="0 0 24 24"><use href="#i-gemini"></use></svg></span>
+                    </div>
+                    <div class="ai-setup-text">
+                      <strong>Sesiones en vivo en la isla</strong>
+                      <span>Ve qué leen, editan o prueban, y aprueba permisos sin cambiar de ventana. Notch nunca toca tus archivos: copia el bloque y pégalo.</span>
+                      <span class="ai-setup-status" id="ai-setup-status" role="status"></span>
+                    </div>
                   </div>
                   <div class="ai-setup-actions">
-                    <button class="btn btn-primary" id="ai-copy-claude" type="button">
+                    <button class="btn ai-setup-btn is-claude" id="ai-copy-claude" type="button" title="Copia los hooks para ~/.claude/settings.json">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-claude"></use></svg>
-                      <span>Copiar para Claude Code</span>
+                      <span>Claude Code</span>
                     </button>
-                    <button class="btn btn-ghost" id="ai-copy-agy" type="button" title="hooks.json de Antigravity: solo informa del estado">Antigravity (en prueba)</button>
-                    <span class="ai-setup-status" id="ai-setup-status" role="status"></span>
+                    <button class="btn ai-setup-btn is-agy" id="ai-copy-agy" type="button" title="Copia los hooks para ~/.gemini/config/hooks.json">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gemini"></use></svg>
+                      <span>Antigravity</span>
+                    </button>
                   </div>
                 </div>
               </div>
 
               <!-- Chat con Claude y Gemini (chat.js) -->
-              <div class="ai-body ai-chat-body">
+              <div class="ai-body ai-chat-body" data-ai-pane="chat">
                 <div class="chat-log" id="chat-log" aria-live="polite"></div>
-                <p class="chat-empty" id="chat-empty">
-                  Lo que escribas va solo a quien elijas: <strong>Claude → Anthropic</strong> · <strong>Gemini → Google</strong>.
-                  Notch no guarda la conversación.
-                </p>
-                <form class="composer" id="chat-form">
+                <div class="chat-empty" id="chat-empty">
+                  <div class="chat-empty-note">
+                    <span class="chat-empty-badge" aria-hidden="true">
+                      <svg class="is-gemini" viewBox="0 0 24 24"><use href="#i-gemini"></use></svg>
+                      <svg class="is-claude" viewBox="0 0 24 24"><use href="#i-claude"></use></svg>
+                    </span>
+                    <span class="chat-empty-copy" id="chat-empty-copy">Directo a tu cuenta · Sin guardar la conversación</span>
+                  </div>
+                  <div class="chat-starters" aria-label="Sugerencias rápidas">
+                    <button class="chat-chip" type="button" data-prompt="Explícame de forma breve y clara: ">Explicar algo rápido</button>
+                    <button class="chat-chip" type="button" data-prompt="Resume en 3 puntos clave: ">Resumir en 3 puntos</button>
+                    <button class="chat-chip" type="button" data-prompt="Dame pros y contras de: ">Comparar opciones</button>
+                  </div>
+                </div>
+                <form class="composer" id="chat-form" data-empty="true">
                   <textarea class="composer-input" id="chat-input" rows="1" maxlength="8000" spellcheck="false" placeholder="Escribe a Gemini…" aria-label="Mensaje"></textarea>
                   <button class="composer-send" id="chat-send" type="submit" aria-label="Enviar">
                     <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-send"></use></svg>

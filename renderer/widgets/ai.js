@@ -34,13 +34,15 @@ function render() {
   const { sessions, pending, lastEventAt, server } = state.ai;
   const live = sessions.filter(isLive);
   const session = live[0] || sessions[0];
+  const activeSource = pending[0]?.source || session?.source || '';
   widget.dataset.status = pending.length ? 'waiting' : session?.status || '';
-  iconUse.setAttribute('href', (SOURCE[session?.source] || SOURCE.claude).icon);
+  widget.dataset.source = activeSource;
+  iconUse.setAttribute('href', (SOURCE[activeSource] || SOURCE.claude).icon);
   titleEl.classList.toggle('is-dim', !session);
 
   if (!session) {
     setText(titleEl, 'Sin sesiones');
-    setText(noteEl, !server.listening ? 'Servidor apagado' : lastEventAt ? 'Esperando a Claude Code' : 'Conecta Claude Code');
+    setText(noteEl, !server.listening ? 'Servidor apagado' : lastEventAt ? 'Esperando actividad' : 'Claude Code · Antigravity');
   } else {
     setText(titleEl, session.project);
     const target = session.status === 'working' && session.tool?.target ? ` ${session.tool.target}` : '';

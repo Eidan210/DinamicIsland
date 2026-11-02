@@ -6,8 +6,9 @@
 //    • Elegir con quién hablas: Gemini, Claude (con su modelo) o Ambos.
 //    • Escribir: Enter manda, Mayús+Enter hace un salto de línea. Mientras
 //      responde, el botón de enviar pasa a ser "parar".
-//    • Las respuestas se ven mientras se escriben. Con "Ambos", las dos van
-//      lado a lado.
+//    • Las respuestas se ven mientras se escriben (el indicador de escritura
+//      avanza con el reloj compartido de beat.js solo mientras se ve, sin
+//      animaciones CSS infinitas). Con "Ambos", las dos van lado a lado.
 //  El texto de las respuestas se pinta SIEMPRE como texto (nunca como HTML):
 //  solo damos formato a los bloques de código, al `código` y a la **negrita**.
 // =============================================================================
@@ -15,13 +16,21 @@
 import { $, setText } from './utils.js';
 import { state } from './state.js';
 import { getCurrentTab } from './tabs.js';
+import { runOnBeat, stopOnBeat } from './beat.js';
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
 const NAMES = { claude: 'Claude', gemini: 'Gemini' };
+const ICONS = { claude: '#i-claude', gemini: '#i-gemini' };
 const CLI_NAMES = { agy: 'Antigravity', gemini: 'Gemini CLI', claude: '' };
 const PLACEHOLDERS = {
   gemini: 'Escribe a Gemini… (va a Google)',
   claude: 'Escribe a Claude… (va a Anthropic)',
   both: 'Escribe a los dos… (va a Google y a Anthropic)',
+};
+const EMPTY_COPIES = {
+  gemini: 'Directo a Google · Sin guardar la conversación',
+  claude: 'Directo a Anthropic · Sin guardar la conversación',
+  both: 'Gemini y Claude lado a lado · Sin guardar la conversación',
 };
 const ERRORS = {
   busy: 'Espera a que termine la respuesta (o párala).',
@@ -32,14 +41,42 @@ const MAX_INPUT_LINES = 4;
 const aiEl = $('ai');
 const log = $('chat-log');
 const empty = $('chat-empty');
+const emptyCopy = $('chat-empty-copy');
 const form = $('chat-form');
 const input = $('chat-input');
 const sendButton = $('chat-send');
 const providerEl = $('chat-provider');
+const providerIndicator = $('chat-provider-indicator');
+const providerButtons = [...document.querySelectorAll('#chat-provider .segment')];
 const modelSelect = $('chat-model');
 const newButton = $('chat-new');
 
 const nodes = new Map(); // id del mensaje → su elemento
+
+function createSvgIcon(href, className) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  if (className) svg.setAttribute('class', className);
+  const use = document.createElementNS(SVG_NS, 'use');
+  use.setAttribute('href', href);
+  svg.append(use);
+  return svg;
+}
+
+/** Resume nombres largos de modelo ("claude-sonnet-4-6[1m]" → "Sonnet 4.6"). */
+function shortModel(raw) {
+  const text = String(raw || '').trim();
+  if (!text || text === 'auto') return '';
+  const clean = text.replace(/\[.*?\]/g, '').replace(/-\d{8}$/, '');
+  const claude = /^claude-(opus|sonnet|haiku|fable)-(\d+)(?:-(\d+))?/i.exec(clean);
+  if (claude) {
+    const name = claude[1].charAt(0).toUpperCase() + claude[1].slice(1).toLowerCase();
+    const ver = claude[3] ? `${claude[2]}.${claude[3]}` : claude[2];
+    return `${name} ${ver}`;
+  }
+  return clean;
+}
 
 // -----------------------------------------------------------------------------
 // Formato del texto (seguro: solo nodos de texto)
@@ -87,8 +124,66 @@ function formatText(text) {
 }
 
 // -----------------------------------------------------------------------------
+// Indicador deslizante y reloj de streaming (beat.js)
+// -----------------------------------------------------------------------------
+
+function isChatVisible() {
+  return state.isExpanded && getCurrentTab() === 'ai' && aiEl.dataset.mode === 'chat';
+}
+
+function moveProviderIndicator(withAnimation) {
+  const active = providerButtons.find((item) => item.dataset.provider === state.chat.provider);
+  if (!active || !providerIndicator) return;
+  providerIndicator.classList.toggle('no-animation', !withAnimation);
+  providerIndicator.style.setProperty('--indicator-x', `${active.offsetLeft}px`);
+  providerIndicator.style.setProperty('--indicator-width', `${active.offsetWidth}px`);
+}
+
+function syncStreamingBeat() {
+  if (state.chat.busy && isChatVisible()) {
+    runOnBeat(
+      'chat-stream',
+      (step) => {
+        log.dataset.beat = String(step % 4);
+      },
+      {
+        onStop: () => {
+          delete log.dataset.beat;
+        },
+      }
+    );
+  } else {
+    stopOnBeat('chat-stream');
+  }
+}
+
+/** Llamado por ai.js cuando se abre el panel, cambia la pestaña o pasa a Chat. */
+export function syncChatVisibility() {
+  moveProviderIndicator(false);
+  syncStreamingBeat();
+}
+
+// -----------------------------------------------------------------------------
 // Mensajes
 // -----------------------------------------------------------------------------
+
+async function copyReply(id, buttonEl) {
+  let ok = false;
+  try {
+    ok = await window.notch.chat.copy(id);
+  } catch {
+    ok = false;
+  }
+  if (!ok) return;
+  const useEl = buttonEl.querySelector('use');
+  buttonEl.dataset.copied = 'true';
+  if (useEl) useEl.setAttribute('href', '#i-check-mark');
+  clearTimeout(buttonEl._copyTimer);
+  buttonEl._copyTimer = setTimeout(() => {
+    delete buttonEl.dataset.copied;
+    if (useEl) useEl.setAttribute('href', '#i-copy');
+  }, 1300);
+}
 
 /** El elemento de un mensaje (lo crea la primera vez). */
 function messageNode(message) {
@@ -98,17 +193,28 @@ function messageNode(message) {
   node.className = `msg ${message.role === 'user' ? 'msg-user' : 'msg-ai'}`;
   node.dataset.id = message.id;
   if (message.role === 'user') {
-    node.append(document.createElement('div'));
-    node.firstChild.className = 'msg-bubble';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    node.append(bubble);
     log.append(node);
   } else {
     const head = document.createElement('div');
     head.className = 'msg-head';
+    const providerIcon = createSvgIcon('#i-gemini', 'msg-icon');
     const name = document.createElement('span');
     name.className = 'msg-name';
     const meta = document.createElement('span');
     meta.className = 'msg-meta';
-    head.append(name, meta);
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'msg-copy';
+    copyBtn.title = 'Copiar respuesta';
+    copyBtn.setAttribute('aria-label', 'Copiar respuesta');
+    copyBtn.hidden = true;
+    copyBtn.append(createSvgIcon('#i-copy', ''));
+    copyBtn.addEventListener('click', () => copyReply(message.id, copyBtn));
+    head.append(providerIcon, name, meta, copyBtn);
+
     const body = document.createElement('div');
     body.className = 'msg-body';
     const status = document.createElement('div');
@@ -137,9 +243,17 @@ function renderMessage(message) {
   }
   node.dataset.provider = message.provider;
   node.dataset.status = message.status;
+  const iconUse = node.querySelector('.msg-icon use');
+  const expectedIcon = ICONS[message.provider] || '#i-w-ai';
+  if (iconUse && iconUse.getAttribute('href') !== expectedIcon) iconUse.setAttribute('href', expectedIcon);
+
   setText(node.querySelector('.msg-name'), NAMES[message.provider] || 'IA');
   const cli = CLI_NAMES[message.cli] || '';
-  setText(node.querySelector('.msg-meta'), [message.model, message.provider === 'gemini' ? cli : ''].filter(Boolean).join(' · '));
+  const modelText = shortModel(message.model);
+  setText(node.querySelector('.msg-meta'), [modelText, message.provider === 'gemini' ? cli : ''].filter(Boolean).join(' · '));
+
+  const copyBtn = node.querySelector('.msg-copy');
+  if (copyBtn) copyBtn.hidden = !message.text || message.status === 'streaming';
 
   const body = node.querySelector('.msg-body');
   // Solo rehacemos el texto si cambió (llega a trozos mientras se escribe).
@@ -151,7 +265,7 @@ function renderMessage(message) {
   const notes = [];
   if (message.note) notes.push(message.note);
   if (message.status === 'error') notes.push(message.error || 'No se pudo responder');
-  if (message.status === 'cancelled') notes.push('Parado');
+  if (message.status === 'cancelled') notes.push('Respuesta detenida');
   setText(status, notes.join(' · '));
 }
 
@@ -164,18 +278,33 @@ function scrollToBottom() {
   log.scrollTop = log.scrollHeight;
 }
 
-function renderComposer() {
+function syncComposerEmpty() {
+  form.dataset.empty = String(!input.value.trim());
+}
+
+function renderComposer({ animateProvider = false } = {}) {
   const { busy, provider, claudeModel } = state.chat;
   aiEl.dataset.chatBusy = String(busy);
   aiEl.dataset.provider = provider;
+  form.dataset.busy = String(busy);
+  syncComposerEmpty();
   sendButton.setAttribute('aria-label', busy ? 'Parar' : 'Enviar');
   sendButton.title = busy ? 'Parar la respuesta' : 'Enviar (Enter)';
   input.placeholder = PLACEHOLDERS[provider] || PLACEHOLDERS.gemini;
-  providerEl.querySelectorAll('.seg').forEach((segment) => {
-    segment.setAttribute('aria-checked', String(segment.dataset.provider === provider));
+  if (emptyCopy) setText(emptyCopy, EMPTY_COPIES[provider] || EMPTY_COPIES.gemini);
+
+  providerButtons.forEach((segment) => {
+    const active = segment.dataset.provider === provider;
+    segment.classList.toggle('is-active', active);
+    segment.setAttribute('aria-checked', String(active));
   });
+  moveProviderIndicator(animateProvider && isChatVisible());
+
   if (modelSelect.value !== claudeModel) modelSelect.value = claudeModel;
-  empty.hidden = state.chat.messages.length > 0;
+  const hasMessages = state.chat.messages.length > 0;
+  empty.hidden = hasMessages;
+  newButton.disabled = !hasMessages && !busy;
+  syncStreamingBeat();
 }
 
 /** main.js manda un mensaje nuevo o actualizado. */
@@ -221,11 +350,14 @@ export function applyChatSettings() {
 // Escribir y mandar
 // -----------------------------------------------------------------------------
 
-/** El cuadro crece con el texto (hasta 4 líneas). */
+/** El cuadro crece con el texto (hasta 4 líneas) sin mostrar barra vertical antes de tiempo. */
 function autosize() {
   input.style.height = 'auto';
   const lineHeight = parseFloat(getComputedStyle(input).lineHeight) || 18;
-  input.style.height = `${Math.min(input.scrollHeight, lineHeight * MAX_INPUT_LINES + 16)}px`;
+  const maxHeight = lineHeight * MAX_INPUT_LINES + 10;
+  const needed = input.scrollHeight;
+  input.style.height = `${Math.min(needed, maxHeight)}px`;
+  input.style.overflowY = needed > maxHeight + 2 ? 'auto' : 'hidden';
 }
 
 async function submit() {
@@ -243,6 +375,7 @@ async function submit() {
   }
   if (result?.ok) {
     input.value = '';
+    syncComposerEmpty();
     autosize();
     return;
   }
@@ -254,7 +387,7 @@ async function submit() {
 /** Pone el cursor en el cuadro del chat (al abrir la página en modo Chat). */
 export function focusChatInput() {
   requestAnimationFrame(() => {
-    if (!state.isExpanded || getCurrentTab() !== 'ai' || aiEl.dataset.mode !== 'chat') return;
+    if (!isChatVisible()) return;
     input.focus({ preventScroll: true });
   });
 }
@@ -274,13 +407,26 @@ export function initChat() {
   input.addEventListener('input', () => {
     input.setCustomValidity('');
     input.title = '';
+    syncComposerEmpty();
     autosize();
   });
-  providerEl.querySelectorAll('.seg').forEach((segment) => {
+  providerButtons.forEach((segment) => {
     segment.addEventListener('click', () => {
       state.chat.provider = segment.dataset.provider;
-      renderComposer();
+      renderComposer({ animateProvider: true });
       input.focus({ preventScroll: true });
+    });
+  });
+  empty.querySelectorAll('.chat-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const promptText = chip.dataset.prompt || '';
+      input.value = promptText;
+      input.setCustomValidity('');
+      input.title = '';
+      syncComposerEmpty();
+      autosize();
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(promptText.length, promptText.length);
     });
   });
   modelSelect.addEventListener('change', () => {
@@ -292,6 +438,7 @@ export function initChat() {
     input.focus({ preventScroll: true });
   });
 
+  autosize();
   window.notch.chat.onUpdate(onUpdate);
   window.notch.chat.onClear(onClear);
   renderComposer();

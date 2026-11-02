@@ -22,6 +22,8 @@
 
 /* ---------- 1. Variables: cambia aquí tamaños, colores y tiempos ---------- */
 :root {
+  color-scheme: dark;
+
   /* Tamaños de cada forma. ⚠️ --panel-* y --top-gap deben coincidir con main.js */
   --mini-width: 124px; /* muesca en reposo */
   --mini-height: 13px;
@@ -58,6 +60,8 @@
   --stroke: rgba(255, 255, 255, 0.1); /* borde fino tipo vidrio */
   --hover: rgba(255, 255, 255, 0.05);
   --selected: rgba(255, 255, 255, 0.14);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.22);
+  --scrollbar-track: transparent;
   /* "Tinta" del panel, en formato R, G, B: los fondos y bordes sutiles se
      pintan con ella, p. ej. rgba(var(--ink), 0.08). En el tema oscuro es
      blanca; en el claro, negra (sección 14). */
@@ -150,6 +154,7 @@
 /* ---------- 2. Base ---------- */
 * {
   box-sizing: border-box;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 html,
@@ -407,6 +412,10 @@ img {
 /* Con información en vivo, la píldora se ensancha */
 .island[data-shape="activity"] {
   width: var(--activity-width);
+}
+
+.island[data-shape="activity"]:has(.activity[data-kind="ai"]) {
+  width: 304px;
 }
 
 .island[data-shape="volume"] {
@@ -1010,12 +1019,12 @@ img {
 
 .activity-ai-icon {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 .activity-ai-label {
-  max-width: 84px;
+  max-width: 94px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1632,6 +1641,11 @@ img {
    En la isla ocupa toda la forma "decision". Con el panel abierto, sale como
    una tarjeta negra encima del contenido (como los avisos, siempre oscura). */
 .decision {
+  --decision-color: var(--claude-color);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.24);
+  --scrollbar-track: transparent;
+  color-scheme: dark;
+
   position: absolute;
   inset: 0;
   z-index: 6;
@@ -1651,6 +1665,10 @@ img {
     filter 180ms ease,
     scale 260ms var(--spring-close),
     visibility 0s linear 260ms;
+}
+
+.decision[data-source="agy"] {
+  --decision-color: var(--info);
 }
 
 .island[data-shape="decision"] .decision {
@@ -1675,8 +1693,8 @@ img {
   border-radius: 24px;
   background: #0b0b0e;
   box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   opacity: 1;
   filter: none;
   scale: 1;
@@ -1703,13 +1721,8 @@ img {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--claude-color) 22%, transparent);
-  color: var(--claude-color);
-}
-
-.decision[data-source="agy"] .decision-icon {
-  background: color-mix(in srgb, var(--info) 22%, transparent);
-  color: var(--info);
+  background: color-mix(in srgb, var(--decision-color) 22%, transparent);
+  color: var(--decision-color);
 }
 
 .decision-icon svg {
@@ -1779,7 +1792,7 @@ img {
 
 .decision-command[data-shell="true"]::before {
   content: "$ ";
-  color: var(--claude-color);
+  color: var(--decision-color);
 }
 
 .decision-note {
@@ -1799,7 +1812,7 @@ img {
 
 .decision-step {
   margin-right: 6px;
-  color: var(--claude-color);
+  color: var(--decision-color);
   font-size: 11.5px;
 }
 
@@ -1841,8 +1854,8 @@ img {
 }
 
 .choice:is([aria-checked="true"], [aria-pressed="true"]) {
-  background: var(--claude-color);
-  color: #1a0d07;
+  background: var(--decision-color);
+  color: #120d0a;
 }
 
 .choice.is-other {
@@ -1860,11 +1873,11 @@ img {
   border-radius: 999px;
   outline: none;
   background: rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--claude-color) 60%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--decision-color) 60%, transparent);
   color: #fff;
   font: inherit;
   font-size: 12.5px;
-  caret-color: var(--claude-color);
+  caret-color: var(--decision-color);
 }
 
 /* El plan, en un recuadro que se puede desplazar */
@@ -2090,10 +2103,23 @@ img {
   width: 20px;
   height: 20px;
   color: var(--claude-color);
+  transition: color 250ms ease;
+}
+
+.bubble[data-source="agy"] .bubble-ai-icon {
+  color: var(--info);
 }
 
 .bubble[data-status="waiting"] .bubble-ai-icon {
   color: var(--warning);
+}
+
+.bubble[data-status="done"] .bubble-ai-icon {
+  color: var(--accent);
+}
+
+.bubble[data-status="error"] .bubble-ai-icon {
+  color: var(--danger);
 }
 
 /* ---------- 7. Contenido del panel ---------- */
@@ -2167,6 +2193,14 @@ img {
 
 .island[data-shape="expanded"] .tabbar {
   transition-delay: 200ms;
+}
+
+/* Con una decisión flotando sobre el panel abierto, el fondo se atenúa */
+.island[data-shape="expanded"][data-decision="true"] :is(.views, .tabbar) {
+  opacity: 0.24;
+  filter: blur(3px);
+  pointer-events: none;
+  transition-delay: 0s;
 }
 
 /* Barra superior: misma altura que la píldora, para alinear con los ojos */
@@ -3123,6 +3157,10 @@ code {
   --widget-accent: var(--claude-color);
 }
 
+.widget-ai[data-source="agy"]:is([data-status="working"], [data-status="waiting"]) {
+  --widget-accent: var(--info);
+}
+
 .widget-ai[data-status="waiting"] .widget-sub {
   color: var(--warning);
 }
@@ -3160,8 +3198,8 @@ code {
 }
 
 .widget-steps li[data-current="true"] {
-  background: color-mix(in srgb, var(--claude-color) 24%, transparent);
-  color: var(--claude-color);
+  background: color-mix(in srgb, var(--widget-accent, var(--claude-color)) 24%, transparent);
+  color: var(--widget-accent, var(--claude-color));
 }
 
 /* ----- Links ----- */
@@ -5097,75 +5135,58 @@ code {
 .ai {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
   height: 100%;
-  padding: 2px 4px 6px;
+  padding: 2px 2px 6px;
+}
+
+.ai [hidden] {
+  display: none !important;
 }
 
 .ai-head {
   display: flex;
   flex: none;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  min-height: 30px;
+  height: 30px;
 }
 
-/* Interruptor de opciones, como los de iOS */
-.segmented {
-  display: inline-flex;
-  flex: none;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: rgba(var(--ink), 0.06);
+/* Variante compacta del control segmentado deslizante (proveedor en Chat) */
+.segmented-compact {
+  padding: 2px;
 }
 
-.seg {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 24px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 200ms ease,
-    color 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.seg:hover {
-  color: var(--text);
-}
-
-.seg:is([aria-selected="true"], [aria-checked="true"]) {
-  background: rgba(var(--ink), 0.14);
-  color: var(--text-strong);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.segmented-small .seg {
+.segmented-compact .segmented-indicator {
+  top: 2px;
   height: 22px;
-  padding: 0 10px;
+}
+
+.segmented-compact .segment {
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
   font-size: 11.5px;
 }
 
-.seg-count {
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
+.segmented-compact .segment svg {
+  width: 12px;
+  height: 12px;
+}
+
+.segment.is-active .provider-glyph.is-gemini {
+  color: var(--info);
+}
+
+.segment.is-active .provider-glyph.is-claude {
+  color: var(--claude-color);
+}
+
+.segment-count.ai-live-count {
   background: var(--claude-color);
   color: #1a0d07;
-  font-size: 10.5px;
-  line-height: 16px;
-  text-align: center;
 }
 
 .ai-head-end {
@@ -5173,7 +5194,7 @@ code {
   flex: 1;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -5182,20 +5203,25 @@ code {
   display: flex;
 }
 
-/* El estado del servidor: un punto y una palabra */
+/* Estado del servidor local y botones rápidos para copiar hooks */
 .ai-server {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-faint);
-  font-size: 11.5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.04);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .ai-server::before {
   content: "";
-  width: 7px;
-  height: 7px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
   background: var(--text-faint);
 }
@@ -5213,6 +5239,31 @@ code {
   background: var(--danger);
 }
 
+.ai-hook-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.05);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ai-hook-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+#ai-copy-head svg {
+  color: var(--claude-color);
+}
+
+#ai-copy-agy-head svg {
+  color: var(--info);
+}
+
 .ai-body {
   display: none;
   flex: 1;
@@ -5225,16 +5276,38 @@ code {
   flex-direction: column;
 }
 
-/* Tarjetas de sesión: en fila, y si no caben se desplazan de lado */
+/* Tarjetas de sesión: en fila horizontal limpia (sin barra vertical ni parpadeos) */
 .sessions {
   display: grid;
   flex: 1;
-  grid-auto-columns: minmax(214px, 1fr);
+  grid-auto-columns: minmax(224px, 1fr);
   grid-auto-flow: column;
   gap: 8px;
   min-height: 0;
+  padding: 1px;
   overflow-x: auto;
-  scrollbar-width: thin;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--fade-before, 0px),
+    #000 calc(100% - var(--fade-after, 0px)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-before, 0px), #000 calc(100% - var(--fade-after, 0px)), transparent 100%);
+}
+
+.sessions::-webkit-scrollbar {
+  display: none;
+}
+
+.sessions[data-more-before="true"] {
+  --fade-before: 20px;
+}
+
+.sessions[data-more-after="true"] {
+  --fade-after: 20px;
 }
 
 .session {
@@ -5244,19 +5317,32 @@ code {
   flex-direction: column;
   gap: 3px;
   min-width: 0;
-  padding: 8px 11px;
+  padding: 9px 12px;
   overflow: hidden;
-  border-radius: 16px;
-  background: rgba(var(--ink), 0.05);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  border-radius: 18px;
+  background:
+    radial-gradient(130% 100% at 0% 0%, color-mix(in srgb, var(--session-color) 11%, transparent), transparent 62%),
+    rgba(var(--ink), 0.048);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.07);
+  transition:
+    box-shadow 220ms ease,
+    background-color 220ms ease;
 }
 
 .session[data-source="agy"] {
   --session-color: var(--info);
 }
 
-.island[data-shape="expanded"] .view.is-active .session {
-  animation: card-in 480ms var(--spring-bounce) backwards;
+.session[data-status="working"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--session-color) 28%, rgba(var(--ink), 0.06));
+}
+
+.session[data-status="waiting"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 44%, transparent);
+}
+
+.session[data-status="error"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 36%, transparent);
 }
 
 .session-head {
@@ -5266,11 +5352,35 @@ code {
   min-width: 0;
 }
 
-.session-icon {
+.session-badge {
+  display: grid;
   flex: none;
-  width: 16px;
-  height: 16px;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--session-color) 18%, transparent);
   color: var(--session-color);
+}
+
+.session[data-status="waiting"] .session-badge {
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  color: var(--warning);
+}
+
+.session[data-status="done"] .session-badge {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.session[data-status="error"] .session-badge {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+}
+
+.session-icon {
+  width: 13px;
+  height: 13px;
 }
 
 .session-project {
@@ -5281,10 +5391,21 @@ code {
   white-space: nowrap;
 }
 
+.session-model {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.07);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .session-time {
   margin-left: auto;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -5297,9 +5418,14 @@ code {
   white-space: nowrap;
 }
 
+.session-task:empty {
+  display: none;
+}
+
 .session-now {
   display: flex;
-  gap: 5px;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
   margin: 0;
   font-size: 12px;
@@ -5309,6 +5435,10 @@ code {
   flex: none;
   color: var(--session-color);
   font-weight: 650;
+}
+
+.session[data-status="idle"] .session-verb {
+  color: var(--text-dim);
 }
 
 .session[data-status="waiting"] .session-verb {
@@ -5334,23 +5464,23 @@ code {
 .session-steps {
   display: flex;
   gap: 4px;
-  margin: 2px 0 0;
-  padding: 0;
+  margin: auto 0 0;
+  padding: 2px 0 0;
   list-style: none;
 }
 
 .session-steps li {
   flex: 1;
-  padding: 1px 0;
-  border-radius: 6px;
-  background: rgba(var(--ink), 0.05);
+  padding: 2px 0;
+  border-radius: 7px;
+  background: rgba(var(--ink), 0.055);
   color: var(--text-faint);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   text-align: center;
   transition:
-    background-color 300ms ease,
-    color 300ms ease;
+    background-color 260ms ease,
+    color 260ms ease;
 }
 
 .session-steps li[data-done="true"] {
@@ -5360,7 +5490,7 @@ code {
 
 .session-steps li[data-current="true"] {
   background: var(--session-color);
-  color: #1a0d07;
+  color: #160c07;
 }
 
 .session[data-status="done"] .session-steps li:last-child {
@@ -5373,10 +5503,14 @@ code {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  margin-top: auto;
+  padding-top: 1px;
   color: var(--text-faint);
-  font-size: 11px;
+  font-size: 10.5px;
   white-space: nowrap;
+}
+
+.session-foot:empty {
+  display: none;
 }
 
 .session-foot > * {
@@ -5385,6 +5519,7 @@ code {
 
 .session-result.is-passed {
   color: var(--accent);
+  font-weight: 600;
 }
 
 .session-result.is-failed,
@@ -5402,86 +5537,184 @@ code {
   white-space: nowrap;
 }
 
-/* Sin sesiones: cómo conectar Claude Code */
+/* Sin sesiones: tarjeta de bienvenida para conectar Claude Code o Antigravity */
 .ai-setup {
   display: flex;
   flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  padding: 0 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 0;
+  padding: 12px 16px;
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 130% at 0% 0%, color-mix(in srgb, var(--claude-color) 11%, transparent), transparent 58%),
+    radial-gradient(90% 130% at 100% 100%, color-mix(in srgb, var(--info) 11%, transparent), transparent 58%),
+    rgba(var(--ink), 0.045);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.07);
 }
 
-.ai-setup[hidden],
-.sessions[hidden] {
-  display: none;
+.ai-setup-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ai-setup-icons {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.ai-setup-badge {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.08);
+}
+
+.ai-setup-badge svg {
+  width: 17px;
+  height: 17px;
+}
+
+.ai-setup-badge.is-claude {
+  background: color-mix(in srgb, var(--claude-color) 20%, transparent);
+  color: var(--claude-color);
+}
+
+.ai-setup-badge.is-agy {
+  margin-left: -9px;
+  background: color-mix(in srgb, var(--info) 20%, var(--glass));
+  color: var(--info);
 }
 
 .ai-setup-text {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 4px;
-  max-width: 560px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .ai-setup-text strong {
-  font-size: 15px;
+  font-size: 13.5px;
+  font-weight: 650;
 }
 
-.ai-setup-text span {
+.ai-setup-text > span {
   color: var(--text-dim);
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-
-.ai-setup-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-primary svg {
-  width: 15px;
-  height: 15px;
-}
-
-.btn-ghost {
-  background: rgba(var(--ink), 0.07);
-  color: var(--text-dim);
-}
-
-.btn-ghost:hover {
-  background: rgba(var(--ink), 0.12);
-  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.38;
 }
 
 .ai-setup-status {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ai-setup-status:empty {
+  display: none;
 }
 
 .ai-setup-status[data-state="ok"] {
-  color: var(--accent);
+  color: var(--accent) !important;
 }
 
 .ai-setup-status[data-state="error"] {
-  color: var(--danger);
+  color: var(--danger) !important;
+}
+
+.ai-setup-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+}
+
+.ai-setup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ai-setup-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ai-setup-btn.is-claude {
+  background: color-mix(in srgb, var(--claude-color) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--claude-color) 32%, transparent);
+  color: var(--text-strong);
+}
+
+.ai-setup-btn.is-claude svg {
+  color: var(--claude-color);
+}
+
+.ai-setup-btn.is-claude:hover {
+  background: color-mix(in srgb, var(--claude-color) 28%, transparent);
+}
+
+.ai-setup-btn.is-agy {
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 30%, transparent);
+  color: var(--text-strong);
+}
+
+.ai-setup-btn.is-agy svg {
+  color: var(--info);
+}
+
+.ai-setup-btn.is-agy:hover {
+  background: color-mix(in srgb, var(--info) 26%, transparent);
 }
 
 /* ----- Chat ----- */
+.chat-model-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
 .chat-model {
+  appearance: none;
   height: 26px;
-  padding: 0 8px;
+  padding: 0 22px 0 10px;
   border: 0;
   border-radius: 999px;
   outline: none;
-  background: rgba(var(--ink), 0.08);
+  background: rgba(var(--ink), 0.07);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
   color: var(--text);
   font: inherit;
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.chat-model:hover {
+  background: rgba(var(--ink), 0.11);
+}
+
+.chat-model:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--claude-color) 55%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--claude-color) 20%, transparent);
 }
 
 .chat-model option {
@@ -5489,8 +5722,17 @@ code {
   color: var(--text);
 }
 
+.chat-model-arrow {
+  position: absolute;
+  right: 7px;
+  width: 11px;
+  height: 11px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
 /* El modelo de Claude solo se elige si hablas con Claude (o con los dos) */
-.ai[data-provider="gemini"] .chat-model {
+.ai[data-provider="gemini"] .chat-model-wrap {
   display: none;
 }
 
@@ -5498,125 +5740,233 @@ code {
   display: grid;
   flex: none;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: transparent;
+  background: rgba(var(--ink), 0.05);
   color: var(--text-dim);
   cursor: pointer;
   transition:
     background-color 150ms ease,
     color 150ms ease,
+    opacity 150ms ease,
     transform 220ms var(--spring-pop);
 }
 
-.icon-btn:hover {
-  background: rgba(var(--ink), 0.08);
+.icon-btn:hover:not(:disabled) {
+  background: rgba(var(--ink), 0.11);
   color: var(--text);
 }
 
-.icon-btn:active {
+.icon-btn:active:not(:disabled) {
   transform: scale(0.9);
 }
 
+.icon-btn:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
 .icon-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
 }
 
 .chat-log {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-height: 0;
-  padding: 2px 4px 4px;
+  padding: 2px 4px 4px 2px;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
   user-select: text;
 }
 
+/* Estado inicial del chat: compacto para caber holgado sin scroll en 260 px */
 .chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: auto;
-  max-width: 480px;
-  color: var(--text-faint);
-  font-size: 12px;
-  line-height: 1.5;
+  padding: 2px 8px;
   text-align: center;
 }
 
-.chat-empty[hidden] {
+.chat-empty-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
+
+.chat-empty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+}
+
+.chat-empty-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.chat-empty-badge .is-gemini {
+  color: var(--info);
+}
+
+.chat-empty-badge .is-claude {
+  color: var(--claude-color);
+}
+
+.ai[data-provider="gemini"] .chat-empty-badge .is-claude,
+.ai[data-provider="claude"] .chat-empty-badge .is-gemini {
   display: none;
 }
 
-.chat-empty strong {
+.chat-starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.chat-chip {
+  height: 25px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.055);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.07);
   color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 200ms var(--spring-pop);
+}
+
+.chat-chip:hover {
+  background: rgba(var(--ink), 0.1);
+  color: var(--text);
+}
+
+.chat-chip:active {
+  transform: scale(0.95);
 }
 
 /* Con mensajes, la explicación se va; sin mensajes, la lista no ocupa sitio */
 .ai-chat-body:has(.chat-empty:not([hidden])) .chat-log {
   flex: 0;
+  padding: 0;
 }
 
+/* Entrada con opacidad + escala: sin desplazamiento vertical para no provocar
+   destellos momentáneos de la barra de scroll al llegar mensajes */
 .msg {
-  max-width: 88%;
+  max-width: 86%;
   font-size: 12.5px;
-  line-height: 1.45;
-  animation: msg-in 360ms var(--spring-bounce) backwards;
+  line-height: 1.46;
+  animation: msg-in 260ms var(--spring) backwards;
 }
 
 @keyframes msg-in {
   from {
     opacity: 0;
-    translate: 0 8px;
+    scale: 0.97;
   }
 }
 
 .msg-user {
   align-self: flex-end;
+  transform-origin: 100% 100%;
 }
 
 .msg-bubble {
   padding: 6px 12px;
   border-radius: 16px 16px 4px 16px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 21%, transparent),
+    color-mix(in srgb, var(--accent) 13%, transparent)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* Las respuestas (con "Ambos", dos columnas) */
+/* Las respuestas: ajustadas a su contenido si es 1, dos columnas iguales con "Ambos" */
 .msg-pair {
   display: grid;
   grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
   gap: 8px;
   align-items: start;
+  justify-items: start;
 }
 
 .msg-pair[data-count="2"] {
   --cols: 2;
+
+  justify-items: stretch;
 }
 
 .msg-ai {
   --msg-color: var(--claude-color);
 
-  max-width: 100%;
-  padding: 6px 12px 8px;
+  min-width: 176px;
+  max-width: 88%;
+  padding: 7px 12px 8px;
   border-radius: 16px 16px 16px 4px;
-  background: rgba(var(--ink), 0.05);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--msg-color) 8%, rgba(var(--ink), 0.055)),
+    rgba(var(--ink), 0.042)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--msg-color) 18%, rgba(var(--ink), 0.06));
+  transform-origin: 0 0;
+}
+
+.msg-pair[data-count="2"] .msg-ai {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .msg-ai[data-provider="gemini"] {
   --msg-color: var(--info);
 }
 
+.msg-ai[data-status="error"] {
+  --msg-color: var(--danger);
+}
+
 .msg-head {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 2px;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
+  margin-bottom: 3px;
+}
+
+.msg-icon {
+  flex: none;
+  width: 12.5px;
+  height: 12.5px;
+  color: var(--msg-color);
 }
 
 .msg-name {
@@ -5633,26 +5983,75 @@ code {
   white-space: nowrap;
 }
 
+.msg-meta:not(:empty)::before {
+  content: "· ";
+}
+
+.msg-copy {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.msg-ai:hover .msg-copy,
+.msg-copy:focus-visible,
+.msg-copy[data-copied="true"] {
+  opacity: 1;
+}
+
+.msg-copy:hover {
+  background: rgba(var(--ink), 0.09);
+  color: var(--text);
+}
+
+.msg-copy[data-copied="true"] {
+  color: var(--accent);
+}
+
+.msg-copy svg {
+  width: 12.5px;
+  height: 12.5px;
+}
+
 .msg-body {
+  color: var(--text);
   word-break: break-word;
 }
 
 .msg-body code {
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 5px;
-  background: rgba(var(--ink), 0.08);
+  background: rgba(var(--ink), 0.09);
+  font-family: "Cascadia Code", Consolas, monospace;
   font-size: 11.5px;
 }
 
 .msg-body pre {
-  margin: 4px 0;
-  padding: 6px 10px;
+  margin: 5px 0;
+  padding: 7px 10px;
   overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 10px;
   background: rgba(var(--ink), 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
   font-family: "Cascadia Code", Consolas, monospace;
   font-size: 11.5px;
   white-space: pre;
+  scrollbar-width: thin;
 }
 
 .msg-body pre code {
@@ -5660,44 +6059,56 @@ code {
   background: none;
 }
 
-/* Escribiendo: tres puntos mientras no hay texto, y un cursor al final mientras llega */
-.island[data-shape="expanded"] .view.is-active .msg-ai[data-status="streaming"] .msg-body:empty::before {
+/* Escribiendo: tres puntos fijos y cursor sincronizados con beat.js (8 pasos/s
+   solo mientras se ve el chat activo; cero @keyframes infinitos en CSS) */
+.msg-ai[data-status="streaming"] .msg-body:empty::before {
   content: "";
   display: inline-block;
-  width: 26px;
-  height: 8px;
-  background: radial-gradient(circle closest-side, var(--text-dim) 90%, transparent) 0 50% / 8px 8px repeat-x;
-  animation: typing 1s steps(4) infinite;
+  width: 24px;
+  height: 6px;
+  vertical-align: middle;
+  background:
+    radial-gradient(circle, var(--msg-color) 2.3px, transparent 2.8px) 0 50% / 8px 6px no-repeat,
+    radial-gradient(circle, var(--msg-color) 2.3px, transparent 2.8px) 8px 50% / 8px 6px no-repeat,
+    radial-gradient(circle, var(--msg-color) 2.3px, transparent 2.8px) 16px 50% / 8px 6px no-repeat;
+  opacity: 0.45;
+  transition: opacity 120ms ease;
 }
 
-.island[data-shape="expanded"] .view.is-active .msg-ai[data-status="streaming"] .msg-body:not(:empty)::after {
+#chat-log[data-beat="0"] .msg-ai[data-status="streaming"] .msg-body:empty::before {
+  opacity: 0.35;
+}
+
+#chat-log[data-beat="1"] .msg-ai[data-status="streaming"] .msg-body:empty::before {
+  opacity: 0.65;
+}
+
+#chat-log[data-beat="2"] .msg-ai[data-status="streaming"] .msg-body:empty::before {
+  opacity: 0.95;
+}
+
+#chat-log[data-beat="3"] .msg-ai[data-status="streaming"] .msg-body:empty::before {
+  opacity: 0.6;
+}
+
+.msg-ai[data-status="streaming"] .msg-body:not(:empty)::after {
   content: "";
   display: inline-block;
-  width: 7px;
+  width: 6px;
   height: 13px;
-  margin-left: 2px;
+  margin-left: 3px;
   border-radius: 2px;
   background: var(--msg-color);
   vertical-align: -2px;
-  animation: caret-blink 1s steps(2) infinite;
+  opacity: 0.9;
 }
 
-@keyframes typing {
-  from {
-    width: 0;
-  }
-  to {
-    width: 34px;
-  }
-}
-
-@keyframes caret-blink {
-  50% {
-    opacity: 0;
-  }
+#chat-log:is([data-beat="2"], [data-beat="3"]) .msg-ai[data-status="streaming"] .msg-body:not(:empty)::after {
+  opacity: 0.18;
 }
 
 .msg-status {
+  margin-top: 2px;
   color: var(--text-faint);
   font-size: 11px;
 }
@@ -5710,29 +6121,43 @@ code {
   color: var(--danger);
 }
 
-/* Donde escribes */
+/* Cuadro de escritura */
 .composer {
+  --composer-accent: var(--info);
+
   display: flex;
   flex: none;
   align-items: flex-end;
   gap: 6px;
-  padding: 4px 4px 4px 14px;
-  border-radius: 20px;
-  background: rgba(var(--ink), 0.05);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.07);
-  transition: box-shadow 200ms ease;
+  padding: 4px 5px 4px 13px;
+  border-radius: 19px;
+  background: rgba(var(--ink), 0.055);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.08);
+  transition:
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.ai[data-provider="claude"] .composer {
+  --composer-accent: var(--claude-color);
+}
+
+.ai[data-provider="both"] .composer {
+  --composer-accent: var(--ai-color);
 }
 
 .composer:focus-within {
+  background: rgba(var(--ink), 0.075);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
-    0 0 0 3px var(--accent-soft);
+    inset 0 0 0 1px color-mix(in srgb, var(--composer-accent) 55%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--composer-accent) 15%, transparent);
 }
 
 .composer-input {
   flex: 1;
   min-height: 28px;
   padding: 5px 0;
+  overflow-y: hidden;
   border: 0;
   outline: none;
   background: transparent;
@@ -5741,7 +6166,7 @@ code {
   font-size: 13px;
   line-height: 18px;
   resize: none;
-  caret-color: var(--accent);
+  caret-color: var(--composer-accent);
   scrollbar-width: thin;
 }
 
@@ -5763,16 +6188,23 @@ code {
   cursor: pointer;
   transition:
     transform 220ms var(--spring-pop),
-    background-color 200ms ease;
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.composer[data-empty="true"]:not([data-busy="true"]) .composer-send {
+  background: rgba(var(--ink), 0.1);
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .composer-send:active {
-  transform: scale(0.88);
+  transform: scale(0.9);
 }
 
 .composer-send svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .composer-send .icon-stop,
@@ -6913,6 +7345,7 @@ code {
 
 /* Variables solo dentro del panel: textos oscuros, tinta negra... */
 :root[data-theme="light"] .panel {
+  color-scheme: light;
   --ink: 0, 0, 0;
   --text: rgba(0, 0, 0, 0.87);
   --text-dim: rgba(0, 0, 0, 0.58);
@@ -6920,11 +7353,14 @@ code {
   --text-strong: #000;
   --hover: rgba(0, 0, 0, 0.05);
   --selected: #fff;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.22);
+  --scrollbar-track: transparent;
   --accent: #12b85b; /* el verde claro no se lee sobre blanco */
   --accent-soft: rgba(18, 184, 91, 0.18);
   --warning: #c98600;
   --danger: #e0352b;
   --info: #1a7fd6;
+  --claude-color: #d46344;
   --music-text: color-mix(in oklab, var(--music-accent) 60%, #000);
   --ctrl-main-bg: #18181c;
   --ctrl-main-fg: #fff;
@@ -6998,13 +7434,26 @@ code {
 }
 
 /* El chat y las sesiones, sobre el panel claro */
-:root[data-theme="light"] .composer,
-:root[data-theme="light"] .session {
-  background: rgba(255, 255, 255, 0.72);
+:root[data-theme="light"] :is(.composer, .session, .ai-setup) {
+  background-color: rgba(255, 255, 255, 0.76);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .composer:focus-within {
+  background-color: #fff;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--composer-accent, var(--accent)) 55%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--composer-accent, var(--accent)) 16%, transparent);
 }
 
 :root[data-theme="light"] .msg-ai {
-  background: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.84);
+}
+
+:root[data-theme="light"] :is(.chat-chip, .chat-model) {
+  background-color: rgba(255, 255, 255, 0.75);
 }
 
 /* Portapapeles y bandeja: tarjetas blancas, como los widgets */

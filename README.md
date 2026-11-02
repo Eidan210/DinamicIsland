@@ -21,7 +21,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 0 | Cimientos: código repartido en módulos y helper renombrado a WinHelper | ✅ Hecha |
 | 1 | Base: 6 páginas, atajos Ctrl+Alt+1…6, varias actividades, tema, volumen, batería, avisos y nota rápida | ✅ Hecha |
 | 2 | Música completa: letras (LRCLIB), degradado de la portada, swipe y salida de audio | ✅ Hecha |
-| 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ✅ Hecha (Antigravity, en prueba) |
+| 3 | IA: Claude Code y Antigravity en vivo (permisos, preguntas y planes desde la isla) y chat con Claude/Gemini | ✅ Hecha |
 | 4 | Glow: colores que avisan de lo que pasa | ✅ Hecha |
 | 5 | Clawd, la mascota, en la isla | ✅ Hecha |
 | 6 | Home con widgets editables y links con su logo | ✅ Hecha |

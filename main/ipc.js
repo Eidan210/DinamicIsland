@@ -113,6 +113,7 @@ function registerIpcHandlers() {
   // Chat
   onRendererRequest('chat:get', () => aiChat.getChatState());
   onRendererRequest('chat:send', (text, options) => aiChat.sendChat(String(text), options && typeof options === 'object' ? options : {}));
+  onRendererRequest('chat:copy', (id) => aiChat.copyMessage(String(id)));
   onRendererMessage('chat:cancel', () => aiChat.cancelChat());
   onRendererMessage('chat:clear', () => aiChat.clearChat());
 }

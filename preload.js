@@ -222,6 +222,8 @@ contextBridge.exposeInMainWorld('notch', {
     getState: () => ipcRenderer.invoke('chat:get'),
     /** Manda un mensaje. options: { provider, claudeModel }. Devuelve (Promise) { ok, error? }. */
     send: (text, options) => ipcRenderer.invoke('chat:send', String(text), options ?? {}),
+    /** Copia al portapapeles el texto completo de un mensaje por su id. */
+    copy: (id) => ipcRenderer.invoke('chat:copy', String(id)),
     /** Para la respuesta que se está escribiendo. */
     cancel: () => ipcRenderer.send('chat:cancel'),
     /** Nueva conversación (se olvida la anterior). */

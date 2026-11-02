@@ -14,15 +14,16 @@
 //  El cronómetro avanza una vez por segundo, solo mientras se ve.
 // =============================================================================
 
-import { $, setText, formatTime, plural } from './utils.js';
+import { $, animate, cssEasing, setText, formatTime, plural, trackScrollEdges } from './utils.js';
 import { state } from './state.js';
 import { getActivities, onShapeChange, updateShape } from './island.js';
 import { makeBeatSpinner } from './beat.js';
 import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange } from './tabs.js';
-import { focusChatInput } from './chat.js';
+import { focusChatInput, syncChatVisibility } from './chat.js';
 
 const DONE_MS = 6000; // al terminar, la isla enseña "Hecho" estos milisegundos
+const MODES = ['sessions', 'chat'];
 export const SOURCE = {
   claude: { name: 'Claude', icon: '#i-claude' },
   agy: { name: 'Antigravity', icon: '#i-gemini' },
@@ -46,8 +47,9 @@ export const STEPS = [
   ['done', 'Hecho'],
 ];
 
-const island = $('island');
 const aiEl = $('ai');
+const modeIndicator = $('ai-mode-indicator');
+const modeButtons = [...document.querySelectorAll('#ai-modes .segment')];
 const activityEl = $('activity');
 const activityUse = $('activity-ai-use');
 const activityLabel = $('activity-ai-label');
@@ -74,6 +76,8 @@ let shownDecisionId = ''; // la decisión que enseña la tarjeta
 // other: { pregunta: 'texto' }, otherOpen: { pregunta: true } }
 let questionState = null;
 let deciding = false; // mientras main aplica tu respuesta, los botones se desactivan
+let updateSessionEdges = () => {};
+const sessionCards = new Map(); // id de sesión → nodos reutilizables de su tarjeta
 const changeListeners = [];
 
 /** Avisa a `listener()` cada vez que cambia algo de la IA (lo usa el widget de Home). */
@@ -128,11 +132,35 @@ export function verbOf(session) {
   if (session.status === 'waiting') return 'Esperando';
   if (session.status === 'done') return 'Hecho';
   if (session.status === 'error') return 'Error';
+  if (session.status === 'idle') return 'En espera';
   return session.tool?.verb || 'Pensando';
+}
+
+/** Nombre corto y legible del modelo ("claude-opus-4-6[1m]" → "Opus 4.6"). */
+function shortModelName(rawModel, sourceKey) {
+  const raw = String(rawModel || '').trim();
+  if (!raw) return sourceKey === 'agy' ? 'Antigravity' : '';
+  const clean = raw.replace(/\[.*?\]/g, '').replace(/-\d{8}$/, '');
+  const claudeMatch = /^claude-(opus|sonnet|haiku)-(\d+)(?:-(\d+))?/i.exec(clean);
+  if (claudeMatch) {
+    const family = claudeMatch[1].charAt(0).toUpperCase() + claudeMatch[1].slice(1).toLowerCase();
+    const ver = claudeMatch[3] ? `${claudeMatch[2]}.${claudeMatch[3]}` : claudeMatch[2];
+    return `${family} ${ver}`;
+  }
+  return clean.length > 22 ? `${clean.slice(0, 20)}…` : clean;
 }
 
 function isPageVisible() {
   return state.isExpanded && getCurrentTab() === 'ai';
+}
+
+/** Coloca la pastilla deslizante bajo "Sesiones" o "Chat". */
+function moveModeIndicator(withAnimation) {
+  const active = modeButtons.find((item) => item.dataset.mode === aiEl.dataset.mode);
+  if (!active || !modeIndicator) return;
+  modeIndicator.classList.toggle('no-animation', !withAnimation);
+  modeIndicator.style.setProperty('--indicator-x', `${active.offsetLeft}px`);
+  modeIndicator.style.setProperty('--indicator-width', `${active.offsetWidth}px`);
 }
 
 // -----------------------------------------------------------------------------
@@ -150,11 +178,13 @@ function renderAll() {
 /** La actividad de la isla y su burbuja. */
 function renderIsland() {
   const session = getIslandSession();
-  const source = SOURCE[session?.source] || SOURCE.claude;
+  const sourceKey = session?.source || 'claude';
+  const source = SOURCE[sourceKey] || SOURCE.claude;
   activityEl.dataset.ai = session?.status || '';
-  activityEl.dataset.source = session?.source || 'claude';
+  activityEl.dataset.source = sourceKey;
   activityUse.setAttribute('href', source.icon);
   bubbleUse.setAttribute('href', source.icon);
+  bubbleAi.dataset.source = sourceKey;
   bubbleAi.dataset.status = session?.status || '';
   if (!session) return;
   setText(activityLabel, verbOf(session));
@@ -163,18 +193,40 @@ function renderIsland() {
 }
 
 /** La página IA: modo (Sesiones o Chat), las tarjetas y el estado del servidor. */
-function renderPage() {
+function renderPage({ animateMode = false } = {}) {
   const { sessions, server, lastEventAt } = state.ai;
   const effective = mode === 'auto' ? (sessions.length || state.ai.pending.length ? 'sessions' : 'chat') : mode;
-  if (aiEl.dataset.mode !== effective) {
-    aiEl.dataset.mode = effective;
-    aiEl.querySelectorAll('.seg[data-mode]').forEach((button) => {
-      button.setAttribute('aria-selected', String(button.dataset.mode === effective));
-    });
-  }
+  const previousMode = aiEl.dataset.mode;
+  const modeChanged = previousMode !== effective;
+
+  if (modeChanged) aiEl.dataset.mode = effective;
+  modeButtons.forEach((item) => {
+    const active = item.dataset.mode === effective;
+    item.classList.toggle('is-active', active);
+    item.setAttribute('aria-selected', String(active));
+  });
+
   const live = sessions.filter((session) => session.status === 'working' || session.status === 'waiting').length;
+  const countWasHidden = countEl.hidden;
   countEl.hidden = !live;
-  setText(countEl, String(live));
+  setText(countEl, live ? String(live) : '');
+
+  if (modeChanged || countWasHidden !== countEl.hidden) {
+    moveModeIndicator(animateMode && isPageVisible());
+  }
+
+  if (modeChanged && animateMode && isPageVisible()) {
+    const direction = MODES.indexOf(effective) > MODES.indexOf(previousMode) ? 1 : -1;
+    const pane = aiEl.querySelector(`[data-ai-pane="${effective}"]`);
+    animate(
+      pane,
+      [
+        { opacity: 0, transform: `translateX(${20 * direction}px)`, filter: 'blur(4px)' },
+        { opacity: 1, transform: 'translateX(0)', filter: 'blur(0px)' },
+      ],
+      { duration: 420, easing: cssEasing('--spring-open') }
+    );
+  }
 
   serverEl.dataset.state = server.listening ? (lastEventAt ? 'connected' : 'listening') : server.error ? 'error' : 'off';
   setText(
@@ -182,7 +234,7 @@ function renderPage() {
     server.listening
       ? lastEventAt
         ? 'Conectado'
-        : `Escuchando · ${server.port}`
+        : `Puerto ${server.port}`
       : server.error === 'busy'
         ? `Puerto ${server.port} ocupado`
         : 'Apagado'
@@ -190,71 +242,153 @@ function renderPage() {
 
   setupEl.hidden = sessions.length > 0;
   sessionsEl.hidden = sessions.length === 0;
+  sessionsEl.dataset.count = String(sessions.length);
   if (sessions.length) renderSessions(sessions);
+  else clearSessionCards();
+  syncChatVisibility();
 }
 
-/** Una tarjeta por sesión. */
+function clearSessionCards() {
+  if (!sessionCards.size) return;
+  sessionCards.clear();
+  sessionsEl.replaceChildren();
+  updateSessionEdges();
+}
+
+/** Crea los elementos fijos de una tarjeta de sesión la primera vez que aparece. */
+function createSessionCard(id) {
+  const card = document.createElement('article');
+  card.className = 'session';
+  card.dataset.id = id;
+
+  const head = document.createElement('header');
+  head.className = 'session-head';
+  const badge = document.createElement('span');
+  badge.className = 'session-badge';
+  const svgIcon = icon('#i-claude', 'session-icon');
+  const iconUse = svgIcon.firstChild;
+  badge.append(svgIcon);
+
+  const projectEl = span('session-project', '');
+  const modelEl = span('session-model', '');
+  const timeEl = span('session-time', '');
+  timeEl.dataset.id = id;
+  head.append(badge, projectEl, modelEl, timeEl);
+
+  const taskEl = span('session-task', '');
+  const nowEl = document.createElement('p');
+  nowEl.className = 'session-now';
+  const verbEl = span('session-verb', '');
+  const targetEl = span('session-target', '');
+  nowEl.append(verbEl, targetEl);
+
+  const stepsEl = document.createElement('ol');
+  stepsEl.className = 'session-steps';
+  const stepItems = STEPS.map(([key, label]) => {
+    const item = document.createElement('li');
+    item.dataset.step = key;
+    item.textContent = label;
+    stepsEl.append(item);
+    return item;
+  });
+
+  const footEl = document.createElement('footer');
+  footEl.className = 'session-foot';
+
+  card.append(head, taskEl, nowEl, stepsEl, footEl);
+  return { card, iconUse, projectEl, modelEl, timeEl, taskEl, verbEl, targetEl, stepItems, footEl };
+}
+
+/** Actualiza las tarjetas en su sitio (sin recrear el DOM en cada evento de herramienta). */
 function renderSessions(sessions) {
-  const cards = sessions.map((session) => {
+  const seen = new Set();
+
+  sessions.forEach((session, index) => {
+    seen.add(session.id);
+    let entry = sessionCards.get(session.id);
+    const isNew = !entry;
+    if (isNew) {
+      entry = createSessionCard(session.id);
+      sessionCards.set(session.id, entry);
+    }
+
+    const { card, iconUse, projectEl, modelEl, timeEl, taskEl, verbEl, targetEl, stepItems, footEl } = entry;
     const source = SOURCE[session.source] || SOURCE.claude;
-    const card = document.createElement('article');
-    card.className = 'session';
     card.dataset.status = session.status;
     card.dataset.source = session.source;
+    if (iconUse.getAttribute('href') !== source.icon) iconUse.setAttribute('href', source.icon);
 
-    const head = document.createElement('header');
-    head.className = 'session-head';
-    head.append(icon(source.icon, 'session-icon'), span('session-project', session.project));
-    const time = span('session-time', elapsedText(session));
-    time.dataset.id = session.id;
-    head.append(time);
+    setText(projectEl, session.project || source.name);
+    const modelLabel = shortModelName(session.model, session.source);
+    modelEl.hidden = !modelLabel;
+    setText(modelEl, modelLabel);
+    setText(timeEl, elapsedText(session));
 
-    // Lo que le pediste, y qué hace ahora (o cómo terminó)
-    const task = span('session-task', session.task || (session.status === 'idle' ? 'Esperando tu mensaje' : ''));
-    const now = document.createElement('p');
-    now.className = 'session-now';
+    setText(taskEl, session.task || (session.status === 'idle' ? 'Sesión abierta · esperando tarea' : ''));
+
     if (session.status === 'done') {
-      now.append(span('session-verb', 'Hecho'), span('session-target', session.summary || 'Listo'));
+      setText(verbEl, 'Hecho');
+      setText(targetEl, session.summary || 'Turno completado');
     } else if (session.status === 'error') {
-      now.append(span('session-verb', 'Error'), span('session-target', session.error?.text || ''));
+      setText(verbEl, 'Error');
+      setText(targetEl, session.error?.text || 'Revisa la terminal');
     } else if (session.status === 'waiting') {
-      now.append(span('session-verb', 'Esperando'), span('session-target', 'tu respuesta'));
+      setText(verbEl, 'Esperando');
+      setText(targetEl, 'tu respuesta');
     } else if (session.status === 'working') {
-      now.append(span('session-verb', verbOf(session)), span('session-target', session.tool?.target || ''));
+      setText(verbEl, verbOf(session));
+      setText(targetEl, session.tool?.target || '');
+    } else {
+      setText(verbEl, 'Lista');
+      setText(targetEl, '');
     }
 
-    // Pasos: Leer → Editar → Probar → Hecho
-    const steps = document.createElement('ol');
-    steps.className = 'session-steps';
-    for (const [key, label] of STEPS) {
-      const item = document.createElement('li');
-      item.textContent = label;
-      const done = key === 'done' ? session.step === 'done' : session.steps?.[key];
-      item.dataset.done = String(Boolean(done));
+    for (const item of stepItems) {
+      const key = item.dataset.step;
+      const done = key === 'done' ? session.step === 'done' : Boolean(session.steps?.[key]);
+      item.dataset.done = String(done);
       item.dataset.current = String(session.step === key && session.status === 'working');
-      steps.append(item);
     }
 
-    // Resultados: archivos, tests y compilación
-    const foot = document.createElement('footer');
-    foot.className = 'session-foot';
+    // Pie de resultados: archivos tocados, tests, build y primer error
+    const footParts = [];
     if (session.fileCount) {
       const files = span('session-files', plural(session.fileCount, 'archivo', 'archivos'));
       files.title = session.files.join('\n');
-      foot.append(files);
+      footParts.push(files);
     }
-    if (session.tests) foot.append(span(`session-result is-${session.tests}`, session.tests === 'passed' ? 'Tests ✓' : 'Tests ✗'));
-    if (session.build) foot.append(span(`session-result is-${session.build}`, session.build === 'passed' ? 'Build ✓' : 'Build ✗'));
+    if (session.tests) footParts.push(span(`session-result is-${session.tests}`, session.tests === 'passed' ? 'Tests ✓' : 'Tests ✗'));
+    if (session.build) footParts.push(span(`session-result is-${session.build}`, session.build === 'passed' ? 'Build ✓' : 'Build ✗'));
     if (session.errors?.length) {
       const error = span('session-error', session.errors[0]);
       error.title = session.errors.join('\n');
-      foot.append(error);
+      footParts.push(error);
     }
+    footEl.replaceChildren(...footParts);
 
-    card.append(head, task, now, steps, foot);
-    return card;
+    // Mantener el orden sin desmontar los nodos que ya están en su sitio
+    const currentAtSlot = sessionsEl.children[index];
+    if (currentAtSlot !== card) sessionsEl.insertBefore(card, currentAtSlot || null);
+
+    if (isNew && isPageVisible() && aiEl.dataset.mode === 'sessions') {
+      animate(
+        card,
+        [
+          { opacity: 0, transform: 'scale(0.96)' },
+          { opacity: 1, transform: 'scale(1)' },
+        ],
+        { duration: 340, easing: cssEasing('--spring-open') }
+      );
+    }
   });
-  sessionsEl.replaceChildren(...cards);
+
+  for (const [id, entry] of sessionCards) {
+    if (!seen.has(id)) {
+      entry.card.remove();
+      sessionCards.delete(id);
+    }
+  }
+  updateSessionEdges();
 }
 
 // -----------------------------------------------------------------------------
@@ -544,10 +678,10 @@ function tick() {
   const session = getIslandSession();
   if (session) setText(activityTime, elapsedText(session, now));
   if (isPageVisible()) {
-    sessionsEl.querySelectorAll('.session-time').forEach((element) => {
-      const item = state.ai.sessions.find((candidate) => candidate.id === element.dataset.id);
-      if (item) setText(element, elapsedText(item, now));
-    });
+    for (const item of state.ai.sessions) {
+      const entry = sessionCards.get(item.id);
+      if (entry) setText(entry.timeEl, elapsedText(item, now));
+    }
   }
   scheduleTick();
 }
@@ -559,11 +693,12 @@ function tick() {
 /** Cambia entre Sesiones y Chat (lo que elijas se mantiene mientras Notch esté abierto). */
 function setMode(next) {
   mode = next;
-  renderPage();
+  renderPage({ animateMode: true });
   if (next === 'chat' && isPageVisible()) focusChatInput();
+  scheduleSpinners();
 }
 
-async function copySetup(kind) {
+async function copySetup(kind, buttonEl, defaultLabel) {
   let copied = false;
   try {
     copied = await window.notch.ai.copySetup(kind);
@@ -574,16 +709,24 @@ async function copySetup(kind) {
     setupStatus,
     copied
       ? kind === 'agy'
-        ? 'Copiado: pégalo en ~/.gemini/config/hooks.json'
-        : 'Copiado: pégalo en ~/.claude/settings.json'
+        ? 'Copiado · pégalo en ~/.gemini/config/hooks.json'
+        : 'Copiado · pégalo en ~/.claude/settings.json'
       : 'No se pudo copiar'
   );
   setupStatus.dataset.state = copied ? 'ok' : 'error';
+  if (buttonEl) {
+    const labelSpan = buttonEl.querySelector('span');
+    if (labelSpan) {
+      setText(labelSpan, copied ? 'Copiado ✓' : 'Error');
+      clearTimeout(buttonEl._copyTimer);
+      buttonEl._copyTimer = setTimeout(() => setText(labelSpan, defaultLabel), 1800);
+    }
+  }
 }
 
-// Los iconos que giran mientras Claude trabaja: en la isla, en su burbuja, en
-// el widget y en la página IA. Giran a pasos (reloj de beat.js) y solo los que
-// se ven: una animación CSS infinita redibujaría la ventana 60 veces por segundo.
+// Los iconos que giran mientras Claude o Antigravity trabajan: en la isla, en
+// su burbuja, en el widget y en la página IA. Giran a pasos (reloj de beat.js)
+// y solo los que se ven: sin animaciones CSS infinitas.
 const refreshSpinners = makeBeatSpinner(
   'ai-spin',
   [
@@ -606,29 +749,58 @@ function scheduleSpinners() {
 }
 
 export function initAi() {
-  aiEl.querySelectorAll('.seg[data-mode]').forEach((segment) => {
+  updateSessionEdges = trackScrollEdges(sessionsEl);
+  // Con varias sesiones, la rueda del ratón desplaza la fila de lado sin barra vertical
+  sessionsEl.addEventListener(
+    'wheel',
+    (event) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX) && sessionsEl.scrollWidth > sessionsEl.clientWidth) {
+        event.preventDefault();
+        sessionsEl.scrollLeft += event.deltaY;
+      }
+    },
+    { passive: false }
+  );
+
+  modeButtons.forEach((segment) => {
     segment.addEventListener('click', () => setMode(segment.dataset.mode));
   });
-  $('ai-copy-claude').addEventListener('click', () => copySetup('claude'));
-  $('ai-copy-agy').addEventListener('click', () => copySetup('agy'));
-  $('ai-copy-head').addEventListener('click', async () => {
-    await copySetup('claude');
-    const head = $('ai-copy-head');
-    head.textContent = setupStatus.dataset.state === 'ok' ? 'Copiado ✓' : 'No se pudo copiar';
-    setTimeout(() => (head.textContent = 'Copiar configuración'), 2000);
-  });
+
+  const btnClaude = $('ai-copy-claude');
+  const btnAgy = $('ai-copy-agy');
+  const btnHeadClaude = $('ai-copy-head');
+  const btnHeadAgy = $('ai-copy-agy-head');
+
+  btnClaude.addEventListener('click', () => copySetup('claude', btnClaude, 'Claude Code'));
+  btnAgy.addEventListener('click', () => copySetup('agy', btnAgy, 'Antigravity'));
+  btnHeadClaude.addEventListener('click', () => copySetup('claude', btnHeadClaude, 'Hooks Claude'));
+  btnHeadAgy.addEventListener('click', () => copySetup('agy', btnHeadAgy, 'Antigravity'));
+
   // Los clics dentro de la tarjeta de decisión no abren el panel.
   decisionEl.addEventListener('click', (event) => event.stopPropagation());
 
+  moveModeIndicator(false);
   window.notch.ai.onChange(setAiState);
   onPanelChange(() => {
     renderAll();
+    requestAnimationFrame(() => {
+      moveModeIndicator(false);
+      updateSessionEdges();
+      syncChatVisibility();
+    });
     scheduleSpinners();
   });
   onTabChange((tab) => {
     if (tab === 'ai') {
       renderPage();
+      requestAnimationFrame(() => {
+        moveModeIndicator(false);
+        updateSessionEdges();
+        syncChatVisibility();
+      });
       if (aiEl.dataset.mode === 'chat') focusChatInput();
+    } else {
+      syncChatVisibility();
     }
     scheduleTick();
     scheduleSpinners();

@@ -1,10 +1,11 @@
 // =============================================================================
-//  main/ai-server.js — El servidor local que escucha a Claude Code (y a agy)
+//  main/ai-server.js — El servidor local que escucha a Claude Code y Antigravity
 // -----------------------------------------------------------------------------
-//  Claude Code puede mandar sus eventos ("hooks" de tipo http) a una URL. Notch
-//  abre un servidor pequeño SOLO en tu PC (127.0.0.1:47823) para recibirlos:
+//  Claude Code puede mandar sus eventos ("hooks" de tipo http) a una URL, y
+//  Antigravity (agy) los suyos con un hook de comando (curl.exe). Notch abre un
+//  servidor pequeño SOLO en tu PC (127.0.0.1:47823) para recibirlos:
 //    POST /claude        eventos de Claude Code (el JSON de cada hook)
-//    POST /agy/<evento>  eventos de Antigravity (un hook con curl.exe; en prueba)
+//    POST /agy/<evento>  eventos de Antigravity (estado en vivo y permisos)
 //    GET  /health        para comprobar que Notch está escuchando
 //
 //  Seguridad:
@@ -16,7 +17,7 @@
 //      no sea el nuestro (protege de páginas web maliciosas).
 //    • Máximo 1 MB por petición.
 //
-//  Notch no se conecta a ningún sitio: solo recibe lo que Claude Code le manda.
+//  Notch no se conecta a ningún sitio: solo recibe lo que Claude Code o agy mandan.
 // =============================================================================
 
 'use strict';
@@ -32,6 +33,9 @@ const sessions = require('./ai-sessions');
 
 const MAX_BODY = 1024 * 1024; // 1 MB
 const TOKEN_FILE = 'ai-token.txt';
+const AGY_SCRIPT_FILE = 'agy-hook.cmd';
+const AGY_PERMISSION_MATCHER =
+  'run_command|write_file|write_to_file|edit_file|replace_file_content|multi_replace_file_content|replace';
 
 let server = null;
 let token = null;
@@ -56,6 +60,43 @@ function getToken() {
     }
   }
   return token;
+}
+
+/**
+ * Crea o actualiza agy-hook.cmd en %APPDATA%\notch con el puerto y el token actuales.
+ * En Windows, Antigravity lanza los hooks con `cmd /c` y escapa las comillas dobles
+ * como \" (que cmd.exe no desescapa). Usando este .cmd evitamos comillas en hooks.json
+ * y, si Notch está cerrado, devolvemos una respuesta válida para no bloquear agy.
+ */
+function ensureAgyHookScript() {
+  const filePath = path.join(app.getPath('userData'), AGY_SCRIPT_FILE);
+  const port = state.settings.aiPort;
+  const secret = getToken();
+  const lines = [
+    '@echo off',
+    'setlocal',
+    'set "EVENT=%~1"',
+    'if "%EVENT%"=="" set "EVENT=PostToolUse"',
+    'set "MAXTIME=3"',
+    'if /I "%EVENT%"=="PreToolUse" set "MAXTIME=600"',
+    `"%SystemRoot%\\System32\\curl.exe" -s -f --connect-timeout 1 -m %MAXTIME% -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${secret}" --data-binary @- "http://127.0.0.1:${port}/agy/%EVENT%"`,
+    'if errorlevel 1 (',
+    '  if /I "%EVENT%"=="PreToolUse" (',
+    '    echo {"decision":"ask"}',
+    '  ) else (',
+    '    echo {}',
+    '  )',
+    ')',
+    'exit /b 0',
+    '',
+  ];
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, lines.join('\r\n'), { encoding: 'utf8', mode: 0o600 });
+  } catch (error) {
+    console.warn(`[ia] No se pudo guardar ${AGY_SCRIPT_FILE}: ${error.message}`);
+  }
+  return filePath;
 }
 
 /** ¿Trae el token bueno? (comparación en tiempo constante) */
@@ -121,17 +162,24 @@ async function handleRequest(req, res) {
   }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return reply(res, 400);
 
-  if (agyMatch) {
-    sessions.handleAgyEvent(agyMatch[1], payload);
-    return replyJson(res, 200, {});
-  }
-
-  // Las decisiones pueden tardar (esperan tu respuesta). Si Claude Code cuelga
-  // antes (respondiste en la terminal, se agotó su tiempo...), lo soltamos.
+  // Las decisiones pueden tardar (esperan tu respuesta). Si Claude Code o
+  // Antigravity cuelgan antes (respondiste en la terminal, cancelaste...), lo soltamos.
   const controller = new AbortController();
   res.on('close', () => {
     if (!res.writableEnded) controller.abort();
   });
+
+  if (agyMatch) {
+    const eventName = agyMatch[1];
+    try {
+      const response = await sessions.handleAgyEvent(eventName, payload, controller.signal);
+      return replyJson(res, 200, response || {});
+    } catch (error) {
+      console.warn(`[ia] Error con un evento de Antigravity: ${error.message}`);
+      return replyJson(res, 200, eventName === 'PreToolUse' ? { decision: 'ask' } : {});
+    }
+  }
+
   try {
     const response = await sessions.handleClaudeEvent(payload, controller.signal);
     // 200 vacío = "sin decisión": Claude Code sigue como siempre.
@@ -148,6 +196,7 @@ function startAiServer() {
   if (server || !state.settings.ai) return;
   const port = state.settings.aiPort;
   getToken();
+  ensureAgyHookScript();
   server = http.createServer((req, res) => {
     handleRequest(req, res).catch(() => reply(res, 500));
   });
@@ -175,7 +224,7 @@ function startAiServer() {
   server.listen(port, '127.0.0.1', () => {
     clearNotice('ai:server');
     sessions.setServerStatus({ listening: true, port, error: '' });
-    console.log(`[ia] Escuchando a Claude Code en http://127.0.0.1:${port}`);
+    console.log(`[ia] Escuchando a Claude Code y Antigravity en http://127.0.0.1:${port}`);
   });
 }
 
@@ -224,11 +273,29 @@ function getClaudeHooksConfig() {
   };
 }
 
-/** El hook de Antigravity (hooks.json) — en prueba: solo informa, nunca decide. */
+/** El bloque para ~/.gemini/config/hooks.json (sesión, estado en vivo y permisos). */
 function getAgyHooksConfig() {
-  const url = `http://127.0.0.1:${state.settings.aiPort}/agy/PostToolUse`;
-  const command = `curl.exe -s -m 3 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${getToken()}" --data-binary @- ${url}`;
-  return { PostToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command }] }] };
+  const script = ensureAgyHookScript().replace(/\\/g, '/');
+  const hook = (event) => [{ type: 'command', command: `${script} ${event}` }];
+  return {
+    notch: {
+      SessionStart: hook('SessionStart'),
+      PreInvocation: hook('PreInvocation'),
+      PreToolUse: [
+        {
+          matcher: AGY_PERMISSION_MATCHER,
+          hooks: [{ type: 'command', command: `${script} PreToolUse`, timeout: 600 }],
+        },
+      ],
+      PostToolUse: [
+        {
+          matcher: '*',
+          hooks: [{ type: 'command', command: `${script} PostToolUse` }],
+        },
+      ],
+      Stop: hook('Stop'),
+    },
+  };
 }
 
 function getSetupText(kind) {

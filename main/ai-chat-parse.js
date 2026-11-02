@@ -65,9 +65,11 @@ function parseClaudeLine(line) {
 function parseGeminiLine(line) {
   const data = parseJson(line);
   if (!data) return null;
-  if (data.type === 'init') return typeof data.model === 'string' ? { model: data.model } : null;
+  if (data.type === 'init') {
+    return typeof data.model === 'string' && data.model && data.model !== 'auto' ? { model: data.model } : null;
+  }
   if (data.type === 'message' && data.role === 'assistant' && typeof data.content === 'string') {
-    return data.delta ? { delta: data.content } : { full: data.content, partial: true };
+    return data.delta ? { delta: data.content } : { full: data.content.replace(/\r?\n$/, ''), partial: true };
   }
   if (data.type === 'error') {
     const message = data.message || data.error?.message;
@@ -77,51 +79,103 @@ function parseGeminiLine(line) {
     if (data.status === 'error' || data.error) {
       return { error: String(data.error?.message || data.error || 'Gemini no pudo responder'), done: true };
     }
-    return { full: typeof data.response === 'string' ? data.response : undefined, done: true };
+    const models = data.stats?.models && typeof data.stats.models === 'object' ? Object.keys(data.stats.models) : [];
+    const realModel = models.find((name) => name && name !== 'auto');
+    const full = typeof data.response === 'string' ? data.response.replace(/\r?\n$/, '') : undefined;
+    return { full: full || undefined, ...(realModel ? { model: realModel } : {}), done: true };
   }
   return null;
 }
 
-/** El primer texto que encontremos en estos campos. */
+/** El primer texto no vacío que encontremos en estos campos. */
 function pickText(object, keys) {
   for (const key of keys) {
-    if (typeof object?.[key] === 'string') return object[key];
+    if (typeof object?.[key] === 'string' && object[key].length > 0) return object[key];
   }
   return undefined;
 }
 
 /**
- * Una línea de `agy -p ... --output-format stream-json`. Su formato no está
- * documentado del todo, así que somos tolerantes: probamos los campos más
- * probables y, si una línea no es JSON, la tratamos como texto normal.
+ * Una línea de `agy --output-format stream-json -p=...`.
+ * Antigravity escribe líneas JSON con `"event"`:
+ *   • {"event":"init","init":{...}}
+ *   • {"event":"step_update","step_update":{"step_type":"agent_response","text_delta":"..."}}
+ *   • {"event":"result","result":{"status":"SUCCESS"|"ERROR","response":"...","error":"..."}}
+ * Seguimos aceptando también `"type"` o salida en texto plano por si cambia entre versiones.
  */
 function parseAgyLine(line) {
   const text = String(line || '');
   const data = parseJson(text);
-  if (!data) return text.trim() ? { delta: `${text}\n`, plain: true } : null;
-  if (data.type === 'init') return typeof data.model === 'string' ? { model: data.model } : null;
-  if (data.type === 'result') {
-    const failed = data.is_error === true || data.status === 'error' || data.finished_reason === 'error' || Boolean(data.error);
-    const full = pickText(data, ['result', 'response', 'text', 'content', 'output']);
-    if (failed) return { error: String(data.error?.message || data.error || full || 'Antigravity no pudo responder'), done: true };
-    return { full, done: true };
+  if (!data) return text.trim() ? { delta: `${text.replace(/\r$/, '')}\n`, plain: true } : null;
+
+  const kind = data.event || data.type;
+  if (kind === 'init') {
+    const initObj = data.init && typeof data.init === 'object' ? data.init : data;
+    const model = pickText(initObj, ['model', 'model_name', 'modelName']) || pickText(data, ['model', 'model_name', 'modelName']);
+    return model && model !== 'auto' ? { model } : null;
   }
-  // Formato tipo Gemini CLI
-  const gemini = parseGeminiLine(text);
-  if (gemini) return gemini;
-  // Trozos de texto en un step_update (si los trae)
-  const step = data.step && typeof data.step === 'object' ? data.step : data;
-  const delta = pickText(step, ['delta', 'text_delta', 'textDelta']);
-  if (delta) return { delta };
-  return null;
+
+  if (kind === 'error') {
+    const errObj = data.error && typeof data.error === 'object' ? data.error : data;
+    const message = pickText(errObj, ['message', 'error']) || (typeof data.error === 'string' ? data.error : '');
+    return data.severity === 'warning' ? null : { error: String(message || 'Antigravity dio un error') };
+  }
+
+  if (kind === 'result') {
+    const res = data.result && typeof data.result === 'object' ? data.result : data;
+    const status = String(res.status ?? data.status ?? '').toLowerCase();
+    const reason = String(res.finished_reason ?? data.finished_reason ?? '').toLowerCase();
+    const rawError = res.error ?? data.error;
+    const failed =
+      res.is_error === true ||
+      data.is_error === true ||
+      status === 'error' ||
+      status === 'failed' ||
+      reason === 'error' ||
+      Boolean(rawError);
+    const rawFull =
+      pickText(res, ['response', 'result', 'text', 'content', 'output']) ??
+      pickText(data, ['result', 'response', 'text', 'content', 'output']);
+    const full = typeof rawFull === 'string' ? rawFull.replace(/\r?\n$/, '') : undefined;
+    const model = pickText(res, ['model', 'model_name', 'modelName']) || pickText(res.usage, ['model', 'model_name']);
+    if (failed) {
+      const errMessage = (typeof rawError === 'object' ? rawError?.message : rawError) || full || 'Antigravity no pudo responder';
+      return { error: String(errMessage), done: true };
+    }
+    return { full: full || undefined, ...(model ? { model } : {}), done: true };
+  }
+
+  if (kind === 'step_update' || data.step_update || data.step) {
+    const step =
+      (data.step_update && typeof data.step_update === 'object' && data.step_update) ||
+      (data.step && typeof data.step === 'object' && data.step) ||
+      data;
+    // Ignorar pasos que no sean la respuesta al usuario (p. ej. user_input o pensamientos internos)
+    if (
+      typeof step.step_type === 'string' &&
+      step.step_type !== 'agent_response' &&
+      step.step_type !== 'assistant_response' &&
+      step.step_type !== 'text'
+    ) {
+      return null;
+    }
+    const delta = pickText(step, ['text_delta', 'delta', 'textDelta']);
+    if (!delta) return null;
+    // Al cerrar el paso (DONE), agy añade un "\n" suelto final: lo omitimos para no dar un salto vacío
+    if (String(step.state || '').toUpperCase() === 'DONE' && /^\r?\n$/.test(delta)) return null;
+    return { delta };
+  }
+
+  // Respaldo por si agy adopta el esquema de Gemini CLI
+  return parseGeminiLine(text);
 }
 
-/** La línea "AGY_ERROR {...}" que agy escribe en stderr cuando falla. */
+/** La línea "AGY_ERROR: {...}" (con o sin los dos puntos) que agy escribe en stderr cuando falla. */
 function parseAgyError(stderr) {
-  const match = /AGY_ERROR\s+(\{.*\})/.exec(String(stderr || ''));
+  const match = /AGY_ERROR:?\s*(\{.*\})/.exec(String(stderr || ''));
   if (!match) return '';
   const data = parseJson(match[1]);
-  return String(data?.message || data?.error || '').trim();
+  return String(data?.message || data?.short_error || data?.error || '').trim();
 }
 
 module.exports = { parseClaudeLine, parseGeminiLine, parseAgyLine, parseAgyError };

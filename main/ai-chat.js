@@ -21,7 +21,7 @@
 
 'use strict';
 
-const { app } = require('electron');
+const { app, clipboard } = require('electron');
 const { execFile, spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -334,6 +334,7 @@ function runProcess(reply, executable, args, { stdin, parseLine, label }) {
       if (cancelled) resolve({ ok: true, cancelled: true });
       else if (error) resolve({ ok: false, error, gotText });
       else if (code !== 0 && !gotText) resolve({ ok: false, error: stderrError || `${label} terminó con un error (${code})`, gotText });
+      else if (!gotText) resolve({ ok: false, error: stderrError || `${label} no devolvió ninguna respuesta.`, gotText: false });
       else resolve({ ok: true, gotText });
     };
     child.on('error', (spawnError) => {
@@ -399,8 +400,9 @@ async function runGemini(reply, prompt) {
   if (agy && !agy.isCmd) {
     reply.cli = 'agy';
     emitMessage(reply);
-    const args = ['-p', fullPrompt, '--output-format', 'stream-json'];
+    const args = ['--output-format', 'stream-json', '--disable-slash-commands'];
     if (state.settings.geminiModel) args.push('--model', state.settings.geminiModel);
+    args.push(`-p=${fullPrompt}`);
     const result = await runProcess(reply, agy, args, { parseLine: parseAgyLine, label: 'Antigravity' });
     if (result.ok || result.cancelled || result.gotText || choice === 'agy') {
       applyResult(reply, result);
@@ -430,9 +432,17 @@ async function runGemini(reply, prompt) {
   applyResult(reply, result);
 }
 
+/** Copia al portapapeles el texto completo de un mensaje del chat. */
+function copyMessage(id) {
+  const entry = history.find((item) => item.id === id);
+  if (!entry?.text) return false;
+  clipboard.writeText(entry.text);
+  return true;
+}
+
 /** Al salir de Notch: que no quede ningún programa del chat abierto. */
 function stopChat() {
   cancelChat();
 }
 
-module.exports = { getChatDir, getChatState, sendChat, cancelChat, clearChat, stopChat, CLAUDE_MODELS };
+module.exports = { getChatDir, getChatState, sendChat, cancelChat, clearChat, copyMessage, stopChat, CLAUDE_MODELS };

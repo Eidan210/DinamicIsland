@@ -5,6 +5,7 @@
 //  una sesión, le escribes algo, va a usar una herramienta, pide permiso,
 //  termina... Aquí traducimos esos JSON a lo que enseña la isla y preparamos
 //  las respuestas (permitir, denegar, responder una pregunta, aprobar un plan).
+//  También sirve para Antigravity (agy), cuyos eventos traduce ai-sessions.js.
 //
 //  No usa Electron: así se puede probar con Node sin abrir la app.
 //  Los nombres de los campos son los de la documentación oficial:
@@ -30,9 +31,9 @@ const MAX_ERROR_LINES = 3;
 const TEXT_LIMIT = 300; // recortamos los textos largos (resúmenes, comandos...)
 
 /** El nombre de la carpeta del proyecto ("C:\\Users\\yo\\Notch" → "Notch"), sea Windows o no. */
-function projectName(cwd) {
+function projectName(cwd, fallback = 'Claude Code') {
   const parts = String(cwd || '').split(/[\\/]+/).filter(Boolean);
-  return parts.at(-1) || 'Claude Code';
+  return parts.at(-1) || fallback;
 }
 
 /** Una ruta relativa al proyecto si está dentro de él ("C:\\p\\src\\a.js" → "src/a.js"). */
@@ -119,7 +120,7 @@ function createSession(payload, source = 'claude') {
     id: String(payload.session_id || ''),
     source,
     cwd: String(payload.cwd || ''),
-    project: projectName(payload.cwd),
+    project: projectName(payload.cwd, source === 'agy' ? 'Antigravity' : 'Claude Code'),
     model: typeof payload.model === 'string' ? payload.model : '',
     mode: typeof payload.permission_mode === 'string' ? payload.permission_mode : '',
     status: 'idle', // 'idle' | 'working' | 'waiting' | 'done' | 'error'
@@ -185,11 +186,13 @@ function applyEvent(session, payload, now = Date.now()) {
   const event = String(payload.hook_event_name || '');
   const toolName = String(payload.tool_name || '');
   const input = payload.tool_input && typeof payload.tool_input === 'object' ? payload.tool_input : {};
+  const agentName = session.source === 'agy' ? 'Antigravity' : 'Claude';
   session.updatedAt = now;
   if (typeof payload.permission_mode === 'string') session.mode = payload.permission_mode;
+  if (typeof payload.model === 'string' && payload.model) session.model = payload.model;
   if (payload.cwd) {
     session.cwd = String(payload.cwd);
-    session.project = projectName(payload.cwd);
+    session.project = projectName(payload.cwd, session.source === 'agy' ? 'Antigravity' : 'Claude Code');
   }
 
   switch (event) {
@@ -268,7 +271,7 @@ function applyEvent(session, payload, now = Date.now()) {
             key: `ai:quota:${session.id}`,
             kind: 'ai',
             tone: 'warning',
-            title: 'Claude: límite de uso',
+            title: `${agentName}: límite de uso`,
             text: clip(payload.message || 'Se alcanzó el límite de uso.', 140, { oneLine: true }),
           },
         };
@@ -293,7 +296,7 @@ function applyEvent(session, payload, now = Date.now()) {
           key: `ai:done:${session.id}`,
           kind: 'ai',
           tone: failed ? 'danger' : 'success',
-          title: `Claude terminó · ${session.project}`,
+          title: `${agentName} terminó · ${session.project}`,
           text: failed
             ? session.tests === 'failed'
               ? 'Los tests fallan'
@@ -305,14 +308,16 @@ function applyEvent(session, payload, now = Date.now()) {
 
     case 'StopFailure': {
       const type = String(payload.error || 'unknown');
-      const text = STOP_ERRORS[type] || 'Error de la API';
+      const text =
+        STOP_ERRORS[type] ||
+        (session.source === 'agy' && type !== 'unknown' ? clip(type, 140, { oneLine: true }) : 'Error de la API');
       Object.assign(session, { status: 'error', endedAt: now, tool: null, error: { type, text } });
       return {
         notice: {
           key: `ai:error:${session.id}`,
           kind: 'ai',
           tone: 'danger',
-          title: `Claude se detuvo · ${session.project}`,
+          title: `${agentName} se detuvo · ${session.project}`,
           text,
           alert: true,
         },
@@ -461,6 +466,23 @@ function cleanAnswers(payload, answers) {
   return Object.keys(result).length ? result : null;
 }
 
+/** ¿Esta herramienta de Antigravity debe pedir permiso en la isla? */
+function needsAgyPermission(toolName) {
+  return SHELL_TOOLS.has(toolName) || EDIT_TOOLS.has(toolName);
+}
+
+/**
+ * La respuesta JSON para el hook PreToolUse de Antigravity (stdout).
+ * 'allow' ejecuta sin preguntar; 'deny' bloquea; 'ask' delega a la terminal.
+ */
+function buildAgyResponse(kind, payload, decision) {
+  if (kind !== 'permission') return {};
+  if (decision === 'allow') return { decision: 'allow' };
+  if (decision === 'deny') return { decision: 'deny', reason: 'El usuario lo denegó desde Notch.' };
+  if (decision === 'terminal') return { decision: 'ask' };
+  return null;
+}
+
 module.exports = {
   projectName,
   relativePath,
@@ -471,5 +493,7 @@ module.exports = {
   applyEvent,
   describeDecision,
   buildResponse,
+  buildAgyResponse,
+  needsAgyPermission,
   alwaysLabel,
 };
