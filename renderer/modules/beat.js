@@ -10,11 +10,12 @@
 //  Por eso lo que se mueve mientras dura un estado avanza con este reloj, y
 //  todo en los mismos instantes (cada instante es un dibujo de Chromium):
 //    • runOnBeat    8 pasos por segundo: Clawd bailando, tecleando o
-//                   durmiendo, el ecualizador, los iconos que giran, el fondo
-//                   de la página Música.
+//                   durmiendo, los iconos que giran, el fondo de la página
+//                   Música.
 //    • runOnFrames  24 veces por segundo, para lo que tiene que verse suave
-//                   (la ola y la letra de la página Música). Uno de cada tres
-//                   coincide con un paso de los de arriba: no suman dibujos.
+//                   (el ecualizador, la ola y la letra de la página Música).
+//                   Uno de cada tres coincide con un paso de los de arriba:
+//                   no suman dibujos.
 //  Entre medias no se hace nada, y el reloj solo corre mientras alguien lo
 //  necesita (con las animaciones apagadas, nunca).
 //

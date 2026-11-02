@@ -955,7 +955,10 @@ img {
   display: none;
   height: 18px;
   gap: 2.5px;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--music-accent) 55%, transparent));
+}
+
+.activity .eq i {
+  box-shadow: 0 0 5px color-mix(in srgb, var(--music-accent) 55%, transparent);
 }
 
 /* Según qué actividad sea, se ve una cosa u otra */
@@ -6857,8 +6860,9 @@ code {
 }
 
 /* ---------- 13. Barras de ecualizador ---------- */
-/* Cuatro barritas que bailan mientras suena la música y se ven. No es una
-   animación CSS: eq.js les cambia la altura a pasos (8 veces por segundo). */
+/* Cuatro barritas que bailan mientras suena la música y se ven. No llevan
+   @keyframes ni transition continuas: eq.js las mueve con un muelle suave a
+   24 dibujos por segundo (beat.js), y will-change evita repintar la isla. */
 .eq {
   display: inline-flex;
   align-items: center;
@@ -6873,6 +6877,11 @@ code {
   border-radius: 2px;
   background: var(--music-accent);
   transform: scaleY(0.35);
+  will-change: transform;
+}
+
+:root[data-reduce-motion="true"] .eq i {
+  will-change: auto;
 }
 
 .eq-small {
@@ -6889,8 +6898,8 @@ code {
   height: 20px;
 }
 
-/* Solo bailan cuando suenan y se ven (en la píldora, en el aviso o en el panel
-   abierto): eq.js les cambia la altura a pasos, 8 veces por segundo. */
+/* Solo se mueven cuando están a la vista: al pausar bajan con suavidad al
+   reposo (~300 ms) y después eq.js detiene el reloj. */
 
 /* ---------- 14. Tema claro ---------- */
 /* Con "theme": "light" (o "auto" y Windows en modo claro), el panel abierto se

@@ -27,7 +27,7 @@
 //    motion.js    animar siempre, como Windows o nunca (ajuste "animations")
 //    wave.js      la ola de la barra de progreso de la música
 //    beat.js      el reloj de pasos de lo que se mueve sin parar (gasta poco)
-//    eq.js        las barritas del ecualizador (a pasos)
+//    eq.js        las barritas del ecualizador (suaves, con muelle)
 //    backdrop.js  el fondo de la página Música (manchas que se mueven despacio)
 //    ai.js        Claude Code y Antigravity: isla, decisiones y página IA
 //    chat.js      el chat con Claude y Gemini (página IA)
