@@ -26,6 +26,9 @@
 //    theme.js     tema claro u oscuro del panel
 //    motion.js    animar siempre, como Windows o nunca (ajuste "animations")
 //    wave.js      la ola de la barra de progreso de la música
+//    beat.js      el reloj de pasos de lo que se mueve sin parar (gasta poco)
+//    eq.js        las barritas del ecualizador (a pasos)
+//    backdrop.js  el fondo de la página Música (manchas que se mueven despacio)
 //    ai.js        Claude Code y Antigravity: isla, decisiones y página IA
 //    chat.js      el chat con Claude y Gemini (página IA)
 //    glow.js      el brillo de color alrededor de la isla
@@ -47,6 +50,8 @@ import { initClock, applyClockSettings } from './clock.js';
 import { startEyes } from './eyes.js';
 import { initPomodoro, renderPomodoro } from './pomodoro.js';
 import { initMusic, loadInitialMedia, renderMedia, renderIslandToggle } from './music.js';
+import { initEq } from './eq.js';
+import { initBackdrop } from './backdrop.js';
 import { initLyrics, setLyrics } from './lyrics.js';
 import { initOutputs, setAudioState } from './outputs.js';
 import { initLinks, setLinks } from './links.js';
@@ -111,6 +116,8 @@ async function init() {
   initClock();
   initPomodoro();
   initMusic();
+  initEq();
+  initBackdrop();
   initLyrics();
   initOutputs();
   initLinks();

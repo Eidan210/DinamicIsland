@@ -595,14 +595,11 @@
                 <div class="player-progress">
                   <span class="time" id="player-elapsed">0:00</span>
                   <!-- Lo que ya sonó es una ola que fluye hacia el tirador y se aplana al
-                       llegar (la dibuja wave.js; en pausa queda recta); lo que falta,
-                       una línea gruesa y tenue. -->
+                       llegar (la dibuja wave.js en un canvas; en pausa queda recta); lo
+                       que falta, una línea gruesa y tenue. -->
                   <div class="bar" id="player-bar" title="Saltar a este punto">
-                    <svg class="bar-wave" aria-hidden="true">
-                      <path class="bar-rest" id="player-wave-rest" />
-                      <path class="bar-played" id="player-wave" />
-                    </svg>
-                    <div class="bar-knob"></div>
+                    <canvas class="bar-wave" id="player-wave" aria-hidden="true"></canvas>
+                    <div class="bar-knob" id="player-knob"></div>
                   </div>
                   <span class="time time-end" id="player-remaining"></span>
                 </div>

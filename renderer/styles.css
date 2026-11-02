@@ -101,15 +101,6 @@
   initial-value: #3dff8f;
 }
 
-/* El progreso de la canción (de 0 a 1). Mientras suena, wave.js lo actualiza
-   en cada fotograma para que la barra avance de forma continua. Registrado
-   como número: si llegara algo raro, vale 0. */
-@property --progress {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-
 @property --art-1 {
   syntax: "<color>";
   inherits: true;
@@ -346,13 +337,14 @@ img {
   --glow-far: 40%;
 }
 
-/* Atención: más fuerte y late despacio */
+/* Atención: más fuerte y late despacio unas veces (luego se queda encendido:
+   un brillo que late sin parar haría redibujar la ventana 60 veces por segundo) */
 .island[data-glow="attention"] {
   --glow: var(--glow-attention);
   --glow-near: 95%;
   --glow-far: 75%;
   --glow-size: 16px;
-  animation: glow-pulse 2.2s ease-in-out infinite;
+  animation: glow-pulse 2.2s ease-in-out 4;
 }
 
 /* Ya lo viste: verde un momento... */
@@ -582,8 +574,9 @@ img {
      data-dance   cuál de los 4 bailes (según la canción)
      data-costume none, halloween o christmas
    y clases para las acciones cortas (is-walking, is-celebrating, is-error).
-   Las animaciones van a saltos de píxel (steps), como un juego retro, y solo
-   mientras Clawd se ve. */
+   Todo va a saltos de píxel, como un juego retro, y solo mientras Clawd se
+   ve. Lo que dura (teclear, bailar, las "z") no son animaciones CSS: clawd.js
+   pone el paso del reloj de beat.js (data-f2, data-f4, data-f8, data-z). */
 @property --clawd-px {
   syntax: "<length>";
   inherits: true;
@@ -728,70 +721,78 @@ img {
   fill: #f4f4f4;
 }
 
-/* ----- Animaciones que duran mientras dura el estado (solo si Clawd se ve) ----- */
+/* ----- Lo que se mueve mientras dura el estado: a pasos -----
+   No son animaciones CSS infinitas (obligarían a Chromium a redibujar 60
+   veces por segundo): clawd.js pone en .clawd el paso del reloj de beat.js
+   (8 pasos por segundo, solo mientras se ve) y aquí se coloca cada postura:
+     data-f2  0/1, cambia cada paso (125 ms)
+     data-f4  0/1, cambia cada 2 pasos (250 ms)
+     data-f8  0…7, una postura por paso (un ciclo por segundo)
+     data-z / data-z2  0…6, la altura de cada "z" al dormir
+   Sin esos números (reloj parado), Clawd se queda en su postura de reposo. */
 
-/* Trabajando: patitas y bracitos tecleando */
-.island:is([data-shape="mini"], [data-shape="pill"], [data-shape="activity"], [data-shape="expanded"])
-  .clawd[data-mode="working"]
-  :is(.leg-a, .clawd-arm-l) {
-  animation: clawd-tap 0.3s steps(1, end) infinite;
-}
-
-.island:is([data-shape="mini"], [data-shape="pill"], [data-shape="activity"], [data-shape="expanded"])
-  .clawd[data-mode="working"]
-  :is(.leg-b, .clawd-arm-r) {
-  animation: clawd-tap 0.3s steps(1, end) -0.15s infinite;
+/* Trabajando: patitas y bracitos tecleando, alternos */
+.clawd[data-mode="working"][data-f2="1"] :is(.leg-a, .clawd-arm-l),
+.clawd[data-mode="working"][data-f2="0"] :is(.leg-b, .clawd-arm-r) {
+  translate: 0 -1px;
 }
 
 /* Caminando (un paseíto de vez en cuando; el desplazamiento lo hace clawd.js) */
-.clawd.is-walking .leg-a {
-  animation: clawd-tap 0.24s steps(1, end) infinite;
-}
-
-.clawd.is-walking .leg-b {
-  animation: clawd-tap 0.24s steps(1, end) -0.12s infinite;
+.clawd.is-walking[data-f2="1"] .leg-a,
+.clawd.is-walking[data-f2="0"] .leg-b {
+  translate: 0 -1px;
 }
 
 /* Bailando: 4 bailes, uno por canción (a 120 pulsaciones por minuto) */
-.island:is([data-shape="pill"], [data-shape="activity"], [data-shape="expanded"]) .clawd[data-mode="dancing"] {
+.clawd[data-mode="dancing"] {
   /* 1. Rebote */
-  &[data-dance="1"] .clawd-all {
-    animation: clawd-tap 0.5s steps(1, end) infinite;
-  }
-
-  &[data-dance="1"] .leg-b {
-    animation: clawd-tap 0.5s steps(1, end) -0.25s infinite;
+  &[data-dance="1"][data-f4="1"] .clawd-all,
+  &[data-dance="1"][data-f4="0"] .leg-b {
+    translate: 0 -1px;
   }
 
   /* 2. Balanceo de lado a lado */
-  &[data-dance="2"] .clawd-all {
-    animation: clawd-sway 1s steps(4, jump-none) infinite;
+  &[data-dance="2"]:is([data-f8="0"], [data-f8="7"]) .clawd-all {
+    rotate: -7deg;
+  }
+
+  &[data-dance="2"]:is([data-f8="1"], [data-f8="6"]) .clawd-all {
+    rotate: -3deg;
+  }
+
+  &[data-dance="2"]:is([data-f8="2"], [data-f8="5"]) .clawd-all {
+    rotate: 3deg;
+  }
+
+  &[data-dance="2"]:is([data-f8="3"], [data-f8="4"]) .clawd-all {
+    rotate: 7deg;
   }
 
   /* 3. Brazos arriba, uno y otro */
-  &[data-dance="3"] .clawd-arm-l {
-    animation: clawd-arms 0.5s steps(1, end) infinite;
+  &[data-dance="3"][data-f4="1"] .clawd-arm-l,
+  &[data-dance="3"][data-f4="0"] .clawd-arm-r {
+    translate: 0 -2px;
   }
 
-  &[data-dance="3"] .clawd-arm-r {
-    animation: clawd-arms 0.5s steps(1, end) -0.25s infinite;
-  }
-
-  &[data-dance="3"] .clawd-body {
-    animation: clawd-tap 0.5s steps(1, end) infinite;
+  &[data-dance="3"][data-f4="1"] .clawd-body {
+    translate: 0 -1px;
   }
 
   /* 4. Pasitos a un lado y al otro */
-  &[data-dance="4"] .clawd-all {
-    animation: clawd-shuffle 0.5s steps(1, end) infinite;
+  &[data-dance="4"][data-f4="0"] .clawd-all {
+    translate: -1px 0;
   }
 
-  &[data-dance="4"] :is(.leg-a, .clawd-arm-l) {
-    animation: clawd-tap 0.25s steps(1, end) infinite;
+  &[data-dance="4"][data-f4="1"] .clawd-all {
+    translate: 1px 0;
+  }
+
+  &[data-dance="4"][data-f2="1"] :is(.leg-a, .clawd-arm-l) {
+    translate: 0 -1px;
   }
 }
 
-/* Durmiendo: se acurruca un píxel y salen "z" */
+/* Durmiendo: se acurruca un píxel y salen "z" (suben un rato y luego se quedan quietas) */
 .clawd[data-mode="sleeping"] .clawd-body {
   translate: 0 1px;
 }
@@ -801,77 +802,69 @@ img {
   fill: #bfe3ff;
 }
 
-.island:is([data-shape="mini"], [data-shape="pill"], [data-shape="activity"], [data-shape="expanded"])
-  .clawd[data-mode="sleeping"]
-  .clawd-z {
-  animation: clawd-z 2.8s steps(7, end) infinite;
+/* Quietas (sin pasos): una a media altura y otra arriba, más tenue */
+.clawd[data-mode="sleeping"] .clawd-z {
+  translate: 1px -2px;
 }
 
 .clawd[data-mode="sleeping"] .clawd-z2 {
-  animation-delay: -1.4s;
+  translate: 2px -4px;
+  opacity: 0.55;
 }
 
-/* Celebrando (Pomodoro terminado): destellos */
-.clawd.is-celebrating .clawd-sparkles {
-  display: inline;
-  fill: #fff2a8;
-  animation: clawd-sparkle 0.4s steps(1, end) infinite;
-}
-
-@keyframes clawd-tap {
-  50% {
-    translate: 0 -1px;
-  }
-}
-
-@keyframes clawd-arms {
-  50% {
-    translate: 0 -2px;
-  }
-}
-
-@keyframes clawd-sway {
-  0%,
-  100% {
-    rotate: -7deg;
-  }
-
-  50% {
-    rotate: 7deg;
-  }
-}
-
-@keyframes clawd-shuffle {
-  0%,
-  100% {
-    translate: -1px 0;
-  }
-
-  50% {
-    translate: 1px 0;
-  }
-}
-
-@keyframes clawd-z {
-  0% {
+/* Subiendo: 7 alturas, apareciendo abajo y desvaneciéndose arriba */
+.clawd[data-mode="sleeping"] {
+  &[data-z="0"] .clawd-z:not(.clawd-z2),
+  &[data-z2="0"] .clawd-z2 {
     translate: 0 0;
-    opacity: 0;
+    opacity: 0.3;
   }
 
-  20% {
+  &[data-z="1"] .clawd-z:not(.clawd-z2),
+  &[data-z2="1"] .clawd-z2 {
+    translate: 0 -1px;
     opacity: 1;
   }
 
-  100% {
+  &[data-z="2"] .clawd-z:not(.clawd-z2),
+  &[data-z2="2"] .clawd-z2 {
+    translate: 1px -2px;
+    opacity: 1;
+  }
+
+  &[data-z="3"] .clawd-z:not(.clawd-z2),
+  &[data-z2="3"] .clawd-z2 {
+    translate: 1px -3px;
+    opacity: 1;
+  }
+
+  &[data-z="4"] .clawd-z:not(.clawd-z2),
+  &[data-z2="4"] .clawd-z2 {
+    translate: 1px -4px;
+    opacity: 0.8;
+  }
+
+  &[data-z="5"] .clawd-z:not(.clawd-z2),
+  &[data-z2="5"] .clawd-z2 {
+    translate: 2px -4px;
+    opacity: 0.5;
+  }
+
+  &[data-z="6"] .clawd-z:not(.clawd-z2),
+  &[data-z2="6"] .clawd-z2 {
     translate: 2px -5px;
-    opacity: 0;
+    opacity: 0.2;
   }
 }
 
-@keyframes clawd-sparkle {
-  50% {
-    opacity: 0.25;
-  }
+/* Celebrando (Pomodoro terminado): destellos que parpadean */
+.clawd.is-celebrating .clawd-sparkles {
+  display: inline;
+  fill: #fff2a8;
+}
+
+.clawd.is-celebrating[data-f4="1"] .clawd-sparkles {
+  opacity: 0.25;
 }
 
 /* ---------- 5. Actividad en vivo, volumen y avisos ---------- */
@@ -1032,18 +1025,14 @@ img {
   font-variant-numeric: tabular-nums;
 }
 
-/* Trabajando: el icono gira despacio. Esperándote: ámbar y late. (Solo
-   mientras se ve: con la isla en otra forma, la animación está parada.) */
-.island[data-shape="activity"] .activity[data-ai="working"] .activity-ai-icon {
-  animation: ai-spin 2.4s linear infinite;
-}
-
+/* Trabajando: el icono gira despacio (a pasos: lo hace ai.js con el reloj de
+   beat.js, solo mientras se ve). Esperándote: ámbar y late unas veces. */
 .activity[data-ai="waiting"] .activity-ai {
   color: var(--warning);
 }
 
 .island[data-shape="activity"] .activity[data-ai="waiting"] .activity-ai-icon {
-  animation: ai-pulse 1.1s ease-in-out infinite;
+  animation: ai-pulse 1.1s ease-in-out 4;
 }
 
 .activity[data-ai="done"] .activity-ai {
@@ -1052,12 +1041,6 @@ img {
 
 .activity[data-ai="error"] .activity-ai {
   color: var(--danger);
-}
-
-@keyframes ai-spin {
-  to {
-    rotate: 1turn;
-  }
 }
 
 @keyframes ai-pulse {
@@ -1732,7 +1715,7 @@ img {
 }
 
 .island:is([data-shape="decision"], [data-decision="true"]) .decision-icon {
-  animation: ai-pulse 1.4s ease-in-out infinite;
+  animation: ai-pulse 1.4s ease-in-out 4; /* late unas veces y se queda (la isla ya brilla) */
 }
 
 .decision-title {
@@ -2108,10 +2091,6 @@ img {
 
 .bubble[data-status="waiting"] .bubble-ai-icon {
   color: var(--warning);
-}
-
-.bubble.is-visible[data-status="working"] .bubble-ai-icon {
-  animation: ai-spin 2.4s linear infinite;
 }
 
 /* ---------- 7. Contenido del panel ---------- */
@@ -2647,11 +2626,11 @@ code {
   animation-name: roll-down;
 }
 
+/* (Sin desenfoque: obligaría a repintar el número en cada fotograma) */
 @keyframes roll-up {
   from {
     opacity: 0;
     translate: 0 0.6em;
-    filter: blur(1.5px);
   }
 }
 
@@ -2659,7 +2638,6 @@ code {
   from {
     opacity: 0;
     translate: 0 -0.6em;
-    filter: blur(1.5px);
   }
 }
 
@@ -3137,13 +3115,9 @@ code {
   height: 18px;
 }
 
-/* Trabajando: el icono gira despacio y todo se tiñe de su color */
+/* Trabajando: el icono gira despacio (ai.js, a pasos) y todo se tiñe de su color */
 .widget-ai:is([data-status="working"], [data-status="waiting"]) {
   --widget-accent: var(--claude-color);
-}
-
-.island[data-shape="expanded"] .view.is-active .widget-ai[data-status="working"] .widget-icon svg {
-  animation: spin 3.2s linear infinite;
 }
 
 .widget-ai[data-status="waiting"] .widget-sub {
@@ -3497,7 +3471,7 @@ code {
 }
 
 .island[data-shape="expanded"] .view.is-active .widget[data-news="true"]::after {
-  animation: widget-news 1.8s ease-in-out infinite;
+  animation: widget-news 1.8s ease-in-out 5; /* late unas veces y se queda encendido */
 }
 
 @keyframes widget-news {
@@ -3982,11 +3956,14 @@ code {
   opacity: 1;
 }
 
+/* Se desplazan muy despacio: las mueve backdrop.js a pasos (8 por segundo),
+   solo con la música sonando. En su propia capa: moverlas no obliga a
+   repintar los degradados. */
 .music-backdrop i {
   position: absolute;
   aspect-ratio: 1;
   border-radius: 50%;
-  animation: blob-drift-1 21s ease-in-out infinite alternate paused;
+  will-change: translate, scale;
 }
 
 .music-backdrop i:nth-child(1) {
@@ -4001,8 +3978,6 @@ code {
   bottom: -110%;
   width: 70%;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--art-2) 62%, transparent), transparent);
-  animation-name: blob-drift-2;
-  animation-duration: 27s;
 }
 
 .music-backdrop i:nth-child(3) {
@@ -4010,33 +3985,6 @@ code {
   left: 40%;
   width: 50%;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--art-3) 58%, transparent), transparent);
-  animation-name: blob-drift-3;
-  animation-duration: 33s;
-}
-
-:root[data-music-playing="true"] .island[data-shape="expanded"] .panel[data-tab="music"] .music-backdrop i {
-  animation-play-state: running;
-}
-
-@keyframes blob-drift-1 {
-  to {
-    translate: 24% 34%;
-    scale: 1.22;
-  }
-}
-
-@keyframes blob-drift-2 {
-  to {
-    translate: -28% -26%;
-    scale: 0.84;
-  }
-}
-
-@keyframes blob-drift-3 {
-  to {
-    translate: -34% 40%;
-    scale: 1.3;
-  }
 }
 
 .player {
@@ -4141,7 +4089,7 @@ code {
   mask-image: linear-gradient(90deg, #000 0, #000 86%, transparent);
 }
 
-.island[data-shape="expanded"] .player-title.is-marquee .marquee-text {
+.island[data-shape="expanded"] .view.is-active .player-title.is-marquee .marquee-text {
   animation: marquee var(--marquee-time, 8s) ease-in-out 1.2s infinite alternate;
 }
 
@@ -4183,9 +4131,10 @@ code {
 
 /* Barra de progreso con ola, como la del reproductor de los móviles Samsung:
    lo que ya sonó es una ola que fluye hacia el tirador redondo y se aplana al
-   llegar; lo que falta, una línea gruesa y tenue. Las dos son <path> que
-   dibuja wave.js (en pausa, la ola queda recta). --progress (de 0 a 1), el
-   sitio del tirador, también lo pone wave.js. */
+   llegar; lo que falta, una línea gruesa y tenue. Las dos las dibuja wave.js
+   en un <canvas> (en pausa, la ola queda recta) y también coloca el tirador
+   (con translate). Así, al moverse, Chromium no tiene que recalcular estilos
+   ni maquetar nada: solo redibuja el canvas. */
 .bar {
   position: relative;
   flex: 1;
@@ -4199,36 +4148,21 @@ code {
   inset: -6px 0;
 }
 
+/* 4 px más grande por cada lado que la barra: las puntas redondas de la ola
+   se salen un poco (⚠️ igual que PAD en wave.js) */
 .bar-wave {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible; /* las puntas redondas de la ola pueden salirse un poco */
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
   pointer-events: none;
 }
 
-.bar-wave path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.bar-played {
-  stroke: var(--music-accent);
-  stroke-width: 3px;
-}
-
-.bar-rest {
-  stroke: rgba(var(--ink), 0.18);
-  stroke-width: 5px;
-}
-
-/* El tirador: una bolita blanca al final de la ola */
+/* El tirador: una bolita blanca al final de la ola (wave.js lo mueve con translate) */
 .bar-knob {
   position: absolute;
   top: 50%;
-  left: calc(var(--progress, 0) * 100%);
+  left: 0;
   width: 13px;
   height: 13px;
   margin: -6.5px 0 0 -6.5px;
@@ -4465,35 +4399,12 @@ code {
   color: transparent;
 }
 
-/* Solo con la página Música a la vista: si no, no se gasta nada */
-.island[data-shape="expanded"] .view.is-active .lyric.is-current.is-filling .lyric-word {
-  animation:
-    word-fill var(--word-duration, 400ms) linear var(--word-delay, 0ms) both,
-    word-lift var(--word-duration, 400ms) var(--spring) var(--word-delay, 0ms) both;
-}
-
+/* --fill (y lo que sube cada palabra) lo pone lyrics.js 24 veces por segundo,
+   con el reloj de beat.js y solo con la página Música a la vista. */
 @property --fill {
   syntax: "<percentage>";
   inherits: false;
   initial-value: 100%;
-}
-
-@keyframes word-fill {
-  from {
-    --fill: -14%;
-  }
-  to {
-    --fill: 114%;
-  }
-}
-
-@keyframes word-lift {
-  from {
-    translate: 0 2px;
-  }
-  to {
-    translate: 0 -1px;
-  }
 }
 
 /* En pausa, todo se queda quieto donde iba */
@@ -4529,8 +4440,9 @@ code {
   scale: 0.8;
 }
 
+/* (A pasos de 125 ms: respira igual y Chromium no redibuja 60 veces por segundo) */
 .island[data-shape="expanded"] .view.is-active .lyric.is-interlude.is-current .interlude {
-  animation: interlude-breathe 2s ease-in-out infinite;
+  animation: interlude-breathe 2s steps(16) infinite;
 }
 
 .lyric.is-interlude.is-current .interlude i {
@@ -4538,7 +4450,7 @@ code {
 }
 
 .island[data-shape="expanded"] .view.is-active .lyric.is-interlude.is-current.is-filling .interlude i {
-  animation: dot-fill calc(var(--gap, 3s) / 3) ease-out both;
+  animation: dot-fill calc(var(--gap, 3s) / 3) steps(8) both;
 }
 
 .island[data-shape="expanded"] .view.is-active .lyric.is-interlude.is-current.is-filling .interlude i:nth-child(1) {
@@ -4625,7 +4537,7 @@ code {
   color: var(--music-text);
 }
 
-.island[data-shape="expanded"] .lyrics[data-status="loading"] #lyrics-message-text {
+.island[data-shape="expanded"] .view.is-active .lyrics[data-status="loading"] #lyrics-message-text {
   background: linear-gradient(90deg, var(--text-faint) 0 35%, var(--text) 50%, var(--text-faint) 65% 100%) 0 0 / 300% 100%;
   background-clip: text;
   -webkit-background-clip: text;
@@ -5358,10 +5270,6 @@ code {
   color: var(--session-color);
 }
 
-.island[data-shape="expanded"] .view.is-active .session[data-status="working"] .session-icon {
-  animation: ai-spin 2.4s linear infinite;
-}
-
 .session-project {
   overflow: hidden;
   font-size: 13px;
@@ -5750,7 +5658,7 @@ code {
 }
 
 /* Escribiendo: tres puntos mientras no hay texto, y un cursor al final mientras llega */
-.msg-ai[data-status="streaming"] .msg-body:empty::before {
+.island[data-shape="expanded"] .view.is-active .msg-ai[data-status="streaming"] .msg-body:empty::before {
   content: "";
   display: inline-block;
   width: 26px;
@@ -5759,7 +5667,7 @@ code {
   animation: typing 1s steps(4) infinite;
 }
 
-.msg-ai[data-status="streaming"] .msg-body:not(:empty)::after {
+.island[data-shape="expanded"] .view.is-active .msg-ai[data-status="streaming"] .msg-body:not(:empty)::after {
   content: "";
   display: inline-block;
   width: 7px;
@@ -6949,8 +6857,8 @@ code {
 }
 
 /* ---------- 13. Barras de ecualizador ---------- */
-/* Cuatro barritas que bailan mientras suena la música. Es la ÚNICA animación
-   continua del notch: solo corre cuando suena música y las barras se ven. */
+/* Cuatro barritas que bailan mientras suena la música y se ven. No es una
+   animación CSS: eq.js les cambia la altura a pasos (8 veces por segundo). */
 .eq {
   display: inline-flex;
   align-items: center;
@@ -6981,58 +6889,8 @@ code {
   height: 20px;
 }
 
-/* Cada barra con su ritmo, para que no se muevan todas a la vez */
-.eq i:nth-child(1) {
-  animation-duration: 1.7s;
-  animation-delay: -0.4s;
-}
-
-.eq i:nth-child(2) {
-  animation-duration: 1.25s;
-  animation-delay: -0.9s;
-}
-
-.eq i:nth-child(3) {
-  animation-duration: 1.5s;
-  animation-delay: -0.2s;
-}
-
-.eq i:nth-child(4) {
-  animation-duration: 1.35s;
-  animation-delay: -1.1s;
-}
-
-/* Solo bailan cuando se ven: en la píldora, en el aviso, o en el panel abierto mientras suena */
-.island[data-shape="activity"] .activity[data-kind="music"] .eq i,
-.island[data-shape="banner"] .eq i,
-.island[data-shape="expanded"] .view.is-active [data-playing="true"] .eq i {
-  animation-name: eq-bounce;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
-}
-
-/* Varios picos de distinta altura en cada vuelta: parece seguir la música */
-@keyframes eq-bounce {
-  0% {
-    transform: scaleY(0.28);
-  }
-  22% {
-    transform: scaleY(0.95);
-  }
-  41% {
-    transform: scaleY(0.45);
-  }
-  63% {
-    transform: scaleY(0.8);
-  }
-  81% {
-    transform: scaleY(0.35);
-  }
-  100% {
-    transform: scaleY(1);
-  }
-}
+/* Solo bailan cuando suenan y se ven (en la píldora, en el aviso o en el panel
+   abierto): eq.js les cambia la altura a pasos, 8 veces por segundo. */
 
 /* ---------- 14. Tema claro ---------- */
 /* Con "theme": "light" (o "auto" y Windows en modo claro), el panel abierto se

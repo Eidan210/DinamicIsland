@@ -94,9 +94,11 @@ function renderProgress() {
   const remainingMs = ((duration - position) * 1000) / (rate || 1);
   if (remainingMs <= 0) return;
   // (Sin utils.animate: la barra informa de por dónde va, también sin animaciones.)
+  // Avanza a saltos de un segundo: a ese tamaño no se nota y Chromium no
+  // tiene que redibujar en cada fotograma.
   progressAnimation = progressBar.animate([{ transform: `scaleX(${from})` }, { transform: 'scaleX(1)' }], {
     duration: remainingMs,
-    easing: 'linear',
+    easing: `steps(${Math.max(1, Math.round(remainingMs / 1000))}, end)`,
     fill: 'forwards',
   });
 }

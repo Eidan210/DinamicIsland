@@ -23,10 +23,17 @@
 //  Parpadear, despertarse al abrir, mirar al ratón y mirar alrededor los
 //  lanza eyes.js (la misma lógica que tenían los ojos). Nada de sondeos: todo
 //  se revisa cuando la isla revisa su forma, y cada acción tiene su temporizador.
+//
+//  Lo que se mueve sin parar (teclear, bailar, las "z", caminar, los destellos)
+//  va a pasos con el reloj de beat.js, solo mientras se ve: aquí ponemos en
+//  Clawd el paso del baile (data-f2, data-f4, data-f8, data-z) y el CSS
+//  coloca patitas y bracitos. Las "z" suben un rato y luego se quedan quietas
+//  (si duerme, es que no estás mirando).
 // =============================================================================
 
 import { $, animate, isMotionReduced, SPRING_POP } from './utils.js';
 import { state } from './state.js';
+import { runOnBeat, stopOnBeat } from './beat.js';
 
 const DONE_MS = 1600; // feliz al terminar Claude
 const ERROR_MS = 1800; // enfadado (ojos rojos) con un error
@@ -41,6 +48,14 @@ const WALK_MAX_MS = 110 * 1000;
 const LOW_BATTERY = 0.2;
 // Los ojos según lo que hace (si no hay una expresión temporal)
 const EYES = { working: 'open', waiting: 'open', dancing: 'happy', sleeping: 'closed', tired: 'tired', focused: 'tired', idle: 'open' };
+// Lo que se mueve sin parar y en qué formas de la isla se ve (en las demás, quieto)
+const MOTION_SHAPES = {
+  working: ['mini', 'pill', 'activity', 'expanded'],
+  dancing: ['pill', 'activity', 'expanded'],
+  sleeping: ['mini', 'pill', 'activity', 'expanded'],
+};
+const SLEEP_MOTION_MS = 12 * 1000; // las "z" suben 12 s y luego se quedan quietas
+const WALK_MS = 3600;
 
 const root = document.documentElement;
 const clawdEl = $('clawd');
@@ -59,6 +74,9 @@ let wasSleeping = false;
 let taps = [];
 let walkTimer = null;
 let byeTimer = null;
+let motion = ''; // lo que se mueve ahora: 'working' | 'dancing' | 'sleeping' | ''
+let motionSince = 0;
+const extras = new Map(); // movimientos cortos encima ('walking', 'celebrating') → hasta cuándo
 let keepAwakeFor = () => {}; // lo pone initClawd (de island.js)
 
 export function isClawdOn() {
@@ -145,7 +163,10 @@ function detectEvents() {
 export function updateClawd() {
   const on = isClawdOn();
   root.dataset.face = on ? 'clawd' : 'eyes';
-  if (!on) return;
+  if (!on) {
+    stopOnBeat('clawd'); // con los ojos de siempre no hay nada que mover
+    return;
+  }
   detectEvents();
   const now = Date.now();
   const mode = computeMode();
@@ -154,8 +175,52 @@ export function updateClawd() {
   clawdEl.dataset.dance = mode === 'dancing' ? danceFor(state.media) : '';
   clawdEl.dataset.costume = costumeFor();
   clawdEl.classList.toggle('is-error', now < errorUntil);
-  clawdEl.classList.toggle('is-celebrating', now < state.celebrateUntil);
+  const celebrating = now < state.celebrateUntil;
+  clawdEl.classList.toggle('is-celebrating', celebrating);
+  if (celebrating) extras.set('celebrating', state.celebrateUntil);
+  else extras.delete('celebrating');
+  updateMotion(mode);
   scheduleWalk();
+}
+
+// -----------------------------------------------------------------------------
+// Lo que se mueve sin parar, a pasos (reloj de beat.js)
+// -----------------------------------------------------------------------------
+
+/** ¿Se mueve ahora (y se ve)? Arranca o para el reloj de sus pasos. */
+function updateMotion(mode) {
+  const next = MOTION_SHAPES[mode]?.includes(state.shape) ? mode : '';
+  if (next !== motion) {
+    motion = next;
+    motionSince = Date.now();
+  }
+  const now = Date.now();
+  let until = 0;
+  if (motion === 'sleeping') until = motionSince + SLEEP_MOTION_MS;
+  else if (motion) until = Infinity;
+  for (const end of extras.values()) until = Math.max(until, end);
+  if (until > now) runOnBeat('clawd', setFrame, { forMs: until - now, onStop: restPose });
+  else stopOnBeat('clawd');
+}
+
+/** Un paso: el CSS mira estos números para colocar patitas, bracitos y "z". */
+function setFrame(beat) {
+  setData('f2', beat % 2); // cambia en cada paso (125 ms)
+  setData('f4', Math.floor(beat / 2) % 2); // cada 2 pasos (250 ms)
+  setData('f8', beat % 8); // 8 posturas seguidas (un ciclo por segundo)
+  const z = Math.floor(beat / 3) % 7; // las "z": 7 posiciones, una cada 375 ms
+  setData('z', z);
+  setData('z2', (z + 4) % 7); // la segunda, desfasada
+}
+
+/** Sin pasos: la postura de reposo (las "z" se quedan quietas a media altura). */
+function restPose() {
+  for (const key of ['f2', 'f4', 'f8', 'z', 'z2']) delete clawdEl.dataset[key];
+}
+
+function setData(key, value) {
+  const text = String(value);
+  if (clawdEl.dataset[key] !== text) clawdEl.dataset[key] = text;
 }
 
 // -----------------------------------------------------------------------------
@@ -213,7 +278,9 @@ function wave() {
 function walk() {
   if (isMotionReduced()) return;
   clawdEl.classList.add('is-walking');
-  const motion = animate(
+  extras.set('walking', Date.now() + WALK_MS);
+  updateMotion(clawdEl.dataset.mode);
+  const steps = animate(
     clawdEl,
     [
       { transform: 'translateX(0)' },
@@ -221,10 +288,14 @@ function walk() {
       { transform: 'translateX(8px)', offset: 0.75 },
       { transform: 'translateX(0)' },
     ],
-    { duration: 3600, easing: 'steps(18, end)' }
+    { duration: WALK_MS, easing: 'steps(18, end)' }
   );
-  const stop = () => clawdEl.classList.remove('is-walking');
-  if (motion) motion.finished.then(stop, stop);
+  const stop = () => {
+    clawdEl.classList.remove('is-walking');
+    extras.delete('walking');
+    updateMotion(clawdEl.dataset.mode);
+  };
+  if (steps) steps.finished.then(stop, stop);
   else stop();
 }
 

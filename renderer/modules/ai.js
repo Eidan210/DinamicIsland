@@ -17,6 +17,7 @@
 import { $, setText, formatTime, plural } from './utils.js';
 import { state } from './state.js';
 import { getActivities, onShapeChange, updateShape } from './island.js';
+import { makeBeatSpinner } from './beat.js';
 import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange } from './tabs.js';
 import { focusChatInput } from './chat.js';
@@ -580,6 +581,30 @@ async function copySetup(kind) {
   setupStatus.dataset.state = copied ? 'ok' : 'error';
 }
 
+// Los iconos que giran mientras Claude trabaja: en la isla, en su burbuja, en
+// el widget y en la página IA. Giran a pasos (reloj de beat.js) y solo los que
+// se ven: una animación CSS infinita redibujaría la ventana 60 veces por segundo.
+const refreshSpinners = makeBeatSpinner(
+  'ai-spin',
+  [
+    '.island[data-shape="activity"] .activity[data-ai="working"] .activity-ai-icon',
+    '.bubble.is-visible[data-status="working"] .bubble-ai-icon',
+    '.island[data-shape="expanded"] .view.is-active .widget-ai[data-status="working"] .widget-icon svg',
+    '.island[data-shape="expanded"] .view.is-active .session[data-status="working"] .session-icon',
+  ].join(', ')
+);
+
+/** Revisa qué iconos giran cuando acaba de cambiar todo (la isla, la página, el widget...). */
+let spinnersPending = false;
+function scheduleSpinners() {
+  if (spinnersPending) return;
+  spinnersPending = true;
+  queueMicrotask(() => {
+    spinnersPending = false;
+    refreshSpinners();
+  });
+}
+
 export function initAi() {
   aiEl.querySelectorAll('.seg[data-mode]').forEach((segment) => {
     segment.addEventListener('click', () => setMode(segment.dataset.mode));
@@ -596,13 +621,21 @@ export function initAi() {
   decisionEl.addEventListener('click', (event) => event.stopPropagation());
 
   window.notch.ai.onChange(setAiState);
-  onPanelChange(() => renderAll());
+  onPanelChange(() => {
+    renderAll();
+    scheduleSpinners();
+  });
   onTabChange((tab) => {
     if (tab === 'ai') {
       renderPage();
       if (aiEl.dataset.mode === 'chat') focusChatInput();
     }
     scheduleTick();
+    scheduleSpinners();
   });
-  onShapeChange(scheduleTick);
+  onShapeChange(() => {
+    scheduleTick();
+    scheduleSpinners();
+  });
+  onAiChange(scheduleSpinners);
 }

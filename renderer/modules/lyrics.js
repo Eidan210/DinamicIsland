@@ -15,8 +15,9 @@
 //  Solo funciona con la página Música a la vista: si no se ve, no gasta nada.
 // =============================================================================
 
-import { $, animate, setText, SPRING } from './utils.js';
+import { $, animate, isMotionReduced, setText, SPRING } from './utils.js';
 import { state } from './state.js';
+import { runOnFrames, stopOnBeat } from './beat.js';
 import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange } from './tabs.js';
 import { getMediaPosition, onMediaChange, seekTo } from './music.js';
@@ -46,6 +47,7 @@ let lineEls = [];
 let currentIndex = null; // null = aún no se ha resaltado ninguna
 let lineTimer = null;
 let enterTimer = null;
+let fillWords = []; // las palabras de la línea que se está iluminando: { element, from, to, fill, lift }
 
 function isVisible() {
   return state.isExpanded && getCurrentTab() === 'music';
@@ -176,7 +178,10 @@ function findLineIndex(position) {
 function syncLyrics({ animate: withAnimation = true, resync = false } = {}) {
   clearTimeout(lineTimer);
   lineTimer = null;
-  if (lyrics.status !== 'synced' || !lines.length || !isVisible() || !isForCurrentTrack()) return;
+  if (lyrics.status !== 'synced' || !lines.length || !isVisible() || !isForCurrentTrack()) {
+    stopOnBeat('lyrics'); // no se ve: las palabras dejan de iluminarse
+    return;
+  }
 
   const playing = state.media.status === 'playing';
   lyricsEl.classList.toggle('is-paused', !playing);
@@ -219,9 +224,9 @@ function showLine(index, withAnimation) {
 
 /**
  * Ilumina las palabras de la línea `index` al ritmo de la canción. Cada
- * palabra recibe su parte del tiempo de la línea (las largas, más) con su
- * retraso; si ya íbamos por la mitad, el retraso es negativo y la animación
- * empieza por donde toca.
+ * palabra recibe su parte del tiempo de la línea (las largas, más); si ya
+ * íbamos por la mitad, empieza por donde toca. Las pinta paintFill con el
+ * reloj de beat.js (24 veces por segundo, en los mismos instantes que la ola).
  */
 function startLineFill(index) {
   const element = lineEls[index];
@@ -230,28 +235,69 @@ function startLineFill(index) {
   const rate = state.media.rate || 1;
   const gap = lineGap(index);
   const elapsed = Math.max(0, getMediaPosition() + LEAD - line.time);
+  clearFill();
 
   if (element.classList.contains('is-interlude')) {
     element.style.setProperty('--gap', `${(gap / rate).toFixed(3)}s`);
     element.style.setProperty('--elapsed', `${(elapsed / rate).toFixed(3)}s`);
-  } else {
-    const words = [...element.querySelectorAll('.lyric-word')];
-    const letters = words.reduce((sum, word) => sum + word.textContent.length + 1, 0) || 1;
-    // Una línea no se canta durante todo su hueco: la llenamos en un poco
-    // menos, y nunca más despacio de lo que se tarda en cantar sus letras.
-    const fill = Math.min(Math.max(gap * 0.88, 0.5), letters * 0.075 + 0.5);
-    let start = 0;
-    for (const word of words) {
-      const share = ((word.textContent.length + 1) / letters) * fill;
-      word.style.setProperty('--word-delay', `${Math.round(((start - elapsed) * 1000) / rate)}ms`);
-      word.style.setProperty('--word-duration', `${Math.round((share * 1000) / rate)}ms`);
-      start += share;
+    // Quitar y volver a poner la clase reinicia los puntos con los tiempos nuevos.
+    element.classList.remove('is-filling');
+    void element.offsetWidth;
+    element.classList.add('is-filling');
+    return;
+  }
+
+  // Sin animaciones, la línea se ve entera iluminada (el --fill del CSS, 100 %).
+  if (isMotionReduced()) return;
+  const words = [...element.querySelectorAll('.lyric-word')];
+  const letters = words.reduce((sum, word) => sum + word.textContent.length + 1, 0) || 1;
+  // Una línea no se canta durante todo su hueco: la llenamos en un poco
+  // menos, y nunca más despacio de lo que se tarda en cantar sus letras.
+  const fill = Math.min(Math.max(gap * 0.88, 0.5), letters * 0.075 + 0.5);
+  const now = performance.now();
+  let start = 0;
+  fillWords = words.map((word) => {
+    const share = ((word.textContent.length + 1) / letters) * fill;
+    const from = now + ((start - elapsed) * 1000) / rate;
+    start += share;
+    return { element: word, from, to: from + (share * 1000) / rate, fill: null, lift: null };
+  });
+  paintFill(now);
+  // En pausa se queda como está (al seguir, syncLyrics vuelve a cuadrarla)
+  if (state.media.status === 'playing') runOnFrames('lyrics', paintFill);
+}
+
+/**
+ * Pinta cada palabra: el degradado avanza (--fill, de -14 % a 114 %) y sube
+ * 3 px, uno a uno (con medios píxeles, las letras temblarían).
+ */
+function paintFill(now) {
+  let done = true;
+  for (const word of fillWords) {
+    const progress = Math.min(1, Math.max(0, (now - word.from) / (word.to - word.from)));
+    if (progress < 1) done = false;
+    const fill = Math.round(-140 + 1280 * progress) / 10;
+    const lift = 2 - Math.ceil(progress * 3);
+    if (fill !== word.fill) {
+      word.fill = fill;
+      word.element.style.setProperty('--fill', `${fill}%`);
+    }
+    if (lift !== word.lift) {
+      word.lift = lift;
+      word.element.style.translate = `0 ${lift}px`;
     }
   }
-  // Quitar y volver a poner la clase reinicia las animaciones con los tiempos nuevos.
-  element.classList.remove('is-filling');
-  void element.offsetWidth;
-  element.classList.add('is-filling');
+  if (done) stopOnBeat('lyrics');
+}
+
+/** La línea anterior vuelve a su aspecto normal. */
+function clearFill() {
+  stopOnBeat('lyrics');
+  for (const { element } of fillWords) {
+    element.style.removeProperty('--fill');
+    element.style.removeProperty('translate');
+  }
+  fillWords = [];
 }
 
 /** Al abrir la página Música (o volver a ella), la letra se coloca sin deslizarse. */

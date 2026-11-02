@@ -50,9 +50,10 @@ function renderClock() {
   const parts = {};
   for (const part of timeFormatter.formatToParts(now)) parts[part.type] = part.value;
 
-  // Los dígitos que cambian "ruedan" hacia arriba, como en el iPhone.
+  // Los dígitos que cambian "ruedan" hacia arriba, como en el iPhone. Los
+  // segundos no: cambian cada segundo y la animación no pararía nunca.
   setRollingText(clockMainEl, `${parts.hour}:${parts.minute}`);
-  setRollingText(clockSecondsEl, `:${parts.second}` + (parts.dayPeriod ? ` ${parts.dayPeriod}` : ''));
+  setText(clockSecondsEl, `:${parts.second}` + (parts.dayPeriod ? ` ${parts.dayPeriod}` : ''));
   tickListeners.forEach((listener) => listener(now));
 }
 

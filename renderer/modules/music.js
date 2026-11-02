@@ -420,8 +420,8 @@ export function initMusic() {
   // La ola de la barra de progreso (wave.js)
   initWave({
     bar: playerBar,
-    playedPath: $('player-wave'),
-    restPath: $('player-wave-rest'),
+    canvas: $('player-wave'),
+    knob: $('player-knob'),
     getProgress: getMediaProgress,
     isPlaying,
     isVisible: isMusicPageVisible,

@@ -5,23 +5,27 @@
 //  es una ola suave que fluye hacia el tirador redondo y se aplana al llegar.
 //    • Al darle a reproducir, la ola se levanta poco a poco; al pausar, se
 //      calma hasta quedar en una línea recta.
-//    • Son dos <path> de SVG que dibujamos aquí: lo que ya sonó (del color de
-//      la carátula) y lo que falta (gris). Para cada punto x:
+//    • Son dos trazos que dibujamos aquí en un <canvas>: lo que ya sonó (del
+//      color de la carátula) y lo que falta (gris). Para cada punto x:
 //          altura = envolvente(x) × amplitud × seno(x − fase)
 //      La envolvente vale 0 al principio de la barra y donde acaba la ola (ahí
 //      nace y muere plana) y 1 en medio. Mover la fase hace fluir la ola.
 //    • La ola acaba en el tirador. Al principio de la canción, como en
 //      Android, sigue un poco más allá en gris: así se ve desde el primer
 //      segundo, y se va llenando de color según suena.
-//    • Mientras suena, un requestAnimationFrame mueve la fase y hace avanzar
-//      la barra (--progress) de forma continua. Solo con la página Música a la
-//      vista, como mucho unas 60-80 veces por segundo (en pantallas de 144 Hz
-//      se salta fotogramas), y se para en cuanto la ola queda quieta.
+//    • Mientras suena, se redibuja 24 veces por segundo con el reloj de
+//      beat.js (mueve la fase, hace avanzar la barra y el tirador), en los
+//      mismos instantes que la letra y el resto de la página. Es un canvas y
+//      el tirador se mueve con translate: así Chromium no recalcula estilos ni
+//      maqueta nada en cada dibujo (con SVG lo hacía, y la ola era lo que más
+//      gastaba). Solo con la página Música a la vista, y se para en cuanto la
+//      ola queda quieta.
 //    • Con las animaciones apagadas, la ola no se mueve y la barra avanza una
 //      vez por segundo (music.js llama a drawWave()).
 // =============================================================================
 
 import { isMotionReduced } from './utils.js';
+import { runOnFrames, stopOnBeat } from './beat.js';
 
 const WAVELENGTH = 60; // px: lo que mide una ola entera (cresta + valle)
 const AMPLITUDE = 4.4; // px: lo que sube la cresta sobre la línea
@@ -32,11 +36,16 @@ const TAPER = 40; // px antes de su final en los que la ola se va aplanando
 const STEP = 2; // px entre punto y punto del dibujo
 const RISE_MS = 170; // al reproducir, la ola se levanta en unas 3 veces esto
 const CALM_MS = 120; // al pausar, se calma en unas 3 veces esto
-const MIN_FRAME_MS = 12; // no dibujar más de ~80 veces por segundo
+const PAD = 4; // px que el canvas sobresale de la barra por cada lado (⚠️ igual que .bar-wave en styles.css)
+const PLAYED_WIDTH = 3; // grosor de lo que ya sonó
+const REST_WIDTH = 5; // grosor de lo que falta
+const REST_ALPHA = 0.18;
 
-let bar = null; // #player-bar (recibe --progress)
-let playedPath = null; // el <path> de lo que ya sonó
-let restPath = null; // el <path> de lo que falta
+let bar = null; // #player-bar
+let canvas = null; // donde se dibuja la ola
+let knob = null; // el tirador
+let context = null;
+let pixelRatio = 1;
 let getProgress = () => null; // por dónde va la canción, de 0 a 1 (null = no se sabe)
 let isPlaying = () => false;
 let isVisible = () => false; // ¿panel abierto en la página Música?
@@ -46,7 +55,7 @@ let height = 0;
 let amplitude = 0; // 0 = línea recta, 1 = ola entera
 let target = 0; // hacia dónde va la amplitud (1 sonando, 0 en pausa)
 let phase = 0; // px que ha fluido la ola
-let frame = null; // el requestAnimationFrame en marcha (o null)
+let running = false; // ¿se está moviendo? (apuntada al reloj de beat.js)
 let lastTime = 0;
 
 /** Suavizado de 0 a 1 (smoothstep): por debajo de 0 vale 0 y por encima de 1, 1. */
@@ -55,11 +64,33 @@ function smooth(t) {
   return x * x * (3 - 2 * x);
 }
 
+/** Los colores, del CSS (cambian con la carátula y con el tema claro u oscuro). */
+function readColors() {
+  const style = getComputedStyle(bar);
+  const ink = style.getPropertyValue('--ink').trim() || '255, 255, 255';
+  return {
+    played: style.getPropertyValue('--music-accent').trim() || '#3dff8f',
+    rest: `rgba(${ink}, ${REST_ALPHA})`,
+  };
+}
+
+/** El canvas, del tamaño de la barra (y nítido en pantallas con zoom). */
+function fitCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  const pixelWidth = Math.round((width + PAD * 2) * ratio);
+  const pixelHeight = Math.round((height + PAD * 2) * ratio);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight || ratio !== pixelRatio) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+    pixelRatio = ratio;
+  }
+}
+
 /**
- * Los dos dibujos: lo que ya sonó (de 0 al tirador) y lo que falta (del
+ * Los dos trazos: lo que ya sonó (de 0 al tirador) y lo que falta (del
  * tirador al final). progress = null: sin duración conocida, todo recto.
  */
-function buildPaths(progress) {
+function strokeWave(progress, colors) {
   const middle = height / 2;
   const end = width * (progress ?? 0); // x del tirador
   const waveEnd = progress === null ? 0 : Math.min(Math.max(end, MIN_WAVE), width); // dónde acaba la ola
@@ -67,39 +98,52 @@ function buildPaths(progress) {
   const taper = Math.min(TAPER, waveEnd * 0.6);
   const k = (2 * Math.PI) / WAVELENGTH;
   const peak = AMPLITUDE * amplitude;
-  const point = (x) => {
+  const y = (x) => {
+    if (x >= waveEnd) return middle;
     const envelope = smooth(x / rampIn) * smooth((waveEnd - x) / taper);
-    const y = middle - peak * envelope * Math.sin(k * (x - phase));
-    return `${x.toFixed(1)} ${y.toFixed(2)}`;
+    return middle - peak * envelope * Math.sin(k * (x - phase));
   };
-  // Puntos cada STEP px de `from` a `to` (el último, justo en `to`)
+  // Un trazo de `from` a `to`, con puntos cada STEP px (el último, justo en `to`)
   const line = (from, to) => {
-    let d = `M${point(from)}`;
-    for (let x = from + STEP; x < to; x += STEP) d += `L${point(x)}`;
-    return `${d}L${point(to)}`;
+    context.moveTo(from, y(from));
+    for (let x = from + STEP; x < to; x += STEP) context.lineTo(x, y(x));
+    context.lineTo(to, y(to));
   };
 
-  const played = end >= 1 ? line(0, end) : '';
   // Lo que falta: la ola hasta su final (si pasa del tirador) y luego recto.
-  const rest = waveEnd > end ? `${line(end, waveEnd)}L${width.toFixed(1)} ${middle}` : `M${end.toFixed(1)} ${middle}L${width.toFixed(1)} ${middle}`;
-  return { played, rest };
+  context.beginPath();
+  line(end, width);
+  context.lineWidth = REST_WIDTH;
+  context.strokeStyle = colors.rest;
+  context.stroke();
+
+  if (end >= 1) {
+    context.beginPath();
+    line(0, end);
+    context.lineWidth = PLAYED_WIDTH;
+    context.strokeStyle = colors.played;
+    context.stroke();
+  }
+  return end;
 }
 
 /** Dibuja la ola y coloca el tirador donde va la canción. */
 export function drawWave() {
-  if (!bar) return;
+  if (!bar || !context || width <= 0 || !isVisible()) return; // oculta: se dibuja al volver
   const value = getProgress();
   const progress = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : null;
-  bar.style.setProperty('--progress', (progress ?? 0).toFixed(5));
-  const { played, rest } = buildPaths(progress);
-  playedPath.setAttribute('d', played);
-  restPath.setAttribute('d', rest);
+  fitCanvas();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, PAD * pixelRatio, PAD * pixelRatio);
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  const end = strokeWave(progress, readColors());
+  knob.style.translate = `${end.toFixed(1)}px 0`;
 }
 
 function tick(now) {
-  frame = requestAnimationFrame(tick);
   const elapsed = now - lastTime;
-  if (elapsed < MIN_FRAME_MS) return; // pantallas rápidas: este fotograma no hace falta
   lastTime = now;
   if (isMotionReduced()) {
     // Acaban de apagar las animaciones: la ola se queda quieta tal cual.
@@ -108,7 +152,7 @@ function tick(now) {
     stopLoop();
     return;
   }
-  const seconds = Math.min(elapsed, 100) / 1000; // tras un parón, sin saltos bruscos
+  const seconds = Math.min(elapsed, 150) / 1000; // tras un parón, sin saltos bruscos
   phase = (phase + SPEED * seconds) % WAVELENGTH;
   // La amplitud se acerca a su objetivo cada vez más despacio (sin rebotes).
   const tau = (target > amplitude ? RISE_MS : CALM_MS) / 1000;
@@ -119,15 +163,15 @@ function tick(now) {
 }
 
 function startLoop() {
-  if (frame !== null) return;
+  if (running) return;
+  running = true;
   lastTime = performance.now();
-  frame = requestAnimationFrame(tick);
+  runOnFrames('wave', tick, { onStop: () => (running = false) });
 }
 
 function stopLoop() {
-  if (frame === null) return;
-  cancelAnimationFrame(frame);
-  frame = null;
+  stopOnBeat('wave');
+  running = false;
 }
 
 /**
@@ -151,7 +195,8 @@ export function updateWave({ instant = false } = {}) {
 }
 
 export function initWave(options) {
-  ({ bar, playedPath, restPath, getProgress, isPlaying, isVisible } = options);
+  ({ bar, canvas, knob, getProgress, isPlaying, isVisible } = options);
+  context = canvas.getContext('2d');
   // La barra cambia de ancho si cambian los tiempos de los lados o se abre el
   // panel (cerrado mide 0): la medimos por eventos, sin preguntar en cada dibujo.
   new ResizeObserver(([entry]) => {
