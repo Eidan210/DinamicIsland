@@ -3644,6 +3644,305 @@ code {
   height: 22px;
 }
 
+/* ==================== FASE 13: NUEVOS WIDGETS ==================== */
+
+/* ----- 1. Esta semana ----- */
+.widget-week {
+  --widget-accent: var(--info);
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.week-days {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.week-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+}
+
+.week-letter {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.week-num {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.week-col.is-today .week-num {
+  background: var(--info);
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--info) 60%, transparent);
+}
+
+/* ----- 2. Próximo evento ----- */
+.widget-next-event {
+  --widget-accent: var(--accent);
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.event-arc-wrap {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-arc-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.event-arc-now {
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+/* ----- 3. Focus de hoy ----- */
+.widget-focus-today {
+  --widget-accent: var(--accent);
+}
+
+/* ----- 4. Agua ----- */
+.widget-water {
+  --widget-accent: #06B6D4;
+  position: relative;
+}
+
+.water-glass-wrap {
+  flex: none;
+  width: 36px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+}
+
+.water-glass {
+  position: relative;
+  width: 28px;
+  height: 42px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.water-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0%;
+  background: linear-gradient(180deg, #22D3EE, #0891B2);
+  transition: height 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+}
+
+.widget-water-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(6, 182, 212, 0.18);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  color: #22D3EE;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: scale 180ms ease, background 180ms ease;
+}
+
+.widget-water-btn:hover {
+  background: rgba(6, 182, 212, 0.3);
+  scale: 1.05;
+}
+
+.widget-water-btn:active {
+  scale: 0.94;
+}
+
+.widget-water-btn svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+}
+
+/* ----- 5. Tareas ----- */
+.widget-tasks {
+  --widget-accent: #F43F5E;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.tasks-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.tasks-widget-count {
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: rgba(244, 63, 94, 0.2);
+  color: #FB7185;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tasks-widget-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tasks-widget-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: rgba(var(--ink), 0.04);
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.tasks-widget-item:hover {
+  background: rgba(var(--ink), 0.08);
+}
+
+.tasks-widget-check {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(var(--ink), 0.25);
+  display: grid;
+  place-items: center;
+}
+
+.tasks-widget-check svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  stroke: currentColor;
+}
+
+.tasks-widget-item.is-urgent .tasks-widget-check {
+  border-color: #F43F5E;
+  background: rgba(244, 63, 94, 0.15);
+}
+
+.tasks-widget-label {
+  font-size: 11.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasks-widget-empty {
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* ----- 6. Reloj mundial ----- */
+.widget-world-clock {
+  --widget-accent: var(--info);
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 6px;
+}
+
+.world-city {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.world-city-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.world-city-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.world-city-offset {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.world-city-time {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ----- 7. Cuenta regresiva ----- */
+.widget-countdown {
+  --widget-accent: #A855F7;
+}
+
+/* ----- 8. Clima ----- */
+.widget-weather {
+  --widget-accent: #F59E0B;
+}
+
+.weather-leading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-icon {
+  width: 28px;
+  height: 28px;
+  stroke: #F59E0B;
+  fill: none;
+}
+
 /* ----- Novedades: un borde de luz que late hasta que lo miras ----- */
 .widget::after {
   content: "";

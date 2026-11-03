@@ -282,6 +282,11 @@ contextBridge.exposeInMainWorld('notch', {
     onChange: (callback) => subscribe('focus:stats', callback),
   },
 
+  // ---------- Clima (Fase 13) ----------
+  weather: {
+    get: () => ipcRenderer.invoke('weather:get'),
+  },
+
   // ---------- Motor de luz (Fase 10 / 12) ----------
   light: {
     onTrigger: (callback) => {

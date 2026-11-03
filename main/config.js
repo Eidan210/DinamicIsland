@@ -77,6 +77,14 @@ const DEFAULT_SETTINGS = {
   waterReminderMinutes: 60,
   focusTargetMinutes: 120,
   focusLongBreakMinutes: 15,
+  // Fase 13: Widgets nuevos
+  countdownDate: '2026-12-31',
+  countdownTitle: 'Fin de Campuslands',
+  worldClockCities: ['America/Bogota', 'Europe/Madrid'],
+  weather: false, // Apagado por defecto (excepción a la regla 1)
+  weatherCity: 'Bucaramanga',
+  weatherLat: 7.1193,
+  weatherLon: -73.1227,
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -234,6 +242,34 @@ function validateSettings(data) {
   result.focusTargetMinutes = Number.isFinite(focusTarget) && focusTarget >= 15 && focusTarget <= 600 ? focusTarget : DEFAULT_SETTINGS.focusTargetMinutes;
   const focusLongBreak = Math.round(Number(result.focusLongBreakMinutes));
   result.focusLongBreakMinutes = Number.isFinite(focusLongBreak) && focusLongBreak >= 5 && focusLongBreak <= 60 ? focusLongBreak : DEFAULT_SETTINGS.focusLongBreakMinutes;
+
+  // Fase 13: Widgets nuevos
+  if (typeof result.countdownDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(result.countdownDate.trim())) {
+    result.countdownDate = result.countdownDate.trim();
+  } else {
+    result.countdownDate = DEFAULT_SETTINGS.countdownDate;
+  }
+  if (typeof result.countdownTitle === 'string' && result.countdownTitle.trim()) {
+    result.countdownTitle = result.countdownTitle.trim();
+  } else {
+    result.countdownTitle = DEFAULT_SETTINGS.countdownTitle;
+  }
+  if (Array.isArray(result.worldClockCities) && result.worldClockCities.length >= 1) {
+    result.worldClockCities = result.worldClockCities.filter((c) => typeof c === 'string' && c.trim()).slice(0, 4);
+    if (result.worldClockCities.length === 0) result.worldClockCities = [...DEFAULT_SETTINGS.worldClockCities];
+  } else {
+    result.worldClockCities = [...DEFAULT_SETTINGS.worldClockCities];
+  }
+  result.weather = result.weather === true;
+  if (typeof result.weatherCity === 'string' && result.weatherCity.trim()) {
+    result.weatherCity = result.weatherCity.trim();
+  } else {
+    result.weatherCity = DEFAULT_SETTINGS.weatherCity;
+  }
+  const lat = Number(result.weatherLat);
+  result.weatherLat = Number.isFinite(lat) && lat >= -90 && lat <= 90 ? lat : DEFAULT_SETTINGS.weatherLat;
+  const lon = Number(result.weatherLon);
+  result.weatherLon = Number.isFinite(lon) && lon >= -180 && lon <= 180 ? lon : DEFAULT_SETTINGS.weatherLon;
 
   return result;
 }

@@ -32,6 +32,14 @@ const WIDGET_SIZES = {
   battery: ['1x1'],
   note: ['2x1', '1x1'],
   clipboard: ['2x1', '1x1'],
+  week: ['2x1', '1x1'],
+  'next-event': ['2x1', '1x1'],
+  'focus-today': ['1x1', '2x1'],
+  water: ['1x1', '2x1'],
+  tasks: ['2x1', '1x1'],
+  'world-clock': ['2x1', '1x1'],
+  countdown: ['1x1', '2x1'],
+  weather: ['1x1', '2x1'],
 };
 
 // Home la primera vez (o si home.json está mal)

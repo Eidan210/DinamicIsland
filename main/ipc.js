@@ -31,6 +31,7 @@ const tasks = require('./tasks');
 const water = require('./water');
 const schedule = require('./schedule');
 const focusStats = require('./focus-stats');
+const weather = require('./weather');
 const { clipboard } = require('electron');
 
 /** Una lista de textos de la página (ids, rutas...), revisada. */
@@ -139,6 +140,9 @@ function registerIpcHandlers() {
 
   // Focus Stats (Fase 12)
   onRendererRequest('focus:get-stats', () => focusStats.getFocusStats());
+
+  // Clima (Fase 13)
+  onRendererRequest('weather:get', () => weather.getWeather());
 
 }
 

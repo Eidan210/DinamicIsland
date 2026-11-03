@@ -106,6 +106,27 @@
     <symbol id="i-w-note" viewBox="0 0 24 24">
       <path d="M13.5 3.5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10" /><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L13 13.4l-3.6.9.9-3.6z" />
     </symbol>
+    <symbol id="i-w-week" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="17" rx="3" /><path d="M3 9h18M8 2v4M16 2v4" /><circle cx="8" cy="14" r="1.2" /><circle cx="12" cy="14" r="1.2" /><circle cx="16" cy="14" r="1.2" />
+    </symbol>
+    <symbol id="i-w-event" viewBox="0 0 24 24">
+      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5h-2v-2h2zm0-4.5h-2V7h2z" /><path d="M12 7v5l3 2" />
+    </symbol>
+    <symbol id="i-w-water" viewBox="0 0 24 24">
+      <path d="M5 4h14l-2 15a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 4z" /><path d="M6 10h12" opacity="0.4" />
+    </symbol>
+    <symbol id="i-w-tasks" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="m8 12 2.5 2.5 5-5M8 7h8M8 17h5" />
+    </symbol>
+    <symbol id="i-w-world" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </symbol>
+    <symbol id="i-w-countdown" viewBox="0 0 24 24">
+      <path d="M5 3h14M5 21h14M7 3v4a5 5 0 0 0 5 5 5 5 0 0 0 5-5V3M7 21v-4a5 5 0 0 1 5-5 5 5 0 0 1 5 5v4" />
+    </symbol>
+    <symbol id="i-w-weather" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </symbol>
     <symbol id="i-laptop" viewBox="0 0 24 24">
       <rect x="4.5" y="5" width="15" height="10.5" rx="1.8" /><path d="M2.5 19h19" />
     </symbol>
@@ -598,6 +619,114 @@
                   <svg class="widget-corner-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-w-note"></use></svg>
                   <p class="notepad-text" id="home-note-text"></p>
                   <span class="widget-sub notepad-placeholder">Toca para escribir</span>
+                </article>
+
+                <!-- Esta semana: 7 días con hoy resaltado y próximo evento -->
+                <article class="widget widget-week" data-widget="week" id="home-week" hidden>
+                  <div class="week-days" id="home-week-days"></div>
+                  <div class="widget-text">
+                    <span class="widget-sub" id="home-week-event">Todo listo por hoy</span>
+                  </div>
+                </article>
+
+                <!-- Próximo evento: nombre en grande, tiempo relativo y arco SVG -->
+                <article class="widget widget-next-event" data-widget="next-event" id="home-next-event" hidden>
+                  <div class="event-arc-wrap">
+                    <svg class="event-arc-svg" viewBox="0 0 120 36" aria-hidden="true">
+                      <path class="event-arc-track" d="M 10 30 Q 60 8 110 30" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="3" stroke-linecap="round" />
+                      <circle class="event-arc-now" id="home-event-now-dot" cx="60" cy="19" r="3.5" fill="#3dff8f" />
+                      <g class="event-arc-points" id="home-event-points"></g>
+                    </svg>
+                  </div>
+                  <div class="widget-text">
+                    <span class="widget-title" id="home-event-title">Sin eventos hoy</span>
+                    <span class="widget-sub" id="home-event-time">--:--</span>
+                  </div>
+                </article>
+
+                <!-- Focus de hoy: minutos acumulados hacia la meta -->
+                <article class="widget widget-focus-today" data-widget="focus-today" id="home-focus-today" hidden>
+                  <div class="widget-ring">
+                    <svg class="mini-ring" viewBox="0 0 48 48" aria-hidden="true">
+                      <circle class="ring-track" cx="24" cy="24" r="19" />
+                      <circle class="ring-progress" id="home-focus-today-ring" cx="24" cy="24" r="19" pathLength="100" />
+                    </svg>
+                    <svg class="ring-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-timer"></use></svg>
+                  </div>
+                  <div class="widget-text">
+                    <span class="widget-big" id="home-focus-today-minutes">0 min</span>
+                    <span class="widget-sub" id="home-focus-today-target">Meta: 120 min</span>
+                    <span class="widget-sub widget-extra only-wide" id="home-focus-today-count">0 sesiones hoy</span>
+                  </div>
+                </article>
+
+                <!-- Agua: vaso interactivo y botón +250 ml -->
+                <article class="widget widget-water" data-widget="water" id="home-water" hidden>
+                  <div class="water-glass-wrap" aria-hidden="true">
+                    <div class="water-glass">
+                      <div class="water-fill" id="home-water-fill"></div>
+                    </div>
+                  </div>
+                  <div class="widget-text">
+                    <span class="widget-big" id="home-water-amount">0 / 2000 ml</span>
+                    <span class="widget-sub" id="home-water-percent">0% de tu meta</span>
+                  </div>
+                  <button class="widget-water-btn" id="home-water-btn" type="button" aria-label="Añadir 250 ml" title="Añadir 250 ml">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"></use></svg>
+                    <span>250</span>
+                  </button>
+                </article>
+
+                <!-- Tareas: lista de pendientes ordenadas por urgencia -->
+                <article class="widget widget-tasks" data-widget="tasks" id="home-tasks" hidden>
+                  <div class="tasks-widget-head">
+                    <span class="widget-title">Tareas</span>
+                    <span class="tasks-widget-count" id="home-tasks-count">0</span>
+                  </div>
+                  <ul class="tasks-widget-list" id="home-tasks-list">
+                    <li class="tasks-widget-empty">Todo listo</li>
+                  </ul>
+                </article>
+
+                <!-- Reloj mundial: dos ciudades con hora local y desfase -->
+                <article class="widget widget-world-clock" data-widget="world-clock" id="home-world-clock" hidden>
+                  <div class="world-city">
+                    <div class="world-city-info">
+                      <span class="world-city-name" id="home-city1-name">Bogotá</span>
+                      <span class="world-city-offset" id="home-city1-offset">Local</span>
+                    </div>
+                    <span class="world-city-time" id="home-city1-time">--:--</span>
+                  </div>
+                  <div class="world-city">
+                    <div class="world-city-info">
+                      <span class="world-city-name" id="home-city2-name">Madrid</span>
+                      <span class="world-city-offset" id="home-city2-offset">+7 h</span>
+                    </div>
+                    <span class="world-city-time" id="home-city2-time">--:--</span>
+                  </div>
+                </article>
+
+                <!-- Cuenta regresiva: días que faltan hacia una fecha -->
+                <article class="widget widget-countdown" data-widget="countdown" id="home-countdown" hidden>
+                  <svg class="widget-corner-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-w-countdown"></use></svg>
+                  <div class="widget-text">
+                    <span class="widget-big" id="home-countdown-days">-- días</span>
+                    <span class="widget-sub" id="home-countdown-title">Fin de Campuslands</span>
+                  </div>
+                </article>
+
+                <!-- Clima: temperatura, estado y ciudad con Open-Meteo -->
+                <article class="widget widget-weather" data-widget="weather" id="home-weather" hidden>
+                  <div class="weather-leading">
+                    <svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <use id="home-weather-icon" href="#i-w-weather"></use>
+                    </svg>
+                    <span class="widget-big" id="home-weather-temp">--°</span>
+                  </div>
+                  <div class="widget-text">
+                    <span class="widget-title" id="home-weather-city">Bucaramanga</span>
+                    <span class="widget-sub" id="home-weather-desc">Clima local</span>
+                  </div>
                 </article>
 
               </div>

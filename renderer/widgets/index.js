@@ -28,9 +28,34 @@ import { linksWidget } from './links.js';
 import { batteryWidget } from './battery.js';
 import { noteWidget } from './note.js';
 import { clipboardWidget } from './clipboard.js';
+import { weekWidget } from './week.js';
+import { nextEventWidget } from './next-event.js';
+import { focusTodayWidget } from './focus-today.js';
+import { waterWidget } from './water.js';
+import { tasksWidget } from './tasks.js';
+import { worldClockWidget } from './world-clock.js';
+import { countdownWidget } from './countdown.js';
+import { weatherWidget } from './weather.js';
 
 /** Todos los widgets, en el orden del catálogo. */
-export const WIDGETS = [clockWidget, musicWidget, focusWidget, aiWidget, linksWidget, batteryWidget, noteWidget, clipboardWidget];
+export const WIDGETS = [
+  clockWidget,
+  musicWidget,
+  focusWidget,
+  aiWidget,
+  linksWidget,
+  batteryWidget,
+  noteWidget,
+  clipboardWidget,
+  weekWidget,
+  nextEventWidget,
+  focusTodayWidget,
+  waterWidget,
+  tasksWidget,
+  worldClockWidget,
+  countdownWidget,
+  weatherWidget,
+];
 
 export const WIDGET_BY_TYPE = new Map(WIDGETS.map((widget) => [widget.type, widget]));
 

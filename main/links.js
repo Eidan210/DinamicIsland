@@ -65,16 +65,21 @@ function normalizeLink(entry, index) {
     return null;
   }
 
-  let url;
-  try {
-    url = new URL(String(entry.url ?? '').trim());
-  } catch {
-    console.warn(`[links] "${name}": la url no es válida. Lo ignoro.`);
-    return null;
-  }
-  if (!ALLOWED_LINK_PROTOCOLS.includes(url.protocol)) {
-    console.warn(`[links] "${name}": solo se permiten links http://, https:// o mailto:. Lo ignoro.`);
-    return null;
+  let url = null;
+  let localPath = null;
+  if (typeof entry.path === 'string' && entry.path.trim()) {
+    localPath = entry.path.trim();
+  } else {
+    try {
+      url = new URL(String(entry.url ?? '').trim());
+      if (!ALLOWED_LINK_PROTOCOLS.includes(url.protocol)) {
+        console.warn(`[links] "${name}": solo se permiten links http://, https:// o mailto:. Lo ignoro.`);
+        return null;
+      }
+    } catch {
+      console.warn(`[links] "${name}": debe tener una "url" válida o una ruta "path" local. Lo ignoro.`);
+      return null;
+    }
   }
 
   const hasColor = isHexColor(entry.color);
@@ -87,12 +92,13 @@ function normalizeLink(entry, index) {
 
   return {
     name,
-    url: url.href,
+    url: url ? url.href : null,
+    path: localPath,
     color,
     hasColor,
     initial,
     textColor: isLightColor(color) ? '#111111' : '#ffffff', // texto legible sobre el color
-    host: url.protocol === 'mailto:' ? url.pathname : url.hostname,
+    host: localPath ? 'local' : url.protocol === 'mailto:' ? url.pathname : url.hostname,
     iconRequest: readIconField(entry, name, Boolean(customInitial)),
   };
 }
@@ -123,9 +129,17 @@ function getLinksForRenderer() {
 function openLink(index) {
   const link = Number.isInteger(index) ? links[index] : undefined;
   if (!link) return;
-  shell.openExternal(link.url).catch((error) => {
-    console.warn(`[links] No se pudo abrir ${link.url}: ${error.message}`);
-  });
+  if (link.path) {
+    shell.openPath(link.path).then((err) => {
+      if (err) console.warn(`[links] No se pudo abrir ruta ${link.path}: ${err}`);
+    }).catch((error) => {
+      console.warn(`[links] Error abriendo ruta ${link.path}: ${error.message}`);
+    });
+  } else if (link.url) {
+    shell.openExternal(link.url).catch((error) => {
+      console.warn(`[links] No se pudo abrir ${link.url}: ${error.message}`);
+    });
+  }
 }
 
 function isHexColor(value) {
