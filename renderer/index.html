@@ -124,6 +124,13 @@
     <symbol id="i-w-countdown" viewBox="0 0 24 24">
       <path d="M5 3h14M5 21h14M7 3v4a5 5 0 0 0 5 5 5 5 0 0 0 5-5V3M7 21v-4a5 5 0 0 1 5-5 5 5 0 0 1 5 5v4" />
     </symbol>
+    
+    <symbol id="i-app-window" viewBox="0 0 24 24">
+      <rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <line x1="2" y1="10" x2="22" y2="10" stroke="currentColor" stroke-width="2"/>
+      <circle cx="6" cy="7" r="1" fill="currentColor"/>
+      <circle cx="10" cy="7" r="1" fill="currentColor"/>
+    </symbol>
     <symbol id="i-w-weather" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
     </symbol>
@@ -417,6 +424,54 @@
         </header>
         <div class="decision-body" id="decision-body"></div>
         <footer class="decision-actions" id="decision-actions"></footer>
+      </div>
+
+      <!-- Caja de comandos de IA rápida (Fase 14, estilo Sentient OS) -->
+      <div class="ai-input-view" id="ai-input-view" role="dialog" aria-label="IA Rápida">
+        <header class="ai-input-head">
+          <div class="ai-input-app-chip" id="ai-input-app-chip" hidden>
+            <span class="ai-chip-icon"><svg viewBox="0 0 24 24"><use href="#i-app-window"></use></svg></span>
+            <span class="ai-chip-label" id="ai-chip-label">Viendo app</span>
+            <button class="ai-chip-remove" id="ai-chip-remove" title="Quitar contexto" type="button">×</button>
+          </div>
+          <button class="ai-input-attach-btn" id="ai-input-attach-btn" title="Adjuntar captura de pantalla" type="button">
+            <svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2-2v-2M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="ai-attach-text">Pantalla</span>
+          </button>
+          <div class="ai-input-spacer"></div>
+          <div class="ai-input-models" id="ai-input-models">
+            <span class="ai-input-model-badge" id="ai-input-model-badge">Gemini</span>
+          </div>
+          <button class="ai-input-close-btn" id="ai-input-close-btn" title="Cerrar (Esc)" type="button">Esc</button>
+        </header>
+
+        <div class="ai-input-body">
+          <div class="ai-screen-preview-wrap" id="ai-screen-preview-wrap" hidden>
+            <img id="ai-screen-preview-img" class="ai-screen-preview-img" alt="Captura" />
+            <button class="ai-screen-preview-remove" id="ai-screen-preview-remove" title="Quitar captura" type="button">×</button>
+          </div>
+          <textarea id="ai-quick-input" class="ai-quick-input" placeholder="¿De qué me encargo por ti?" rows="1"></textarea>
+        </div>
+
+        <div class="ai-input-status" id="ai-input-status" hidden>
+          <span class="ai-spinner"><i></i><i></i><i></i></span>
+          <span class="ai-status-text" id="ai-status-text">Trabajando…</span>
+          <button class="ai-cancel-btn" id="ai-cancel-btn" type="button" title="Cancelar">✕</button>
+        </div>
+
+        <div class="ai-input-response-wrap" id="ai-input-response-wrap" hidden>
+          <div class="ai-input-response" id="ai-input-response"></div>
+          <footer class="ai-input-actions">
+            <button class="ai-btn" id="ai-btn-copy" type="button">
+              <svg viewBox="0 0 24 24"><path d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.24a2 2 0 0 0-.59-1.41l-3.24-3.24A2 2 0 0 0 14.76 2H10a2 2 0 0 0-2 2z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+              <span>Copiar</span>
+            </button>
+            <button class="ai-btn is-primary" id="ai-btn-paste" type="button">
+              <svg viewBox="0 0 24 24"><path d="M19 11v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="15 3 21 3 21 9" fill="none" stroke="currentColor" stroke-width="2"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2"/></svg>
+              <span>Pegar en la app</span>
+            </button>
+          </footer>
+        </div>
       </div>
 
       <!-- Contenido del panel abierto -->

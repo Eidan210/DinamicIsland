@@ -63,6 +63,7 @@ import { initTheme, setTheme } from './theme.js';
 import { initMotion, applyMotionSetting } from './motion.js';
 import { initAi, setAiState } from './ai.js';
 import { initChat, loadChat, applyChatSettings } from './chat.js';
+import { initAiQuick } from './ai-quick.js';
 import { initGlow } from './glow.js';
 import { initClawd, scheduleBye, setClawdSleeping } from './clawd.js';
 import { initClipPage } from './clip-page.js';
@@ -127,6 +128,7 @@ async function init() {
   initNotices();
   initNote();
   initChat();
+  initAiQuick();
   initAi();
   initGlow();
   initClawd({ keepAwakeFor });

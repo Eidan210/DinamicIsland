@@ -8639,3 +8639,316 @@ code {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.14); }
 }
+
+
+/* =============================================================================
+   IA Rápida — Sentient OS Style (Fase 14)
+   ============================================================================= */
+.island[data-shape="ai-input"] {
+  width: 560px;
+  height: 120px;
+  border-radius: 28px;
+  cursor: default;
+}
+
+.island[data-shape="ai-input"][data-ai-expanded="true"] {
+  height: 340px;
+}
+
+.island[data-shape="ai-input"] :is(.face, .activity, .panel, .charging-alert, .volume-bar, .banner, .alert, .drop, .decision) {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.island[data-shape="ai-input"] .ai-input-view {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  scale: 1;
+}
+
+.ai-input-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 18px;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  scale: 0.95;
+  transition: opacity 220ms ease, scale 220ms var(--spring), visibility 220ms;
+  color: #fff;
+}
+
+.ai-input-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.ai-input-app-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 2px 8px 2px 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 220px;
+}
+
+.ai-chip-icon svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+
+.ai-chip-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-chip-remove {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.ai-chip-remove:hover {
+  color: #fff;
+}
+
+.ai-input-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.ai-input-attach-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.ai-input-attach-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ai-input-spacer {
+  flex: 1;
+}
+
+.ai-input-model-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(169, 139, 255, 0.2);
+  color: #c4b5fd;
+  border: 1px solid rgba(169, 139, 255, 0.3);
+  border-radius: 8px;
+  padding: 2px 7px;
+}
+
+.ai-input-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.ai-input-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.ai-input-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+}
+
+.ai-screen-preview-wrap {
+  position: relative;
+  width: 48px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.ai-screen-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ai-screen-preview-remove {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 14px;
+  height: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.ai-quick-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: none;
+  max-height: 64px;
+}
+.ai-quick-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ai-input-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #c4b5fd;
+}
+
+.ai-spinner {
+  display: inline-flex;
+  gap: 3px;
+}
+.ai-spinner i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #a98bff;
+  animation: ai-dot-bounce 1s infinite ease-in-out;
+}
+.ai-spinner i:nth-child(2) { animation-delay: 150ms; }
+.ai-spinner i:nth-child(3) { animation-delay: 300ms; }
+
+@keyframes ai-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+.ai-cancel-btn {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+.ai-cancel-btn:hover {
+  background: rgba(244, 63, 94, 0.3);
+  color: #f43f5e;
+}
+
+.ai-input-response-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
+.ai-input-response {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  padding-right: 4px;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.ai-input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 4px;
+}
+
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ai-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+.ai-btn:active {
+  transform: scale(0.96);
+}
+.ai-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ai-btn.is-primary {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: #fff;
+}
+.ai-btn.is-primary:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}

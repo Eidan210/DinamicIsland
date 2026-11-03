@@ -104,6 +104,10 @@ function createWindow() {
   // abierta la ventana de elegir archivos (la bandeja): esa se lleva el foco.
   win.on('blur', () => {
     if (state.isExpanded && !IS_DEV && !state.dialogOpen) setExpanded(false);
+    if (state.aiQuickOpen && !IS_DEV) {
+      const { closeAiQuick } = require('./ai-quick');
+      closeAiQuick();
+    }
   });
 
   // Alt+F4 con el panel abierto: lo cerramos en lugar de salir de la app.

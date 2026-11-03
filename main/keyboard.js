@@ -19,9 +19,15 @@ function initKeyboard() {
     if (!message || typeof message !== 'object') return;
     const { action } = message;
 
-    // Doble Ctrl derecho: abrir o cerrar el panel
+    // Doble Ctrl derecho (Fase 11 / Fase 14)
     if (action === 'right-ctrl-double-tap') {
-      toggleExpanded();
+      const { state } = require('./state');
+      if (state.settings && state.settings.aiQuickReplyRightCtrl) {
+        const aiQuick = require('./ai-quick');
+        aiQuick.handleRightCtrlDoubleTap();
+      } else {
+        toggleExpanded();
+      }
     }
 
     // Reenviar a la interfaz

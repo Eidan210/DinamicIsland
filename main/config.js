@@ -85,6 +85,10 @@ const DEFAULT_SETTINGS = {
   weatherCity: 'Bucaramanga',
   weatherLat: 7.1193,
   weatherLon: -73.1227,
+  // Fase 14: IA rápida (estilo Sentient OS)
+  aiShortcut: 'Control+Alt+Space',
+  aiActiveAppChip: false,
+  aiQuickReplyRightCtrl: false,
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -270,6 +274,14 @@ function validateSettings(data) {
   result.weatherLat = Number.isFinite(lat) && lat >= -90 && lat <= 90 ? lat : DEFAULT_SETTINGS.weatherLat;
   const lon = Number(result.weatherLon);
   result.weatherLon = Number.isFinite(lon) && lon >= -180 && lon <= 180 ? lon : DEFAULT_SETTINGS.weatherLon;
+
+  // Fase 14: IA rápida (estilo Sentient OS)
+  if (typeof result.aiShortcut !== 'string' || !result.aiShortcut.trim()) {
+    result.aiShortcut = DEFAULT_SETTINGS.aiShortcut;
+  }
+  result.aiShortcut = result.aiShortcut.trim();
+  result.aiActiveAppChip = result.aiActiveAppChip === true;
+  result.aiQuickReplyRightCtrl = result.aiQuickReplyRightCtrl === true;
 
   return result;
 }

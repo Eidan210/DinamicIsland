@@ -287,6 +287,18 @@ contextBridge.exposeInMainWorld('notch', {
     get: () => ipcRenderer.invoke('weather:get'),
   },
 
+  // ---------- IA Rápida (Fase 14) ----------
+  aiQuick: {
+    open: () => ipcRenderer.send('ai:quick-open'),
+    close: () => ipcRenderer.send('ai:quick-close'),
+    pasteToApp: (text) => ipcRenderer.send('ai:paste-to-app', String(text || '')),
+    captureScreen: () => ipcRenderer.invoke('ai:capture-screen'),
+    getActiveApp: () => ipcRenderer.invoke('ai:get-active-app'),
+    onShow: (callback) => subscribe('ai:quick-show', callback),
+    onHide: (callback) => subscribe('ai:quick-hide', callback),
+    onActiveApp: (callback) => subscribe('ai:active-app', callback),
+  },
+
   // ---------- Motor de luz (Fase 10 / 12) ----------
   light: {
     onTrigger: (callback) => {

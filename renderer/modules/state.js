@@ -37,6 +37,7 @@ export const state = {
   // Forma actual de la isla:
   // 'mini' | 'pill' | 'activity' | 'volume' | 'banner' | 'alert' | 'drop' | 'decision' | 'expanded'
   shape: 'mini',
+  aiQuickOpen: false, // ¿está abierta la caja de IA rápida? (Fase 14)
   fileDrag: false, // ¿estás arrastrando archivos sobre la isla? (tray.js)
 
   // Pomodoro (lo actualiza pomodoro.js con lo que manda main)

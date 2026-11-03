@@ -201,6 +201,7 @@ internal static class FullscreenModule
     {
         // Al cambiar de ventana, verificamos si la ventana activa está en pantalla completa
         CheckFullscreenState(null);
+        ActiveAppModule.OnForegroundChanged(hwnd);
     }
 
     private static void CheckFullscreenState(bool? hintEntering)

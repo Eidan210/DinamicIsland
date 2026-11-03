@@ -40,6 +40,12 @@ function registerShortcuts() {
 
   if (!tryRegister(state.settings.shortcut, notchWindow.toggleExpanded)) failed.push(state.settings.shortcut);
 
+  // Fase 14: Atajo global de IA rápida
+  if (state.settings.aiShortcut) {
+    const aiQuick = require('./ai-quick');
+    if (!tryRegister(state.settings.aiShortcut, () => aiQuick.toggleAiQuick())) failed.push(state.settings.aiShortcut);
+  }
+
   for (const page of PAGES) {
     const accelerator = state.settings.pageShortcuts[page];
     if (!accelerator) continue; // "" = esta página no tiene atajo

@@ -61,10 +61,11 @@ const tasks = require('./main/tasks');
 const water = require('./main/water');
 const schedule = require('./main/schedule');
 const focusStats = require('./main/focus-stats');
+const aiQuick = require('./main/ai-quick');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
 function shortcutsKey(settings) {
-  return JSON.stringify([settings.shortcut, settings.pageShortcuts]);
+  return JSON.stringify([settings.shortcut, settings.pageShortcuts, settings.aiShortcut]);
 }
 
 /** Al guardar algo en config/, se aplica al momento (sin reiniciar). */
@@ -140,6 +141,7 @@ if (!hasSingleInstanceLock) {
     water.initWater();
     schedule.initSchedule();
     focusStats.initFocusStats();
+    aiQuick.initAiQuick();
     helper.onHelperMessage('fullscreen', (msg) => {
       notchWindow.setFullscreenHidden(Boolean(msg && msg.active));
     });

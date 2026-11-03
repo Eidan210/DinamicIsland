@@ -144,6 +144,14 @@ function registerIpcHandlers() {
   // Clima (Fase 13)
   onRendererRequest('weather:get', () => weather.getWeather());
 
+  // IA Rápida (Fase 14)
+  const aiQuick = require('./ai-quick');
+  onRendererMessage('ai:quick-open', () => aiQuick.openAiQuick());
+  onRendererMessage('ai:quick-close', () => aiQuick.closeAiQuick());
+  onRendererMessage('ai:paste-to-app', (text) => aiQuick.pasteToApp(String(text || '')));
+  onRendererRequest('ai:capture-screen', () => aiQuick.captureScreen());
+  onRendererRequest('ai:get-active-app', () => aiQuick.getActiveApp());
+
 }
 
 module.exports = { registerIpcHandlers };
