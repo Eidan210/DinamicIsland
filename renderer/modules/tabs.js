@@ -33,6 +33,14 @@ export function getCurrentTab() {
 }
 
 /** Avisa a `listener(nueva, anterior)` cada vez que cambia la página. */
+export function syncTallState() {
+  const isChat = getCurrentTab() === 'ai' && document.getElementById('ai')?.dataset.mode === 'chat';
+  const island = document.getElementById('island');
+  const panel = document.querySelector('.panel');
+  if (island) island.dataset.tall = String(isChat);
+  if (panel) panel.dataset.tall = String(isChat);
+}
+
 export function onTabChange(listener) {
   tabListeners.push(listener);
 }
@@ -56,6 +64,7 @@ export function showTab(name) {
   const newView = getView(name);
   oldView.classList.remove('is-active');
   newView.classList.add('is-active');
+  syncTallState();
 
   if (state.isExpanded) {
     // La vista nueva entra por el lado hacia el que avanzas, enfocándose y con

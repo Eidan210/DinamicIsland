@@ -39,6 +39,7 @@
   --decision-height: 180px;
   --panel-width: 720px;
   --panel-height: 260px;
+  --panel-chat-height: 360px;
   --top-gap: 8px;
 
   --pill-radius: 20px; /* la mitad de la altura = píldora perfecta */
@@ -476,6 +477,16 @@ img {
     0 12px 28px var(--panel-shadow),
     inset 0 0 0 1px var(--stroke);
   cursor: default;
+  transition:
+    width 380ms var(--spring),
+    height 380ms var(--spring),
+    border-radius 380ms var(--spring);
+}
+
+/* Solo crece cuando el panel está en IA Y en modo Chat */
+.island[data-shape="expanded"]:has(#ai.is-active[data-mode="chat"]),
+.island[data-shape="expanded"][data-tall="true"] {
+  height: var(--panel-chat-height);
 }
 
 /* Brillo superior sutil: le da el toque de "vidrio" al panel abierto */
@@ -2136,12 +2147,19 @@ img {
   padding: 0 16px 12px;
   color: var(--text); /* así el tema claro cambia el color del texto */
   visibility: hidden; /* oculto de verdad: sus botones no reciben clics ni Tab */
-  transition: visibility 0s linear 200ms;
+  transition: visibility 0s linear 200ms, height 380ms var(--spring);
 }
 
 .island[data-shape="expanded"] .panel {
   visibility: visible;
-  transition: visibility 0s;
+  transition: visibility 0s, height 380ms var(--spring);
+}
+
+.island[data-shape="expanded"]:has(#ai.is-active[data-mode="chat"]) .panel,
+.island[data-shape="expanded"][data-tall="true"] .panel,
+.panel:has(#ai.is-active[data-mode="chat"]),
+.panel[data-tall="true"] {
+  height: var(--panel-chat-height);
 }
 
 /* Entrada en cascada: barra superior → contenido → pestañas.
@@ -2716,10 +2734,13 @@ code {
   min-height: 0;
   padding: 10px 12px;
   border-radius: 16px;
-  /* Un halo de su color en la esquina (en una capa aparte: el tema claro solo cambia el fondo) */
+  /* Un halo de su color en la esquina y elevación acrílica */
   background-color: rgba(var(--ink), 0.045);
   background-image: radial-gradient(130px 100px at 100% 100%, color-mix(in srgb, var(--widget-accent) 20%, transparent), transparent 72%);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(var(--ink), 0.08),
+    0 4px 14px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   transition:
     transform 280ms var(--spring-bounce),
@@ -2736,14 +2757,19 @@ code {
 
 .home:not([data-editing="true"]) .widget:hover {
   transform: translateY(-2px);
-  background-color: rgba(var(--ink), 0.07);
+  background-color: rgba(var(--ink), 0.08);
   box-shadow:
-    inset 0 0 0 1px rgba(var(--ink), 0.1),
-    0 10px 22px rgba(0, 0, 0, 0.28);
+    inset 0 0 0 1px color-mix(in srgb, var(--widget-accent) 45%, rgba(var(--ink), 0.15)),
+    0 10px 24px rgba(0, 0, 0, 0.32),
+    0 0 22px -2px color-mix(in srgb, var(--widget-accent) 40%, transparent);
 }
 
 .home:not([data-editing="true"]) .widget:active {
   transform: translateY(0) scale(0.98);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--widget-accent) 55%, rgba(var(--ink), 0.2)),
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 0 16px -2px color-mix(in srgb, var(--widget-accent) 30%, transparent);
 }
 
 /* Mientras mantienes pulsado, se hunde un poco: va a pasar algo */
@@ -2985,7 +3011,17 @@ code {
     );
 }
 
-.widget-art-wrap {
+/* Mientras reproduce, añade un halo ambiental de su color */
+.widget-music[data-playing="true"] {
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(var(--ink), 0.08),
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    0 0 24px -4px color-mix(in srgb, var(--widget-accent) 35%, transparent);
+}
+
+.widget-art-wrap,
+.widget-music-art {
   position: relative;
   flex: none;
   display: grid;
@@ -2994,10 +3030,15 @@ code {
   height: 46px;
   border-radius: 11px;
   background: rgba(var(--ink), 0.07);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(var(--ink), 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.32);
   overflow: hidden;
 }
 
-.widget-music[data-size="2x1"] .widget-art-wrap {
+.widget-music[data-size="2x1"] .widget-art-wrap,
+.widget-music[data-size="2x1"] .widget-music-art {
   width: 52px;
   height: 52px;
   border-radius: 12px;
@@ -3043,6 +3084,12 @@ code {
 
 .home:not([data-editing="true"]) .widget-music:hover .widget-art-btn {
   opacity: 1;
+}
+
+.widget-art-btn:hover,
+.widget-music-btn:hover,
+.widget-music .widget-ctrl.is-main:hover:not(:disabled) {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--widget-accent) 50%, transparent);
 }
 
 .widget-controls {
@@ -3105,6 +3152,23 @@ code {
 }
 
 /* ----- Focus ----- */
+.widget-focus .ring-progress {
+  stroke: var(--accent);
+  transition: filter 240ms ease;
+}
+
+.widget-focus[data-status="running"] {
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(var(--ink), 0.08),
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    0 0 20px -3px color-mix(in srgb, var(--widget-accent) 30%, transparent);
+}
+
+.widget-focus[data-status="running"] .ring-progress {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--widget-accent) 50%, transparent));
+}
+
 .widget-focus .ring-icon {
   display: none;
   width: 15px;
@@ -3250,7 +3314,10 @@ code {
   color: var(--link-text);
   font-size: 11px;
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 2px 6px rgba(0, 0, 0, 0.18);
   transition:
     transform 240ms var(--spring-pop),
     box-shadow 200ms ease;
@@ -3265,8 +3332,9 @@ code {
 .widget-link:hover .widget-link-circle {
   transform: scale(1.14);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
-    0 4px 12px color-mix(in srgb, var(--link-color) 55%, transparent);
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 4px 14px color-mix(in srgb, var(--link-color) 55%, transparent);
 }
 
 .widget-link.is-more {
@@ -3335,6 +3403,11 @@ code {
 .widget-battery[data-charging="true"] .icon-bolt {
   display: block;
   color: var(--accent);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+.widget-battery[data-charging="true"] .ring-progress {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 55%, transparent));
 }
 
 /* ----- Nota ----- */
@@ -5133,6 +5206,7 @@ code {
 
 /* ---------- 11b. IA: sesiones en vivo y chat ---------- */
 .ai {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -5141,11 +5215,86 @@ code {
   padding: 2px 2px 6px;
 }
 
+/* Fondo ambiental sutil del chat de IA (R3) */
+.ai-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+  z-index: 0;
+}
+
+.ai[data-mode="chat"] .ai-backdrop {
+  opacity: 1;
+}
+
+.ai-backdrop i {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  will-change: translate, scale;
+  pointer-events: none;
+  filter: blur(32px);
+}
+
+.ai-backdrop i:nth-child(1) {
+  top: -42%;
+  left: -18%;
+  width: 60%;
+  background: radial-gradient(closest-side, var(--ai-blob-1, color-mix(in srgb, var(--info) 14%, transparent)), transparent);
+}
+
+.ai-backdrop i:nth-child(2) {
+  right: -18%;
+  bottom: -45%;
+  width: 64%;
+  background: radial-gradient(closest-side, var(--ai-blob-2, color-mix(in srgb, var(--info) 12%, transparent)), transparent);
+}
+
+.ai-backdrop i:nth-child(3) {
+  top: -20%;
+  left: 36%;
+  width: 48%;
+  background: radial-gradient(closest-side, var(--ai-blob-3, color-mix(in srgb, var(--info) 10%, transparent)), transparent);
+}
+
+/* Colores de degradado específicos según el proveedor activo */
+.ai[data-provider="gemini"] {
+  --ai-blob-1: color-mix(in srgb, var(--info) 14%, transparent);
+  --ai-blob-2: color-mix(in srgb, #74c0fc 12%, transparent);
+  --ai-blob-3: color-mix(in srgb, #a98bff 10%, transparent);
+}
+
+.ai[data-provider="claude"] {
+  --ai-blob-1: color-mix(in srgb, var(--claude-color) 14%, transparent);
+  --ai-blob-2: color-mix(in srgb, #f783ac 12%, transparent);
+  --ai-blob-3: color-mix(in srgb, #ffa94d 10%, transparent);
+}
+
+.ai[data-provider="both"] {
+  --ai-blob-1: color-mix(in srgb, var(--info) 14%, transparent);
+  --ai-blob-2: color-mix(in srgb, var(--claude-color) 14%, transparent);
+  --ai-blob-3: color-mix(in srgb, #d0bfff 10%, transparent);
+}
+
+:root[data-theme="light"] .ai[data-mode="chat"] .ai-backdrop {
+  opacity: 0.85;
+}
+
+:root[data-reduce-motion="true"] .ai-backdrop {
+  opacity: 0 !important;
+}
+
 .ai [hidden] {
   display: none !important;
 }
 
 .ai-head {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex: none;
   align-items: center;
@@ -5265,6 +5414,8 @@ code {
 }
 
 .ai-body {
+  position: relative;
+  z-index: 1;
   display: none;
   flex: 1;
   min-height: 0;
@@ -5683,6 +5834,7 @@ code {
 }
 
 /* ----- Chat ----- */
+
 .chat-model-wrap {
   position: relative;
   display: inline-flex;
@@ -5704,10 +5856,12 @@ code {
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    opacity 150ms ease;
 }
 
-.chat-model:hover {
+.chat-model:hover:not(:disabled) {
   background: rgba(var(--ink), 0.11);
 }
 
@@ -5717,9 +5871,24 @@ code {
     0 0 0 2px color-mix(in srgb, var(--claude-color) 20%, transparent);
 }
 
+#chat-model-gemini:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--info) 55%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--info) 20%, transparent);
+}
+
+.chat-model:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .chat-model option {
   background: var(--popover-bg);
   color: var(--text);
+}
+
+.chat-model option:disabled {
+  color: var(--text-faint);
 }
 
 .chat-model-arrow {
@@ -5731,9 +5900,26 @@ code {
   pointer-events: none;
 }
 
-/* El modelo de Claude solo se elige si hablas con Claude (o con los dos) */
-.ai[data-provider="gemini"] .chat-model-wrap {
+/* Visibilidad contextual de selectores según el proveedor activo */
+.ai[data-provider="gemini"] #chat-model-claude-wrap {
   display: none;
+}
+
+.ai[data-provider="gemini"] #chat-model-gemini-wrap {
+  display: inline-flex;
+}
+
+.ai[data-provider="claude"] #chat-model-gemini-wrap {
+  display: none;
+}
+
+.ai[data-provider="claude"] #chat-model-claude-wrap {
+  display: inline-flex;
+}
+
+.ai[data-provider="both"] #chat-model-claude-wrap,
+.ai[data-provider="both"] #chat-model-gemini-wrap {
+  display: inline-flex;
 }
 
 .icon-btn {
@@ -5778,9 +5964,9 @@ code {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   min-height: 0;
-  padding: 2px 4px 4px 2px;
+  padding: 4px 6px 6px 4px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -6129,6 +6315,7 @@ code {
   flex: none;
   align-items: flex-end;
   gap: 6px;
+  max-height: 84px;
   padding: 4px 5px 4px 13px;
   border-radius: 19px;
   background: rgba(var(--ink), 0.055);
@@ -6156,6 +6343,7 @@ code {
 .composer-input {
   flex: 1;
   min-height: 28px;
+  max-height: 76px;
   padding: 5px 0;
   overflow-y: hidden;
   border: 0;
@@ -7384,19 +7572,22 @@ code {
   --eye-glow: rgba(22, 184, 93, 0.35);
 }
 
-/* Widgets blancos con un borde finito */
+/* Widgets blancos con un borde finito y elevación cerámica acrílica */
 :root[data-theme="light"] .widget {
-  background-color: rgba(255, 255, 255, 0.72);
+  background-color: rgba(255, 255, 255, 0.78);
   box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+    0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 :root[data-theme="light"] .home:not([data-editing="true"]) .widget:hover {
-  background-color: #fff;
+  background-color: #ffffff;
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
-    0 10px 24px rgba(0, 0, 0, 0.1);
+    inset 0 1px 1px 0 #ffffff,
+    inset 0 0 0 1px color-mix(in srgb, var(--widget-accent) 40%, rgba(0, 0, 0, 0.08)),
+    0 10px 24px rgba(0, 0, 0, 0.08),
+    0 0 20px -2px color-mix(in srgb, var(--widget-accent) 35%, transparent);
 }
 
 :root[data-theme="light"] .widget-slot {

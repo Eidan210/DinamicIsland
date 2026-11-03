@@ -17,6 +17,7 @@ import { $, setText } from './utils.js';
 import { state } from './state.js';
 import { getCurrentTab } from './tabs.js';
 import { runOnBeat, stopOnBeat } from './beat.js';
+import { updateAiBackdrop } from './backdrop.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const NAMES = { claude: 'Claude', gemini: 'Gemini' };
@@ -48,7 +49,8 @@ const sendButton = $('chat-send');
 const providerEl = $('chat-provider');
 const providerIndicator = $('chat-provider-indicator');
 const providerButtons = [...document.querySelectorAll('#chat-provider .segment')];
-const modelSelect = $('chat-model');
+const claudeSelect = $('chat-model') || $('chat-model-claude');
+const geminiSelect = $('chat-model-gemini');
 const newButton = $('chat-new');
 
 const nodes = new Map(); // id del mensaje → su elemento
@@ -161,6 +163,7 @@ function syncStreamingBeat() {
 export function syncChatVisibility() {
   moveProviderIndicator(false);
   syncStreamingBeat();
+  updateAiBackdrop();
 }
 
 // -----------------------------------------------------------------------------
@@ -282,8 +285,33 @@ function syncComposerEmpty() {
   form.dataset.empty = String(!input.value.trim());
 }
 
+/** Deshabilita modelos o backends no disponibles en el entorno local. */
+function updateModelAvailability() {
+  const available = state.chat.available;
+  if (!available) return;
+
+  if (claudeSelect) {
+    claudeSelect.disabled = !available.claude;
+    claudeSelect.title = available.claude ? 'Modelo de Claude' : 'Claude CLI no detectado en el sistema';
+  }
+
+  if (geminiSelect) {
+    const autoOption = geminiSelect.querySelector('option[value="auto"]');
+    const agyOption = geminiSelect.querySelector('option[value="agy"]');
+    const geminiOption = geminiSelect.querySelector('option[value="gemini"]');
+
+    if (autoOption) autoOption.disabled = !available.agy && !available.gemini;
+    if (agyOption) agyOption.disabled = !available.agy;
+    if (geminiOption) geminiOption.disabled = !available.gemini;
+
+    const anyGeminiAvailable = available.agy || available.gemini;
+    geminiSelect.disabled = !anyGeminiAvailable;
+    geminiSelect.title = anyGeminiAvailable ? 'Backend de Antigravity / Gemini' : 'Ni Antigravity (agy) ni Gemini CLI detectados';
+  }
+}
+
 function renderComposer({ animateProvider = false } = {}) {
-  const { busy, provider, claudeModel } = state.chat;
+  const { busy, provider, claudeModel, geminiCli } = state.chat;
   aiEl.dataset.chatBusy = String(busy);
   aiEl.dataset.provider = provider;
   form.dataset.busy = String(busy);
@@ -300,7 +328,13 @@ function renderComposer({ animateProvider = false } = {}) {
   });
   moveProviderIndicator(animateProvider && isChatVisible());
 
-  if (modelSelect.value !== claudeModel) modelSelect.value = claudeModel;
+  updateModelAvailability();
+  if (claudeSelect && claudeSelect.value !== (claudeModel || 'sonnet')) {
+    claudeSelect.value = claudeModel || 'sonnet';
+  }
+  if (geminiSelect && geminiSelect.value !== (geminiCli || 'auto')) {
+    geminiSelect.value = geminiCli || 'auto';
+  }
   const hasMessages = state.chat.messages.length > 0;
   empty.hidden = hasMessages;
   newButton.disabled = !hasMessages && !busy;
@@ -333,6 +367,9 @@ export function loadChat(initial) {
   if (!initial) return;
   state.chat.provider = initial.provider || state.chat.provider;
   state.chat.claudeModel = initial.claudeModel || state.chat.claudeModel;
+  state.chat.geminiCli = initial.geminiCli || state.chat.geminiCli || 'auto';
+  state.chat.geminiModel = initial.geminiModel ?? state.chat.geminiModel ?? '';
+  if (initial.available) state.chat.available = initial.available;
   onClear();
   for (const message of initial.messages || []) onUpdate({ message, busy: initial.busy });
   renderComposer();
@@ -343,6 +380,8 @@ export function applyChatSettings() {
   if (state.chat.busy) return;
   state.chat.provider = state.settings.chatProvider || state.chat.provider;
   state.chat.claudeModel = state.settings.claudeModel || state.chat.claudeModel;
+  state.chat.geminiCli = state.settings.geminiCli || state.chat.geminiCli || 'auto';
+  state.chat.geminiModel = state.settings.geminiModel ?? state.chat.geminiModel ?? '';
   renderComposer();
 }
 
@@ -369,7 +408,12 @@ async function submit() {
   if (!text) return;
   let result;
   try {
-    result = await window.notch.chat.send(text, { provider: state.chat.provider, claudeModel: state.chat.claudeModel });
+    result = await window.notch.chat.send(text, {
+      provider: state.chat.provider,
+      claudeModel: state.chat.claudeModel,
+      geminiCli: state.chat.geminiCli,
+      geminiModel: state.chat.geminiModel,
+    });
   } catch {
     result = { ok: false };
   }
@@ -429,8 +473,12 @@ export function initChat() {
       input.setSelectionRange(promptText.length, promptText.length);
     });
   });
-  modelSelect.addEventListener('change', () => {
-    state.chat.claudeModel = modelSelect.value;
+  claudeSelect?.addEventListener('change', () => {
+    state.chat.claudeModel = claudeSelect.value;
+    renderComposer();
+  });
+  geminiSelect?.addEventListener('change', () => {
+    state.chat.geminiCli = geminiSelect.value;
     renderComposer();
   });
   newButton.addEventListener('click', () => {

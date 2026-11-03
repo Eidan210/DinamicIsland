@@ -648,6 +648,8 @@
           <!-- ===================== IA: sesiones en vivo y chat ===================== -->
           <section class="view" data-view="ai" role="tabpanel" aria-label="IA">
             <div class="ai" id="ai" data-mode="sessions" data-provider="gemini">
+              <!-- Fondo ambiental sutil del chat de IA (R3): manchas difusas aceleradas por GPU -->
+              <div class="ai-backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
               <header class="ai-head">
                 <div class="segmented" id="ai-modes" role="tablist" aria-label="Sesiones o chat">
                   <span class="segmented-indicator" id="ai-mode-indicator" aria-hidden="true"></span>
@@ -689,12 +691,21 @@
                       <span>Ambos</span>
                     </button>
                   </div>
-                  <div class="chat-model-wrap">
-                    <select class="chat-model" id="chat-model" aria-label="Modelo de Claude">
-                      <option value="opus">Opus</option>
+                  <!-- Selector de modelos de Claude -->
+                  <div class="chat-model-wrap" id="chat-model-claude-wrap">
+                    <select class="chat-model" id="chat-model" name="chat-model-claude" aria-label="Modelo de Claude">
                       <option value="sonnet">Sonnet</option>
+                      <option value="opus">Opus</option>
                       <option value="haiku">Haiku</option>
-                      <option value="fable">Fable</option>
+                    </select>
+                    <svg class="chat-model-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chevron"></use></svg>
+                  </div>
+                  <!-- Selector de backend de Antigravity / Gemini CLI -->
+                  <div class="chat-model-wrap" id="chat-model-gemini-wrap">
+                    <select class="chat-model" id="chat-model-gemini" aria-label="Backend de Antigravity / Gemini">
+                      <option value="auto">Auto (agy / gemini)</option>
+                      <option value="agy">Antigravity (agy)</option>
+                      <option value="gemini">Gemini CLI</option>
                     </select>
                     <svg class="chat-model-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chevron"></use></svg>
                   </div>

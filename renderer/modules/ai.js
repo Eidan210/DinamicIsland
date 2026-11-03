@@ -19,7 +19,7 @@ import { state } from './state.js';
 import { getActivities, onShapeChange, updateShape } from './island.js';
 import { makeBeatSpinner } from './beat.js';
 import { onPanelChange } from './panel.js';
-import { getCurrentTab, onTabChange } from './tabs.js';
+import { getCurrentTab, onTabChange, syncTallState } from './tabs.js';
 import { focusChatInput, syncChatVisibility } from './chat.js';
 
 const DONE_MS = 6000; // al terminar, la isla enseña "Hecho" estos milisegundos
@@ -199,7 +199,10 @@ function renderPage({ animateMode = false } = {}) {
   const previousMode = aiEl.dataset.mode;
   const modeChanged = previousMode !== effective;
 
-  if (modeChanged) aiEl.dataset.mode = effective;
+  if (modeChanged) {
+    aiEl.dataset.mode = effective;
+    syncTallState();
+  }
   modeButtons.forEach((item) => {
     const active = item.dataset.mode === effective;
     item.classList.toggle('is-active', active);

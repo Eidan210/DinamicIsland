@@ -21,11 +21,11 @@ const music = require('./music');
 // transparentes en Windows produce parpadeos.
 // ⚠️ Si cambias PANEL_* o TOP_GAP, cambia también las variables de renderer/styles.css.
 const PANEL_WIDTH = 720;
-const PANEL_HEIGHT = 260;
+const PANEL_HEIGHT = 360;
 const TOP_GAP = 8; // separación entre el borde de arriba de la pantalla y el notch
 const SHADOW_MARGIN = 50; // espacio extra alrededor para que la sombra no se corte
 const WINDOW_WIDTH = PANEL_WIDTH + SHADOW_MARGIN * 2; // 820 px
-const WINDOW_HEIGHT = TOP_GAP + PANEL_HEIGHT + SHADOW_MARGIN; // 318 px
+const WINDOW_HEIGHT = TOP_GAP + PANEL_HEIGHT + SHADOW_MARGIN; // 418 px
 
 /** Calcula dónde va la ventana: centrada arriba del monitor PRINCIPAL. */
 function getWindowBounds() {

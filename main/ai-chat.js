@@ -32,6 +32,7 @@ const { saveSetting } = require('./config');
 const { parseClaudeLine, parseGeminiLine, parseAgyLine, parseAgyError } = require('./ai-chat-parse');
 
 const CLAUDE_MODELS = ['opus', 'sonnet', 'haiku', 'fable'];
+const GEMINI_CLI_OPTIONS = ['auto', 'agy', 'gemini'];
 const PROVIDERS = ['gemini', 'claude', 'both'];
 const MAX_MESSAGE_CHARS = 8000; // lo que puedes escribir en un mensaje
 const MAX_HISTORY_CHARS = 12000; // la conversación que mandamos (lo más viejo se recorta)
@@ -135,12 +136,41 @@ function killTree(child) {
 // La conversación
 // -----------------------------------------------------------------------------
 
+let cachedAvailability = { claude: true, agy: true, gemini: true };
+
+// Comprueba la disponibilidad de ejecutables en segundo plano
+function refreshAvailability() {
+  Promise.all([findExecutable('claude'), findExecutable('agy'), findExecutable('gemini')])
+    .then(([claudeExe, agyExe, geminiExe]) => {
+      cachedAvailability = {
+        claude: Boolean(claudeExe),
+        agy: Boolean(agyExe && !agyExe.isCmd),
+        gemini: Boolean(geminiExe),
+      };
+    })
+    .catch(() => {});
+}
+refreshAvailability();
+
 function getChatState() {
+  const claudeOverride = process.env.NOTCH_CLAUDE_CMD;
+  const agyOverride = process.env.NOTCH_AGY_CMD;
+  const geminiOverride = process.env.NOTCH_GEMINI_CMD;
+
+  const available = {
+    claude: claudeOverride !== undefined ? Boolean(claudeOverride) : cachedAvailability.claude,
+    agy: agyOverride !== undefined ? Boolean(agyOverride) : cachedAvailability.agy,
+    gemini: geminiOverride !== undefined ? Boolean(geminiOverride) : cachedAvailability.gemini,
+  };
+
   return {
     messages: history.map((message) => ({ ...message })),
     busy: running.size > 0,
     provider: state.settings.chatProvider,
     claudeModel: state.settings.claudeModel,
+    geminiCli: state.settings.geminiCli || 'auto',
+    geminiModel: state.settings.geminiModel || '',
+    available,
   };
 }
 
@@ -188,7 +218,9 @@ function sendChat(text, options = {}) {
 
   const provider = PROVIDERS.includes(options.provider) ? options.provider : state.settings.chatProvider;
   const claudeModel = CLAUDE_MODELS.includes(options.claudeModel) ? options.claudeModel : state.settings.claudeModel;
-  rememberPrefs(provider, claudeModel);
+  const geminiCli = GEMINI_CLI_OPTIONS.includes(options.geminiCli) ? options.geminiCli : state.settings.geminiCli;
+  const geminiModel = typeof options.geminiModel === 'string' ? options.geminiModel : state.settings.geminiModel;
+  rememberPrefs(provider, claudeModel, geminiCli, geminiModel);
 
   const userMessage = { id: `m${nextId++}`, role: 'user', text: message, status: 'done' };
   history.push(userMessage);
@@ -201,7 +233,7 @@ function sendChat(text, options = {}) {
       role: 'assistant',
       provider: target,
       cli: target === 'claude' ? 'claude' : '',
-      model: target === 'claude' ? claudeModel : state.settings.geminiModel,
+      model: target === 'claude' ? claudeModel : (geminiModel || state.settings.geminiModel),
       text: '',
       status: 'streaming',
       group: userMessage.id, // con "Ambos", las dos respuestas van juntas
@@ -210,7 +242,7 @@ function sendChat(text, options = {}) {
     running.set(reply.id, { child: null, cancelled: false });
     emitMessage(reply, { now: true });
     const prompt = buildPrompt(target);
-    const job = target === 'claude' ? runClaude(reply, prompt, claudeModel) : runGemini(reply, prompt);
+    const job = target === 'claude' ? runClaude(reply, prompt, claudeModel) : runGemini(reply, prompt, { cli: geminiCli, model: geminiModel });
     job
       .catch((error) => {
         reply.status = 'error';
@@ -226,14 +258,22 @@ function sendChat(text, options = {}) {
 }
 
 /** Recuerda lo que elegiste en el selector (se guarda en settings.json). */
-function rememberPrefs(provider, claudeModel) {
-  if (provider !== state.settings.chatProvider) {
+function rememberPrefs(provider, claudeModel, geminiCli, geminiModel) {
+  if (provider && provider !== state.settings.chatProvider) {
     state.settings.chatProvider = provider;
     saveSetting('chatProvider', provider);
   }
-  if (claudeModel !== state.settings.claudeModel) {
+  if (claudeModel && claudeModel !== state.settings.claudeModel) {
     state.settings.claudeModel = claudeModel;
     saveSetting('claudeModel', claudeModel);
+  }
+  if (geminiCli && geminiCli !== state.settings.geminiCli) {
+    state.settings.geminiCli = geminiCli;
+    saveSetting('geminiCli', geminiCli);
+  }
+  if (typeof geminiModel === 'string' && geminiModel !== state.settings.geminiModel) {
+    state.settings.geminiModel = geminiModel;
+    saveSetting('geminiModel', geminiModel);
   }
 }
 
@@ -243,6 +283,7 @@ function cancelChat() {
     job.cancelled = true;
     killTree(job.child);
   }
+  running.clear();
 }
 
 /** "Nueva conversación": se olvida todo. */
@@ -392,8 +433,9 @@ async function runClaude(reply, prompt, model) {
 }
 
 /** Gemini: Antigravity (agy) o Gemini CLI, según "geminiCli" (auto = agy y, si falla, Gemini CLI). */
-async function runGemini(reply, prompt) {
-  const choice = state.settings.geminiCli;
+async function runGemini(reply, prompt, options = {}) {
+  const choice = options.cli || state.settings.geminiCli;
+  const model = typeof options.model === 'string' ? options.model : state.settings.geminiModel;
   const fullPrompt = `${SYSTEM_PROMPT}\n\n${prompt}`;
   const agy = choice !== 'gemini' ? await findExecutable('agy') : null;
   // agy recibe el texto como argumento: solo si es un .exe (sin pasar por cmd.exe).
@@ -401,7 +443,7 @@ async function runGemini(reply, prompt) {
     reply.cli = 'agy';
     emitMessage(reply);
     const args = ['--output-format', 'stream-json', '--disable-slash-commands'];
-    if (state.settings.geminiModel) args.push('--model', state.settings.geminiModel);
+    if (model) args.push('--model', model);
     args.push(`-p=${fullPrompt}`);
     const result = await runProcess(reply, agy, args, { parseLine: parseAgyLine, label: 'Antigravity' });
     if (result.ok || result.cancelled || result.gotText || choice === 'agy') {
@@ -427,7 +469,8 @@ async function runGemini(reply, prompt) {
   reply.text = '';
   emitMessage(reply);
   const args = ['--output-format', 'stream-json'];
-  if (state.settings.geminiModel) args.push('-m', state.settings.geminiModel);
+  const validGeminiModel = model && model !== 'auto' && model !== 'gemini-2.0' && /^[a-zA-Z0-9_.-]+$/.test(model);
+  if (validGeminiModel) args.push('-m', model);
   const result = await runProcess(reply, gemini, args, { stdin: fullPrompt, parseLine: parseGeminiLine, label: 'Gemini CLI' });
   applyResult(reply, result);
 }
@@ -445,4 +488,4 @@ function stopChat() {
   cancelChat();
 }
 
-module.exports = { getChatDir, getChatState, sendChat, cancelChat, clearChat, copyMessage, stopChat, CLAUDE_MODELS };
+module.exports = { getChatDir, getChatState, sendChat, cancelChat, clearChat, copyMessage, stopChat, CLAUDE_MODELS, GEMINI_CLI_OPTIONS };
