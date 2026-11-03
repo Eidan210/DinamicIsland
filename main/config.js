@@ -86,7 +86,7 @@ const DEFAULT_SETTINGS = {
   weatherLat: 7.1193,
   weatherLon: -73.1227,
   // Fase 14: IA rápida (estilo Sentient OS)
-  aiShortcut: 'Control+Alt+Space',
+  aiShortcut: 'Control+Alt+I',
   aiActiveAppChip: false,
   aiQuickReplyRightCtrl: false,
 };

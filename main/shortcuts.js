@@ -43,7 +43,15 @@ function registerShortcuts() {
   // Fase 14: Atajo global de IA rápida
   if (state.settings.aiShortcut) {
     const aiQuick = require('./ai-quick');
-    if (!tryRegister(state.settings.aiShortcut, () => aiQuick.toggleAiQuick())) failed.push(state.settings.aiShortcut);
+    let ok = tryRegister(state.settings.aiShortcut, () => aiQuick.toggleAiQuick());
+    if (!ok) {
+      const alt = state.settings.aiShortcut === 'Control+Alt+Space' ? 'Control+Alt+I' : 'Control+Alt+Space';
+      if (tryRegister(alt, () => aiQuick.toggleAiQuick())) {
+        console.log(`[atajo] ${state.settings.aiShortcut} estaba ocupado por otra app; usando ${alt} como alternativa.`);
+        ok = true;
+      }
+    }
+    if (!ok) failed.push(state.settings.aiShortcut);
   }
 
   for (const page of PAGES) {

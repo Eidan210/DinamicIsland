@@ -5,7 +5,7 @@
 //  el envío al chat de IA, el botón de copia y el pegado nativo en la app anterior.
 // =============================================================================
 
-import { $ } from '../lib/dom.js';
+import { $ } from './utils.js';
 import { state } from './state.js';
 import { updateShape } from './island.js';
 import { triggerLight, clearLight } from './light.js';

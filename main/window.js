@@ -99,6 +99,12 @@ function createWindow() {
     sendToRenderer('notch:expanded', state.isExpanded);
   });
 
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level >= 2) {
+      console.warn(`[renderer] ${message} (${sourceId}:${line})`);
+    }
+  });
+
   // Clic fuera del panel (en otra ventana, el escritorio, el otro monitor...)
   // = nuestra ventana pierde el foco → cerramos el panel. Salvo mientras está
   // abierta la ventana de elegir archivos (la bandeja): esa se lleva el foco.

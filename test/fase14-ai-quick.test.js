@@ -13,16 +13,16 @@ test('Fase 14 — IA Rápida (estilo Sentient OS)', async (t) => {
   await t.test('Ajustes de configuración (main/config.js)', () => {
     const { DEFAULT_SETTINGS, validateSettings } = require('../main/config');
 
-    assert.equal(DEFAULT_SETTINGS.aiShortcut, 'Control+Alt+Space');
+    assert.equal(DEFAULT_SETTINGS.aiShortcut, 'Control+Alt+I');
     assert.equal(DEFAULT_SETTINGS.aiActiveAppChip, false);
     assert.equal(DEFAULT_SETTINGS.aiQuickReplyRightCtrl, false);
 
     const validated = validateSettings({
-      aiShortcut: 'Control+Alt+Space',
+      aiShortcut: 'Control+Alt+I',
       aiActiveAppChip: true,
       aiQuickReplyRightCtrl: true,
     });
-    assert.equal(validated.aiShortcut, 'Control+Alt+Space');
+    assert.equal(validated.aiShortcut, 'Control+Alt+I');
     assert.equal(validated.aiActiveAppChip, true);
     assert.equal(validated.aiQuickReplyRightCtrl, true);
 
@@ -31,7 +31,7 @@ test('Fase 14 — IA Rápida (estilo Sentient OS)', async (t) => {
       aiActiveAppChip: 'yes',
       aiQuickReplyRightCtrl: 1,
     });
-    assert.equal(fallback.aiShortcut, 'Control+Alt+Space');
+    assert.equal(fallback.aiShortcut, 'Control+Alt+I');
     assert.equal(fallback.aiActiveAppChip, false);
     assert.equal(fallback.aiQuickReplyRightCtrl, false);
   });
