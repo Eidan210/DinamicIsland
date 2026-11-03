@@ -202,6 +202,13 @@ async function init() {
   window.addEventListener('copy', () => testLight('copy'), true);
   window.addEventListener('cut', () => testLight('cut'), true);
   window.addEventListener('paste', () => testLight('paste'), true);
+
+  // Escucha de eventos de luz disparados desde backend (Fase 12: tareas, agua, etc.)
+  if (window.notch.light?.onTrigger) {
+    window.notch.light.onTrigger((payload) => {
+      if (payload?.event) testLight(payload.event);
+    });
+  }
 }
 
 init();

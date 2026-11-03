@@ -57,6 +57,10 @@ const { registerIpcHandlers } = require('./main/ipc');
 const systemTray = require('./main/system-tray');
 const loginItem = require('./main/login-item');
 const keyboard = require('./main/keyboard');
+const tasks = require('./main/tasks');
+const water = require('./main/water');
+const schedule = require('./main/schedule');
+const focusStats = require('./main/focus-stats');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
 function shortcutsKey(settings) {
@@ -132,6 +136,10 @@ if (!hasSingleInstanceLock) {
     config.watchConfigFolder(onConfigChanged);
     helper.startHelper();
     keyboard.initKeyboard();
+    tasks.initTasks();
+    water.initWater();
+    schedule.initSchedule();
+    focusStats.initFocusStats();
     helper.onHelperMessage('fullscreen', (msg) => {
       notchWindow.setFullscreenHidden(Boolean(msg && msg.active));
     });

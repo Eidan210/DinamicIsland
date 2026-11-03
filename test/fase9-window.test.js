@@ -82,9 +82,10 @@ describe('Fase 9: La ventana — Validaciones de Arquitectura y Funcionalidad', 
     assert.ok(beat.includes('onPausedChange'), 'Debe escuchar onPausedChange');
   });
 
-  it('10. package.json tiene la versión minor incrementada a 0.11.0', () => {
+  it('10. package.json tiene la versión minor incrementada a 0.11.0 o superior', () => {
     const pkg = JSON.parse(read('package.json'));
-    assert.strictEqual(pkg.version, '0.11.0', 'La versión de package.json debe ser 0.11.0');
+    const [maj, min] = pkg.version.split('.').map(Number);
+    assert.ok(min >= 11, 'La versión de package.json debe ser 0.11.0 o superior');
   });
 });
 

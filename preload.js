@@ -251,6 +251,48 @@ contextBridge.exposeInMainWorld('notch', {
   /** Tras responder en la isla con el panel cerrado: devolver el foco a tu app. */
   releaseFocus: () => ipcRenderer.send('notch:release-focus'),
 
+  // ---------- Tareas (Fase 12) ----------
+  tasks: {
+    get: () => ipcRenderer.invoke('tasks:get'),
+    add: (data) => ipcRenderer.invoke('tasks:add', data),
+    toggle: (id) => ipcRenderer.invoke('tasks:toggle', String(id)),
+    remove: (id) => ipcRenderer.invoke('tasks:remove', String(id)),
+    onChange: (callback) => subscribe('tasks:state', callback),
+  },
+
+  // ---------- Agua / Hidratación (Fase 12) ----------
+  water: {
+    get: () => ipcRenderer.invoke('water:get'),
+    drink: (ml) => ipcRenderer.invoke('water:drink', ml),
+    onChange: (callback) => subscribe('water:state', callback),
+  },
+
+  // ---------- Horario (Fase 12) ----------
+  schedule: {
+    get: () => ipcRenderer.invoke('schedule:get'),
+    add: (data) => ipcRenderer.invoke('schedule:add', data),
+    remove: (id) => ipcRenderer.invoke('schedule:remove', String(id)),
+    toggle: (id) => ipcRenderer.invoke('schedule:toggle', String(id)),
+    onChange: (callback) => subscribe('schedule:state', callback),
+  },
+
+  // ---------- Focus Stats (Fase 12) ----------
+  focusStats: {
+    get: () => ipcRenderer.invoke('focus:get-stats'),
+    onChange: (callback) => subscribe('focus:stats', callback),
+  },
+
+  // ---------- Motor de luz (Fase 10 / 12) ----------
+  light: {
+    onTrigger: (callback) => {
+      const off1 = subscribe('light:trigger', (event) => callback(typeof event === 'string' ? { event } : event));
+      const off2 = subscribe('light:urgentTask', (data) => callback({ event: 'urgentTask', data }));
+      const off3 = subscribe('light:waterReminder', (data) => callback({ event: 'waterReminder', data }));
+      const off4 = subscribe('light:celebrateWater', (data) => callback({ event: 'celebrateWater', data }));
+      return () => { off1?.(); off2?.(); off3?.(); off4?.(); };
+    },
+  },
+
   // ---------- Teclado (Fase 11) ----------
   keyboard: {
     onEvent: (callback) => subscribe('keyboard:event', callback),

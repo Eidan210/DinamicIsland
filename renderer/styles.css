@@ -5161,7 +5161,65 @@ code {
   animation-delay: calc(80ms + var(--i, 0) * 40ms);
 }
 
-/* ---------- 11. Nota rápida ---------- */
+/* ---------- 11. Nota rápida y Tareas (Fase 12) ---------- */
+.note-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 2px 2px 6px;
+}
+
+.note-page [hidden] {
+  display: none !important;
+}
+
+.note-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 30px;
+}
+
+.tasks-urgent-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #F43F5E;
+  background: rgba(244, 63, 94, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.25);
+  animation: pop-in 260ms var(--spring-pop);
+}
+
+.note-panes {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.note-pane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.note-page[data-segment="note"] .note-pane[data-note-pane="tasks"],
+.note-page[data-segment="tasks"] .note-pane[data-note-pane="note"] {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .note {
   display: flex;
   flex-direction: column;
@@ -5232,6 +5290,235 @@ code {
 
 .note-count {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tareas (Fase 12) ---------- */
+.tasks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 0 4px 6px;
+}
+
+.tasks-composer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 8px;
+  background: rgba(var(--ink), 0.045);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  border-radius: 14px;
+  transition: background-color 200ms ease, box-shadow 200ms ease;
+}
+
+.tasks-composer:focus-within {
+  background: rgba(var(--ink), 0.06);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 0 3px var(--accent-soft);
+}
+
+.tasks-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 4px;
+}
+
+.tasks-input::placeholder {
+  color: var(--text-faint);
+}
+
+.tasks-time-input {
+  flex: none;
+  background: rgba(var(--ink), 0.05);
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  padding: 3px 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tasks-urgent-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(var(--ink), 0.05);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tasks-urgent-btn:hover {
+  background: rgba(var(--ink), 0.08);
+  color: var(--text);
+}
+
+.tasks-urgent-btn[aria-pressed="true"] {
+  background: rgba(244, 63, 94, 0.18);
+  color: #F43F5E;
+  box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.35);
+}
+
+.tasks-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 2px;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(var(--ink), 0.035);
+  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.04);
+  transition: background-color 150ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.task-item:hover {
+  background: rgba(var(--ink), 0.06);
+}
+
+.task-item.is-urgent {
+  box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.task-item.is-completed {
+  opacity: 0.55;
+}
+
+.task-item.is-completed .task-title {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
+.task-checkbox {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border: 1.5px solid rgba(var(--ink), 0.28);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 140ms ease;
+}
+
+.task-checkbox:hover {
+  border-color: var(--accent);
+  background: rgba(var(--ink), 0.08);
+}
+
+.task-item.is-urgent .task-checkbox {
+  border-color: #F43F5E;
+}
+
+.task-item.is-completed .task-checkbox {
+  background: #22C55E;
+  border-color: #22C55E;
+}
+
+.task-checkbox svg {
+  width: 12px;
+  height: 12px;
+}
+
+.task-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: text;
+}
+
+.task-due {
+  flex: none;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(var(--ink), 0.06);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-item.is-urgent .task-due {
+  background: rgba(244, 63, 94, 0.15);
+  color: #F43F5E;
+}
+
+.task-delete {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.task-item:hover .task-delete {
+  opacity: 1;
+}
+
+.task-delete:hover {
+  color: var(--danger);
+}
+
+.task-delete svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tasks-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 12px;
+  color: var(--text-faint);
+  font-size: 12.5px;
 }
 
 /* ---------- 11b. IA: sesiones en vivo y chat ---------- */

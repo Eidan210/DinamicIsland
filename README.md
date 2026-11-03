@@ -596,3 +596,12 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **Prefiero los ojos de siempre.** Pon `"clawd": false` en `settings.json`.
 - **Clawd se duerme demasiado pronto (o tarde).** Cambia `clawdSleepMinutes`. Viendo una película sin tocar el ratón también se duerme; si suena música, baila en vez de dormir.
 - **No quiero que se despida (o a otra hora).** Pon `"clawdByeTime": ""` o la hora que quieras, p. ej. `"20:30"`.
+
+---
+
+## Fase 12: Tareas, Agua y Horario
+
+- **Tareas en la página Nota (Ctrl+Alt+6):** Nuevo selector segmentado para alternar entre tu nota rápida de siempre y tu lista de tareas. Añade tareas pulsando Enter, márcalas como urgentes (rosa `#F43F5E`) o asígnales hora límite. Las tareas completadas se tachan al final y se purgan solas cada nuevo día en `%APPDATA%\Notch\tareas.json`.
+- **Recordatorio inteligente de agua:** Notch te recuerda hidratarte cada hora (solo entre las 7:00 y las 22:00) con aviso en la isla y luz celeste. Se recalcula solo al suspender y reanudar Windows sin gastar CPU.
+- **Horario semanal:** Programación de eventos recurrentes en `%APPDATA%\Notch\eventos.json` con temporizadores exactos.
+- **Historial de Focus:** Acumula minutos diarios de concentración en `%APPDATA%\Notch\focus.json` y premia 4 bloques de Pomodoro con aviso de descanso largo de 15 minutos.

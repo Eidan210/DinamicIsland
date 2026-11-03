@@ -27,6 +27,10 @@ const idle = require('./idle');
 const home = require('./home');
 const clipboardHistory = require('./clipboard');
 const tray = require('./tray');
+const tasks = require('./tasks');
+const water = require('./water');
+const schedule = require('./schedule');
+const focusStats = require('./focus-stats');
 const { clipboard } = require('electron');
 
 /** Una lista de textos de la página (ids, rutas...), revisada. */
@@ -116,6 +120,26 @@ function registerIpcHandlers() {
   onRendererRequest('chat:copy', (id) => aiChat.copyMessage(String(id)));
   onRendererMessage('chat:cancel', () => aiChat.cancelChat());
   onRendererMessage('chat:clear', () => aiChat.clearChat());
+
+  // Tareas (Fase 12)
+  onRendererRequest('tasks:get', () => tasks.getTasksState());
+  onRendererRequest('tasks:add', (data) => tasks.addTask(data || {}));
+  onRendererRequest('tasks:toggle', (id) => tasks.toggleTask(String(id)));
+  onRendererRequest('tasks:remove', (id) => tasks.removeTask(String(id)));
+
+  // Agua / Hidratación (Fase 12)
+  onRendererRequest('water:get', () => water.getWaterState());
+  onRendererRequest('water:drink', (ml) => water.drinkWater(ml));
+
+  // Horario (Fase 12)
+  onRendererRequest('schedule:get', () => schedule.getScheduleState());
+  onRendererRequest('schedule:add', (data) => schedule.addEvent(data || {}));
+  onRendererRequest('schedule:remove', (id) => schedule.removeEvent(String(id)));
+  onRendererRequest('schedule:toggle', (id) => schedule.toggleEvent(String(id)));
+
+  // Focus Stats (Fase 12)
+  onRendererRequest('focus:get-stats', () => focusStats.getFocusStats());
+
 }
 
 module.exports = { registerIpcHandlers };

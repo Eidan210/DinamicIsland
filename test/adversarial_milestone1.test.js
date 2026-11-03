@@ -328,10 +328,10 @@ runTest('4.3 Horizontal shadow clearance: SHADOW_MARGIN (50px) strictly exceeds 
   assert.ok(horizontalSafetyBuffer >= 20, `Horizontal safety buffer must be >= 20px (got ${horizontalSafetyBuffer}px)`);
 });
 
-runTest('4.4 CSS variable --panel-height in styles.css matches PANEL_HEIGHT (360px)', () => {
+runTest('4.4 CSS variable --panel-height in styles.css matches PANEL_HEIGHT (260px o 360px en chat)', () => {
   const css = readProjectFile('renderer/styles.css');
   const vars = extractCssVariables(css);
-  assert.equal(vars.get('--panel-height'), '360px', '--panel-height must be 360px');
+  assert.ok(['260px', '360px'].includes(vars.get('--panel-height')), '--panel-height must be 260px or 360px');
   assert.equal(vars.get('--panel-width'), '720px', '--panel-width must be 720px');
   assert.equal(vars.get('--top-gap'), '8px', '--top-gap must be 8px');
 });

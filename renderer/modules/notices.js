@@ -23,7 +23,7 @@ const OPEN_LIST_DELAY = 160; // ms tras abrir el panel desde un aviso
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Icono de cada tipo de aviso (están en index.html, al principio)
-const KIND_ICONS = { pomodoro: 'i-timer', battery: 'i-battery', error: 'i-warning', keyboard: 'i-keyboard', ai: 'i-claude' };
+const KIND_ICONS = { pomodoro: 'i-timer', battery: 'i-battery', error: 'i-warning', keyboard: 'i-keyboard', ai: 'i-claude', water: 'i-info', task: 'i-check' };
 const TONE_ICONS = { success: 'i-check', warning: 'i-warning', danger: 'i-warning', info: 'i-info' };
 const TONES = ['info', 'success', 'warning', 'danger'];
 

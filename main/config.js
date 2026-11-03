@@ -71,6 +71,12 @@ const DEFAULT_SETTINGS = {
   keyboardCaps: true,
   keyboardShortcuts: true,
   keyboardRightCtrl: true,
+  // Fase 12: Tareas, agua y horario
+  waterTargetMl: 2000,
+  waterCupMl: 250,
+  waterReminderMinutes: 60,
+  focusTargetMinutes: 120,
+  focusLongBreakMinutes: 15,
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -216,6 +222,18 @@ function validateSettings(data) {
   result.keyboardCaps = result.keyboardCaps !== false;
   result.keyboardShortcuts = result.keyboardShortcuts !== false;
   result.keyboardRightCtrl = result.keyboardRightCtrl !== false;
+
+  // Fase 12: Tareas, agua y horario
+  const waterTarget = Math.round(Number(result.waterTargetMl));
+  result.waterTargetMl = Number.isFinite(waterTarget) && waterTarget >= 500 && waterTarget <= 10000 ? waterTarget : DEFAULT_SETTINGS.waterTargetMl;
+  const waterCup = Math.round(Number(result.waterCupMl));
+  result.waterCupMl = Number.isFinite(waterCup) && waterCup >= 50 && waterCup <= 1000 ? waterCup : DEFAULT_SETTINGS.waterCupMl;
+  const waterReminder = Math.round(Number(result.waterReminderMinutes));
+  result.waterReminderMinutes = Number.isFinite(waterReminder) && waterReminder >= 15 && waterReminder <= 240 ? waterReminder : DEFAULT_SETTINGS.waterReminderMinutes;
+  const focusTarget = Math.round(Number(result.focusTargetMinutes));
+  result.focusTargetMinutes = Number.isFinite(focusTarget) && focusTarget >= 15 && focusTarget <= 600 ? focusTarget : DEFAULT_SETTINGS.focusTargetMinutes;
+  const focusLongBreak = Math.round(Number(result.focusLongBreakMinutes));
+  result.focusLongBreakMinutes = Number.isFinite(focusLongBreak) && focusLongBreak >= 5 && focusLongBreak <= 60 ? focusLongBreak : DEFAULT_SETTINGS.focusLongBreakMinutes;
 
   return result;
 }

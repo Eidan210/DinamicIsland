@@ -925,22 +925,93 @@
             </div>
           </section>
 
-          <!-- ===================== NOTA RÁPIDA ===================== -->
-          <section class="view" data-view="note" role="tabpanel" aria-label="Nota">
-            <div class="note" id="note" data-state="idle">
-              <!-- maxlength: igual que MAX_NOTE_CHARS en main/note.js -->
-              <textarea
-                class="note-text"
-                id="note-text"
-                maxlength="200000"
-                spellcheck="false"
-                placeholder="Escribe aquí lo que no quieras olvidar. Se guarda solo."
-                aria-label="Nota rápida"
-              ></textarea>
-              <footer class="note-foot">
-                <span class="note-status" id="note-status"></span>
-                <span class="note-count" id="note-count"></span>
-              </footer>
+          <!-- ===================== NOTA RÁPIDA Y TAREAS ===================== -->
+          <section class="view" data-view="note" role="tabpanel" aria-label="Nota y Tareas">
+            <div class="note-page" id="note-page" data-segment="note">
+
+              <header class="note-head">
+                <div class="segmented" id="note-segments" role="tablist" aria-label="Nota y Tareas">
+                  <span class="segmented-indicator" id="note-segment-indicator" aria-hidden="true"></span>
+                  <button class="segment is-active" type="button" role="tab" aria-selected="true" aria-controls="note-pane-note" data-segment="note">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M13.5 3.5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10" /><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L13 13.4l-3.6.9.9-3.6z" />
+                    </svg>
+                    <span>Nota</span>
+                  </button>
+                  <button class="segment" type="button" role="tab" aria-selected="false" aria-controls="note-pane-tasks" data-segment="tasks">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Tareas</span>
+                    <span class="segment-count" id="tasks-count"></span>
+                  </button>
+                </div>
+                <div class="tasks-urgent-chip" id="tasks-urgent-chip" hidden>Urgente · 0 pendientes</div>
+              </header>
+
+              <div class="note-panes">
+                <!-- Panel 1: Nota rápida -->
+                <div class="note-pane" data-note-pane="note" id="note-pane-note">
+                  <div class="note" id="note" data-state="idle">
+                    <!-- maxlength: igual que MAX_NOTE_CHARS en main/note.js -->
+                    <textarea
+                      class="note-text"
+                      id="note-text"
+                      maxlength="200000"
+                      spellcheck="false"
+                      placeholder="Escribe aquí lo que no quieras olvidar. Se guarda solo."
+                      aria-label="Nota rápida"
+                    ></textarea>
+                    <footer class="note-foot">
+                      <span class="note-status" id="note-status"></span>
+                      <span class="note-count" id="note-count"></span>
+                    </footer>
+                  </div>
+                </div>
+
+                <!-- Panel 2: Tareas -->
+                <div class="note-pane" data-note-pane="tasks" id="note-pane-tasks">
+                  <div class="tasks-container">
+                    <form class="tasks-composer" id="tasks-composer">
+                      <input
+                        type="text"
+                        class="tasks-input"
+                        id="tasks-input"
+                        placeholder="Nueva tarea... (Enter para añadir)"
+                        maxlength="240"
+                        autocomplete="off"
+                        spellcheck="false"
+                      />
+                      <input
+                        type="time"
+                        class="tasks-time-input"
+                        id="tasks-time-input"
+                        title="Hora límite opcional"
+                      />
+                      <button
+                        type="button"
+                        class="tasks-urgent-btn"
+                        id="tasks-urgent-btn"
+                        aria-pressed="false"
+                        title="Marcar como urgente"
+                      >
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                        <span>Urgente</span>
+                      </button>
+                    </form>
+
+                    <div class="tasks-scroll">
+                      <ul class="tasks-list" id="tasks-list"></ul>
+                      <div class="tasks-empty" id="tasks-empty">
+                        <span class="tasks-empty-text">No tienes tareas pendientes</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </section>
 

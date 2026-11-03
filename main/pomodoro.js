@@ -112,6 +112,10 @@ function finishPomodoro() {
 
   sendPomodoroState();
   notifyPomodoroFinished();
+  try {
+    const { recordFocusBlock } = require('./focus-stats');
+    recordFocusBlock(Math.round(pomodoro.durationMs / MINUTE_MS));
+  } catch (e) {}
   // También queda en el centro de avisos (la isla ya lo celebra por su cuenta).
   addNotice({
     kind: 'pomodoro',

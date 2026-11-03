@@ -285,6 +285,13 @@ export const LIGHT_EVENTS = {
     durationMs: 1500,
     spill: true,
   },
+  celebrateWater: {
+    effect: 'sweep',
+    color: '#06B6D4',
+    priority: 'high',
+    durationMs: 2000,
+    spill: true,
+  },
   music: {
     effect: 'border',
     color: 'var(--music-accent, #3dff8f)',
