@@ -392,8 +392,8 @@ img {
 }
 
 .island[data-motion="grow"] {
-  --size-duration: 640ms;
-  --size-easing: var(--spring-bouncy);
+  --size-duration: 480ms;
+  --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .island[data-motion="grow"][data-shape="banner"] {
@@ -402,13 +402,24 @@ img {
 }
 
 .island[data-motion="grow"][data-shape="charging"] {
-  --size-duration: 340ms;
+  --size-duration: 320ms;
   --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .island[data-motion="grow"][data-shape="expanded"] {
-  --size-duration: 740ms;
+  --size-duration: 580ms;
   --size-easing: var(--spring-open);
+}
+
+/* Al encoger hacia píldora o actividad, una transición ágil y suave sin retrasos */
+.island[data-motion="shrink"]:is([data-shape="activity"], [data-shape="pill"]) {
+  --size-duration: 320ms;
+  --size-easing: cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.island[data-motion="shrink"][data-shape="charging"] {
+  --size-duration: 300ms;
+  --size-easing: cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 /* Bar: una línea ultra-fina pegada al borde superior tras inactividad (120x6 px) */
@@ -549,9 +560,19 @@ img {
   translate: -50% 0;
   pointer-events: none;
   transition:
-    opacity 200ms ease,
-    filter 220ms ease,
-    scale 420ms var(--spring-bouncy);
+    opacity 140ms ease,
+    filter 160ms ease,
+    scale 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.island:is([data-shape="activity"], [data-shape="pill"]) .face {
+  opacity: 1;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 200ms ease 40ms,
+    filter 220ms ease 30ms,
+    scale 320ms cubic-bezier(0.16, 1, 0.3, 1) 30ms;
 }
 
 /* --look-x / --look-y los pone eyes.js para que los ojos miren hacia el ratón */
@@ -925,13 +946,13 @@ img {
   align-items: center;
   justify-content: space-between;
   opacity: 0;
-  filter: blur(6px);
+  filter: blur(4px);
   scale: 0.9;
   pointer-events: none;
   transition:
-    opacity 140ms ease,
-    filter 180ms ease,
-    scale 260ms var(--spring-close);
+    opacity 110ms ease-out,
+    filter 130ms ease-out,
+    scale 150ms ease-out;
 }
 
 /* Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca y
@@ -941,9 +962,9 @@ img {
   filter: none;
   scale: 1;
   transition:
-    opacity 260ms ease 110ms,
-    filter 340ms ease 90ms,
-    scale 640ms var(--spring-bouncy) 60ms;
+    opacity 220ms ease 50ms,
+    filter 240ms ease 40ms,
+    scale 340ms cubic-bezier(0.16, 1, 0.3, 1) 40ms;
 }
 
 /* Al arrastrar la isla para cambiar de canción, el contenido sigue al ratón
@@ -959,15 +980,15 @@ img {
 .activity-trailing {
   display: flex;
   align-items: center;
-  transition: translate 480ms var(--spring-pop);
+  transition: translate 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .activity-leading {
-  translate: 16px 0;
+  translate: 0 0;
 }
 
 .activity-trailing {
-  translate: -16px 0;
+  translate: 0 0;
 }
 
 .island[data-shape="activity"] :is(.activity-leading, .activity-trailing) {
@@ -1106,19 +1127,21 @@ img {
 /* Aviso "Ahora suena" */
 .banner {
   position: absolute;
-  inset: 0;
+  inset: 0 16px;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 13px;
   padding: 0 20px 0 12px;
+  color: #fff;
   opacity: 0;
-  filter: blur(6px);
-  scale: 0.9;
+  filter: blur(4px);
+  scale: 0.92;
   pointer-events: none;
   transition:
-    opacity 120ms ease,
-    filter 180ms ease,
-    scale 260ms var(--spring-close);
+    opacity 110ms ease,
+    filter 120ms ease,
+    scale 150ms ease;
 }
 
 .island[data-shape="banner"] .banner {
@@ -1126,9 +1149,9 @@ img {
   filter: none;
   scale: 1;
   transition:
-    opacity 260ms ease 140ms,
-    filter 360ms ease 120ms,
-    scale 680ms var(--spring-bouncy) 80ms;
+    opacity 220ms ease 30ms,
+    filter 260ms ease 20ms,
+    scale 340ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .banner-art-wrap {
@@ -1181,11 +1204,11 @@ img {
 
 /* Entrada del aviso: la carátula "salta" y los textos suben uno tras otro */
 .island[data-shape="banner"] .banner-art-wrap {
-  animation: pop-in 280ms var(--spring-pop) backwards;
+  animation: banner-art-in 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .island[data-shape="banner"] .banner-text > * {
-  animation: rise-in 220ms var(--spring) backwards;
+  animation: rise-in 240ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(1) {
@@ -1193,17 +1216,24 @@ img {
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(2) {
-  animation-delay: 50ms;
+  animation-delay: 35ms;
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(3) {
-  animation-delay: 80ms;
+  animation-delay: 55ms;
+}
+
+@keyframes banner-art-in {
+  from {
+    opacity: 0;
+    scale: 0.82;
+  }
 }
 
 @keyframes rise-in {
   from {
     opacity: 0;
-    translate: 0 8px;
+    translate: 0 6px;
   }
 }
 
@@ -8196,11 +8226,11 @@ code {
   pointer-events: none;
   opacity: 0;
   filter: blur(4px);
-  scale: 0.85;
+  scale: 0.9;
   transition:
-    opacity 140ms ease,
-    filter 180ms ease,
-    scale 260ms var(--spring-close);
+    opacity 110ms ease,
+    filter 120ms ease,
+    scale 150ms ease;
 }
 
 .island[data-shape="charging"] .charging-alert {
@@ -8208,9 +8238,31 @@ code {
   filter: none;
   scale: 1;
   transition:
-    opacity 180ms ease 40ms,
-    filter 200ms ease 20ms,
-    scale 380ms var(--spring-bouncy);
+    opacity 200ms ease 30ms,
+    filter 220ms ease 20ms,
+    scale 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.island[data-shape="charging"] .charging-leading {
+  animation: charging-slide-l 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.island[data-shape="charging"] .charging-trailing {
+  animation: charging-slide-r 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes charging-slide-l {
+  from {
+    opacity: 0;
+    translate: -12px 0;
+  }
+}
+
+@keyframes charging-slide-r {
+  from {
+    opacity: 0;
+    translate: 12px 0;
+  }
 }
 
 .charging-leading {

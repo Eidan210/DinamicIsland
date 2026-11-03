@@ -29,6 +29,7 @@ const statusBattery = $('status-battery');
 const statusBatteryText = $('status-battery-text');
 const chargingPercent = $('charging-percent');
 const chargingBatteryLevel = $('charging-battery-level');
+const chargingLabel = $('charging-label');
 
 let battery = null;
 const warned = { low: false, critical: false }; // para avisar solo una vez de cada
@@ -70,6 +71,7 @@ function renderBattery() {
   setRollingText(statusBatteryText, `${percent}%`, { countDown: !charging });
   if (chargingPercent) chargingPercent.textContent = `${percent}%`;
   if (chargingBatteryLevel) chargingBatteryLevel.setAttribute('width', String(Math.max(2, Math.round(percent * 0.26))));
+  if (chargingLabel) chargingLabel.textContent = 'Conectado';
 }
 
 function checkWarnings() {

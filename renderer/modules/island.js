@@ -32,7 +32,7 @@ const bubbleEls = [...document.querySelectorAll('.bubble')];
 const bubblePomodoro = $('bubble-pomodoro');
 
 // De menor a mayor (al crecer la isla rebota; al encoger, no)
-const SHAPE_ORDER = ['bar', 'mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'drop', 'decision', 'expanded'];
+const SHAPE_ORDER = ['bar', 'mini', 'pill', 'activity', 'volume', 'charging', 'banner', 'alert', 'drop', 'decision', 'expanded'];
 let lastInteractionTime = Date.now();
 let hoverOpenTimer = null;
 let hoverCloseTimer = null;
