@@ -112,7 +112,7 @@ function createWindow() {
     if (state.isExpanded && !IS_DEV && !state.dialogOpen) setExpanded(false);
     if (state.aiQuickOpen && !IS_DEV) {
       const { closeAiQuick } = require('./ai-quick');
-      closeAiQuick();
+      closeAiQuick({ restoreFocus: false });
     }
   });
 
@@ -240,11 +240,14 @@ function togglePage(tabName) {
  */
 function giveFocusBack() {
   const { win } = state;
-  win.setAlwaysOnTop(false);
-  win.blur();
-  // Nivel 'screen-saver': en Windows, el nivel por defecto ('floating') deja
-  // la ventana DEBAJO de la barra de tareas; este la deja por encima de todo.
-  win.setAlwaysOnTop(true, 'screen-saver');
+  if (!win || win.isDestroyed()) return;
+  try {
+    win.setAlwaysOnTop(false);
+    win.blur();
+    win.setAlwaysOnTop(true, 'screen-saver');
+  } catch (err) {
+    console.warn('[window] Error devolviendo el foco:', err.message);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -330,6 +333,7 @@ module.exports = {
   setExpanded,
   toggleExpanded,
   releaseFocus,
+  giveFocusBack,
   openTab,
   togglePage,
   setMouseInteractive,

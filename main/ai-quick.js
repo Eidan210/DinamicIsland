@@ -66,10 +66,17 @@ function closeAiQuick(options = { restoreFocus: true }) {
   sendToRenderer('ai:quick-hide');
 
   if (!state.isExpanded) {
-    win.setIgnoreMouseEvents(true, { forward: true });
-    if (options.restoreFocus) {
-      const { giveFocusBack } = require('./window');
-      giveFocusBack();
+    try {
+      win.setIgnoreMouseEvents(true, { forward: true });
+    } catch {}
+
+    if (options && options.restoreFocus) {
+      try {
+        const { giveFocusBack } = require('./window');
+        if (typeof giveFocusBack === 'function') {
+          giveFocusBack();
+        }
+      } catch {}
     }
   }
 }
