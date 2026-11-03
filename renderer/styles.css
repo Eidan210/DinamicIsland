@@ -293,6 +293,8 @@ img {
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transform-origin: 50% 0;
+  will-change: width, height, border-radius;
+  transform: translateZ(0);
   transition:
     width var(--size-duration) var(--size-easing),
     height var(--size-duration) var(--size-easing),
@@ -399,6 +401,11 @@ img {
 .island[data-motion="grow"][data-shape="banner"] {
   --size-duration: 380ms;
   --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.island[data-motion="shrink"][data-shape="banner"] {
+  --size-duration: 340ms;
+  --size-easing: cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 .island[data-motion="grow"][data-shape="charging"] {
@@ -559,10 +566,11 @@ img {
   align-items: center;
   translate: -50% 0;
   pointer-events: none;
+  transform: translateZ(0);
+  will-change: transform, opacity;
   transition:
-    opacity 140ms ease,
-    filter 160ms ease,
-    scale 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 120ms ease,
+    scale 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .island:is([data-shape="activity"], [data-shape="pill"]) .face {
@@ -615,8 +623,7 @@ img {
 /* En el volumen y en los avisos, los ojos dejan sitio al contenido */
 .island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"], [data-shape="drop"], [data-shape="decision"], [data-shape="charging"]) .face {
   opacity: 0;
-  filter: blur(4px);
-  scale: 0.6;
+  scale: 0.65;
 }
 
 /* Pomodoro en marcha: ojos entrecerrados, "concentrados" */
@@ -946,25 +953,24 @@ img {
   align-items: center;
   justify-content: space-between;
   opacity: 0;
-  filter: blur(4px);
-  scale: 0.9;
+  scale: 0.92;
   pointer-events: none;
+  transform: translateZ(0);
+  will-change: transform, opacity;
   transition:
-    opacity 110ms ease-out,
-    filter 130ms ease-out,
-    scale 150ms ease-out;
+    opacity 100ms ease-out,
+    scale 130ms ease-out;
 }
 
-/* Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca y
-   crece con un muelle (igual en el volumen y los avisos) */
+/* Al cambiar de forma, lo que se va se desvanece ágilmente y lo que llega
+   crece con un muelle suave y limpio a 60 fps */
 .island[data-shape="activity"] .activity {
   opacity: 1;
-  filter: none;
   scale: 1;
+  pointer-events: auto;
   transition:
-    opacity 220ms ease 50ms,
-    filter 240ms ease 40ms,
-    scale 340ms cubic-bezier(0.16, 1, 0.3, 1) 40ms;
+    opacity 180ms ease 40ms,
+    scale 280ms cubic-bezier(0.16, 1, 0.3, 1) 30ms;
 }
 
 /* Al arrastrar la isla para cambiar de canción, el contenido sigue al ratón
@@ -1135,23 +1141,22 @@ img {
   padding: 0 20px 0 12px;
   color: #fff;
   opacity: 0;
-  filter: blur(4px);
-  scale: 0.92;
+  scale: 0.95;
   pointer-events: none;
+  transform: translateZ(0);
+  will-change: transform, opacity;
   transition:
-    opacity 110ms ease,
-    filter 120ms ease,
-    scale 150ms ease;
+    opacity 100ms ease,
+    scale 120ms ease;
 }
 
 .island[data-shape="banner"] .banner {
   opacity: 1;
-  filter: none;
   scale: 1;
+  pointer-events: auto;
   transition:
-    opacity 220ms ease 30ms,
-    filter 260ms ease 20ms,
-    scale 340ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 180ms ease,
+    scale 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .banner-art-wrap {
@@ -1204,11 +1209,13 @@ img {
 
 /* Entrada del aviso: la carátula "salta" y los textos suben uno tras otro */
 .island[data-shape="banner"] .banner-art-wrap {
-  animation: banner-art-in 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  will-change: transform, opacity;
+  animation: banner-art-in 240ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .island[data-shape="banner"] .banner-text > * {
-  animation: rise-in 240ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  will-change: transform, opacity;
+  animation: rise-in 200ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(1) {
@@ -1220,20 +1227,20 @@ img {
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(3) {
-  animation-delay: 55ms;
+  animation-delay: 50ms;
 }
 
 @keyframes banner-art-in {
   from {
     opacity: 0;
-    scale: 0.82;
+    scale: 0.91;
   }
 }
 
 @keyframes rise-in {
   from {
     opacity: 0;
-    translate: 0 6px;
+    translate: 0 4px;
   }
 }
 
@@ -8225,22 +8232,21 @@ code {
   justify-content: space-between;
   pointer-events: none;
   opacity: 0;
-  filter: blur(4px);
-  scale: 0.9;
+  scale: 0.92;
+  transform: translateZ(0);
+  will-change: transform, opacity;
   transition:
-    opacity 110ms ease,
-    filter 120ms ease,
-    scale 150ms ease;
+    opacity 100ms ease,
+    scale 130ms ease;
 }
 
 .island[data-shape="charging"] .charging-alert {
   opacity: 1;
-  filter: none;
   scale: 1;
+  pointer-events: auto;
   transition:
-    opacity 200ms ease 30ms,
-    filter 220ms ease 20ms,
-    scale 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 180ms ease,
+    scale 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .island[data-shape="charging"] .charging-leading {

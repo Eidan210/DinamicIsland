@@ -284,10 +284,18 @@ function updateMusicColors() {
   const image = new Image();
   image.onload = () => {
     if (art !== mediaArt) return; // mientras cargaba, ya cambió la carátula
-    const palette = readPalette(image);
-    if (!palette) return;
-    root.style.setProperty('--music-accent', palette.accent);
-    palette.art.forEach((color, index) => root.style.setProperty(`--art-${index + 1}`, color));
+    const compute = () => {
+      if (art !== mediaArt) return;
+      const palette = readPalette(image);
+      if (!palette) return;
+      root.style.setProperty('--music-accent', palette.accent);
+      palette.art.forEach((color, index) => root.style.setProperty(`--art-${index + 1}`, color));
+    };
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(compute, { timeout: 180 });
+    } else {
+      setTimeout(compute, 60);
+    }
   };
   image.src = art;
 }
