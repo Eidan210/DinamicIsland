@@ -51,8 +51,8 @@ const DEFAULT_SETTINGS = {
   aiPort: 47823, // su puerto (si lo cambias, cambia también la URL en la configuración de Claude Code)
   chatProvider: 'gemini', // chat: "gemini", "claude" o "both" (los dos a la vez)
   claudeModel: 'sonnet', // modelo de Claude en el chat: "opus", "sonnet", "haiku" o "fable"
-  geminiModel: '', // modelo de Gemini en el chat ("" = el que use por defecto agy o Gemini CLI)
-  geminiCli: 'auto', // "auto" (Antigravity y, si falla, Gemini CLI), "agy" o "gemini"
+  geminiModel: 'gemini-3.8-flash-high', // modelo exclusivo de Gemini en el chat
+  geminiCli: 'agy', // 'agy' (Antigravity para gemini-3.8-flash-high), 'auto' o 'gemini'
   // Fase 9: La ventana
   startWithWindows: false, // iniciar con Windows
   monitor: 'primary', // monitor: 'primary' o ID numérico
@@ -205,7 +205,7 @@ function validateSettings(data) {
   if (!CHAT_PROVIDERS.includes(result.chatProvider)) result.chatProvider = DEFAULT_SETTINGS.chatProvider;
   if (!CLAUDE_MODELS.includes(result.claudeModel)) result.claudeModel = DEFAULT_SETTINGS.claudeModel;
   // El modelo de Gemini va a la línea de comandos: solo letras, números y . _ : -
-  if (typeof result.geminiModel !== 'string' || !/^[A-Za-z0-9._:-]{0,60}$/.test(result.geminiModel)) {
+  if (typeof result.geminiModel !== 'string' || !result.geminiModel || !/^[A-Za-z0-9._:-]{0,60}$/.test(result.geminiModel) || result.geminiModel === 'gemini-1.5-flash-8b') {
     result.geminiModel = DEFAULT_SETTINGS.geminiModel;
   }
   if (!GEMINI_CLIS.includes(result.geminiCli)) result.geminiCli = DEFAULT_SETTINGS.geminiCli;

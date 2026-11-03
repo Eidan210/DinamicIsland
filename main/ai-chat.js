@@ -24,6 +24,7 @@
 const { app, clipboard } = require('electron');
 const { execFile, spawn } = require('node:child_process');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { StringDecoder } = require('node:string_decoder');
 const { state } = require('./state');
@@ -55,7 +56,10 @@ const executables = new Map(); // nombre → { file, isCmd } | { missingUntil }
 
 /** La carpeta vacía donde se ejecutan los CLI (los eventos de esta carpeta se ignoran). */
 function getChatDir() {
-  return path.join(app.getPath('userData'), 'chat');
+  const base = (app && typeof app.getPath === 'function')
+    ? app.getPath('userData')
+    : path.join(os.tmpdir(), 'notch-dev');
+  return path.join(base, 'chat');
 }
 
 function ensureChatDir() {
@@ -169,7 +173,7 @@ function getChatState() {
     provider: state.settings.chatProvider,
     claudeModel: state.settings.claudeModel,
     geminiCli: state.settings.geminiCli || 'auto',
-    geminiModel: state.settings.geminiModel || '',
+    geminiModel: state.settings.geminiModel || 'gemini-3.8-flash-high',
     available,
   };
 }
@@ -219,7 +223,7 @@ function sendChat(text, options = {}) {
   const provider = PROVIDERS.includes(options.provider) ? options.provider : state.settings.chatProvider;
   const claudeModel = CLAUDE_MODELS.includes(options.claudeModel) ? options.claudeModel : state.settings.claudeModel;
   const geminiCli = GEMINI_CLI_OPTIONS.includes(options.geminiCli) ? options.geminiCli : state.settings.geminiCli;
-  const geminiModel = typeof options.geminiModel === 'string' ? options.geminiModel : state.settings.geminiModel;
+  const geminiModel = typeof options.geminiModel === 'string' && options.geminiModel ? options.geminiModel : (state.settings.geminiModel || 'gemini-3.8-flash-high');
   rememberPrefs(provider, claudeModel, geminiCli, geminiModel);
 
   const userMessage = { id: `m${nextId++}`, role: 'user', text: message, status: 'done' };
@@ -233,7 +237,7 @@ function sendChat(text, options = {}) {
       role: 'assistant',
       provider: target,
       cli: target === 'claude' ? 'claude' : '',
-      model: target === 'claude' ? claudeModel : (geminiModel || state.settings.geminiModel),
+      model: target === 'claude' ? claudeModel : (geminiModel || state.settings.geminiModel || 'gemini-3.8-flash-high'),
       text: '',
       status: 'streaming',
       group: userMessage.id, // con "Ambos", las dos respuestas van juntas
@@ -435,7 +439,7 @@ async function runClaude(reply, prompt, model) {
 /** Gemini: Antigravity (agy) o Gemini CLI, según "geminiCli" (auto = agy y, si falla, Gemini CLI). */
 async function runGemini(reply, prompt, options = {}) {
   const choice = options.cli || state.settings.geminiCli;
-  const model = typeof options.model === 'string' ? options.model : state.settings.geminiModel;
+  const model = typeof options.model === 'string' && options.model ? options.model : (state.settings.geminiModel || 'gemini-3.8-flash-high');
   const fullPrompt = `${SYSTEM_PROMPT}\n\n${prompt}`;
   const agy = choice !== 'gemini' ? await findExecutable('agy') : null;
   // agy recibe el texto como argumento: solo si es un .exe (sin pasar por cmd.exe).
@@ -472,6 +476,20 @@ async function runGemini(reply, prompt, options = {}) {
   const validGeminiModel = model && model !== 'auto' && model !== 'gemini-2.0' && /^[a-zA-Z0-9_.-]+$/.test(model);
   if (validGeminiModel) args.push('-m', model);
   const result = await runProcess(reply, gemini, args, { stdin: fullPrompt, parseLine: parseGeminiLine, label: 'Gemini CLI' });
+  if (!result.ok && !result.cancelled && !result.gotText) {
+    const agyFallback = await findExecutable('agy');
+    if (agyFallback && !agyFallback.isCmd) {
+      reply.cli = 'agy';
+      reply.text = '';
+      emitMessage(reply);
+      const agyArgs = ['--output-format', 'stream-json', '--disable-slash-commands'];
+      if (model) agyArgs.push('--model', model);
+      agyArgs.push(`-p=${fullPrompt}`);
+      const agyResult = await runProcess(reply, agyFallback, agyArgs, { parseLine: parseAgyLine, label: 'Antigravity' });
+      applyResult(reply, agyResult);
+      return;
+    }
+  }
   applyResult(reply, result);
 }
 
