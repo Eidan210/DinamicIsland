@@ -27,17 +27,29 @@ const SHADOW_MARGIN = 50; // espacio extra alrededor para que la sombra no se co
 const WINDOW_WIDTH = PANEL_WIDTH + SHADOW_MARGIN * 2; // 820 px
 const WINDOW_HEIGHT = TOP_GAP + PANEL_HEIGHT + SHADOW_MARGIN; // 418 px
 
-/** Calcula dónde va la ventana: centrada arriba del monitor PRINCIPAL. */
+/** Obtiene el monitor configurado o el principal. */
+function getTargetDisplay() {
+  const displays = screen.getAllDisplays();
+  if (state.settings && state.settings.monitor && state.settings.monitor !== 'primary') {
+    const match = displays.find((d) => String(d.id) === String(state.settings.monitor));
+    if (match) return match;
+  }
+  return screen.getPrimaryDisplay();
+}
+
+/** Calcula dónde va la ventana según el monitor, escala y margen superior. */
 function getWindowBounds() {
-  const display = screen.getPrimaryDisplay();
+  const display = getTargetDisplay();
+  const zoomFactor = ((state.settings && state.settings.scale) || 100) / 100;
+  const topGap = state.settings && Number.isFinite(state.settings.topGap) ? state.settings.topGap : TOP_GAP;
+  const scaledWidth = Math.round(WINDOW_WIDTH * zoomFactor);
+  const scaledHeight = Math.round((WINDOW_HEIGHT + (topGap - TOP_GAP)) * zoomFactor);
+  // bounds = el monitor completo → centramos: display.bounds.width - WINDOW_WIDTH escalado
   return {
-    // bounds = el monitor completo → centramos respecto a la pantalla real.
-    x: Math.round(display.bounds.x + (display.bounds.width - WINDOW_WIDTH) / 2),
-    // workArea = la pantalla sin la barra de tareas → si la tuvieras arriba,
-    // el notch quedaría justo debajo en vez de taparla.
+    x: Math.round(display.bounds.x + (display.bounds.width - scaledWidth) / 2),
     y: display.workArea.y,
-    width: WINDOW_WIDTH,
-    height: WINDOW_HEIGHT,
+    width: scaledWidth,
+    height: scaledHeight,
   };
 }
 
@@ -81,6 +93,8 @@ function createWindow() {
   // Cada vez que la página (re)carga, le mandamos el estado actual. Así un
   // Ctrl+R en las DevTools no deja a main y a la página desincronizados.
   win.webContents.on('did-finish-load', () => {
+    const zoomFactor = ((state.settings && state.settings.scale) || 100) / 100;
+    win.webContents.setZoomFactor(zoomFactor);
     setMouseInteractive(false);
     sendToRenderer('notch:expanded', state.isExpanded);
   });
@@ -124,7 +138,31 @@ function createWindow() {
 /** Recoloca la ventana cuando cambian los monitores (resolución, escala, conectar/desconectar...). */
 function repositionWindow() {
   const { win } = state;
-  if (win && !win.isDestroyed()) win.setBounds(getWindowBounds());
+  if (win && !win.isDestroyed()) {
+    win.setBounds(getWindowBounds());
+    const zoomFactor = ((state.settings && state.settings.scale) || 100) / 100;
+    win.webContents.setZoomFactor(zoomFactor);
+  }
+}
+
+let isFullscreenHidden = false;
+
+/** Oculta o muestra la ventana de Notch al entrar o salir de pantalla completa. */
+function setFullscreenHidden(active) {
+  const { win } = state;
+  if (!win || win.isDestroyed()) return;
+  isFullscreenHidden = Boolean(active);
+  if (isFullscreenHidden) {
+    if (state.isExpanded) setExpanded(false);
+    win.hide();
+  } else {
+    if (!state.isPaused) win.showInactive();
+  }
+  sendToRenderer('notch:fullscreen', isFullscreenHidden);
+}
+
+function isFullscreenActive() {
+  return isFullscreenHidden;
 }
 
 // -----------------------------------------------------------------------------
@@ -286,4 +324,6 @@ module.exports = {
   togglePage,
   setMouseInteractive,
   showContextMenu,
+  setFullscreenHidden,
+  isFullscreenActive,
 };

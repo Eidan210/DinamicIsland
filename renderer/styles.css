@@ -314,8 +314,9 @@ img {
   --glow-far: 0%;
   --glow-size: 12px;
   --glow-duration: 500ms;
-  filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--glow) var(--glow-near), transparent))
-    drop-shadow(0 0 var(--glow-size) color-mix(in srgb, var(--glow) var(--glow-far), transparent));
+  filter:
+    drop-shadow(0 1.5px 2px color-mix(in srgb, var(--glow) var(--glow-near), transparent))
+    drop-shadow(0 3px calc(var(--glow-size) - 2px) color-mix(in srgb, var(--glow) var(--glow-far), transparent));
 }
 
 /* El panel abierto nunca brilla: sin filtro (así no gasta nada mientras está abierto) */
@@ -377,8 +378,9 @@ img {
 /* El latido: a mitad baja a algo menos de la mitad del brillo de ese estado */
 @keyframes glow-pulse {
   50% {
-    filter: drop-shadow(0 0 1px color-mix(in srgb, var(--glow) calc(var(--glow-near) * 0.6), transparent))
-      drop-shadow(0 0 calc(var(--glow-size) * 0.55) color-mix(in srgb, var(--glow) calc(var(--glow-far) * 0.4), transparent));
+    filter:
+      drop-shadow(0 1px 1.5px color-mix(in srgb, var(--glow) calc(var(--glow-near) * 0.6), transparent))
+      drop-shadow(0 3px calc(var(--glow-size) * 0.55) color-mix(in srgb, var(--glow) calc(var(--glow-far) * 0.4), transparent));
   }
 }
 
@@ -399,13 +401,31 @@ img {
   --size-easing: var(--spring-open);
 }
 
+/* Bar: una línea ultra-fina pegada al borde superior tras inactividad (120x6 px) */
+.island[data-shape="bar"] {
+  width: 120px;
+  height: 6px;
+  border-radius: 0 0 4px 4px;
+  translate: 0 calc(-1 * var(--top-gap) - 1px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.island[data-shape="bar"] .eyes,
+.island[data-shape="bar"] .clawd,
+.island[data-shape="bar"] .activity,
+.island[data-shape="bar"] .panel {
+  display: none !important;
+  opacity: 0 !important;
+}
+
 /* Mini: una muesca pegada al borde de arriba, como el notch de un portátil.
    Deja pasar los clics (pointer-events: none): no molesta a las pestañas. */
 .island[data-shape="mini"] {
   width: var(--mini-width);
   height: var(--mini-height);
   border-radius: 0 0 10px 10px;
-  translate: 0 calc(-1 * var(--top-gap));
+  translate: 0 calc(-1 * var(--top-gap) - 1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
 }

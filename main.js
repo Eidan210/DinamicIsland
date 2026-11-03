@@ -54,6 +54,8 @@ const aiChat = require('./main/ai-chat');
 const idle = require('./main/idle');
 const clipboardHistory = require('./main/clipboard');
 const { registerIpcHandlers } = require('./main/ipc');
+const systemTray = require('./main/system-tray');
+const loginItem = require('./main/login-item');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
 function shortcutsKey(settings) {
@@ -75,6 +77,10 @@ function onConfigChanged(changedFiles) {
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();
+    if (previous.scale !== state.settings.scale || previous.topGap !== state.settings.topGap || previous.monitor !== state.settings.monitor) {
+      notchWindow.repositionWindow();
+    }
+    systemTray.updateTrayMenu();
     sendToRenderer('settings:changed', state.settings);
     console.log('[config] settings.json recargado.');
   }
@@ -124,6 +130,12 @@ if (!hasSingleInstanceLock) {
     shortcuts.registerShortcuts();
     config.watchConfigFolder(onConfigChanged);
     helper.startHelper();
+    helper.onHelperMessage('fullscreen', (msg) => {
+      notchWindow.setFullscreenHidden(Boolean(msg && msg.active));
+    });
+
+    loginItem.syncLoginItemState();
+    systemTray.initSystemTray();
 
     // IA: el servidor local para Claude Code y Antigravity. Los eventos que
     // vengan de la carpeta del chat de Notch no son sesiones tuyas: se ignoran.
@@ -149,6 +161,7 @@ if (!hasSingleInstanceLock) {
 
   app.on('will-quit', () => {
     shortcuts.unregisterShortcuts();
+    systemTray.destroySystemTray();
     helper.stopHelper(); // el helper se cierra con nosotros
     aiServer.stopAiServer(); // lo pendiente vuelve a la terminal
     aiChat.stopChat(); // ningún programa del chat se queda abierto

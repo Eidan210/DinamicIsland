@@ -137,6 +137,7 @@ async function init() {
   window.notch.onSettingsChange((newSettings) => {
     state.settings = { ...state.settings, ...newSettings };
     applyMotionSetting();
+    if (typeof state.settings.topGap === "number") document.documentElement.style.setProperty("--top-gap", `${state.settings.topGap}px`);
     applyClockSettings();
     applyTabShortcuts();
     renderIslandToggle();
@@ -149,6 +150,7 @@ async function init() {
   const loaded = await loadInitialState();
   if (loaded.settings) state.settings = { ...state.settings, ...loaded.settings };
   applyMotionSetting();
+  if (state.settings && typeof state.settings.topGap === "number") document.documentElement.style.setProperty("--top-gap", `${state.settings.topGap}px`);
   if (loaded.theme) setTheme(loaded.theme);
   if (loaded.pomodoro) state.pomodoro = loaded.pomodoro;
   if (loaded.media) loadInitialMedia(loaded.media);

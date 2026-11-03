@@ -46,6 +46,12 @@ contextBridge.exposeInMainWorld('notch', {
   /** Avisa cuando guardas config/settings.json: callback(settings). */
   onSettingsChange: (callback) => subscribe('settings:changed', callback),
 
+  /** Avisa cuando una app entra o sale de pantalla completa: callback(isFullscreen). */
+  onFullscreenChange: (callback) => subscribe('notch:fullscreen', (active) => callback(active === true)),
+
+  /** Avisa cuando Notch se pausa desde la bandeja: callback(isPaused). */
+  onPausedChange: (callback) => subscribe('notch:paused', (isPaused) => callback(isPaused === true)),
+
   /** Tema del panel: 'light' o 'dark' (ya resuelto: "auto" = el modo de Windows). */
   theme: {
     get: () => ipcRenderer.invoke('theme:get'),

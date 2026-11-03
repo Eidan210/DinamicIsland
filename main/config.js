@@ -53,6 +53,14 @@ const DEFAULT_SETTINGS = {
   claudeModel: 'sonnet', // modelo de Claude en el chat: "opus", "sonnet", "haiku" o "fable"
   geminiModel: '', // modelo de Gemini en el chat ("" = el que use por defecto agy o Gemini CLI)
   geminiCli: 'auto', // "auto" (Antigravity y, si falla, Gemini CLI), "agy" o "gemini"
+  // Fase 9: La ventana
+  startWithWindows: false, // iniciar con Windows
+  monitor: 'primary', // monitor: 'primary' o ID numérico
+  topGap: 8, // margen superior (de 0 a 12 px)
+  scale: 100, // escala de la isla (del 80 al 130 %)
+  autoHideIdle: false, // auto-ocultar a rayita de 120x6 tras inactividad
+  autoHideIdleSeconds: 30, // segundos sin actividad para auto-ocultar
+  hoverToOpen: false, // abrir el panel al pasar el ratón (250 ms / 400 ms)
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -68,7 +76,7 @@ const POMODORO_MAX_MINUTES = 180;
 function getConfigDir() {
   // En desarrollo usamos la carpeta config/ del proyecto. En la app empaquetada
   // (npm run dist), electron-builder la copia a resources/config (ver package.json).
-  return app.isPackaged ? path.join(process.resourcesPath, 'config') : path.join(ROOT_DIR, 'config');
+  return (app && app.isPackaged) ? path.join(process.resourcesPath, 'config') : path.join(ROOT_DIR, 'config');
 }
 
 /** Quita el BOM: un carácter invisible que el Bloc de notas a veces pone al principio. */
@@ -174,6 +182,19 @@ function loadSettings() {
     result.geminiModel = DEFAULT_SETTINGS.geminiModel;
   }
   if (!GEMINI_CLIS.includes(result.geminiCli)) result.geminiCli = DEFAULT_SETTINGS.geminiCli;
+
+  // Fase 9: La ventana
+  result.startWithWindows = result.startWithWindows === true;
+  result.monitor = typeof result.monitor === 'string' || typeof result.monitor === 'number' ? String(result.monitor).trim() : DEFAULT_SETTINGS.monitor;
+  const topGap = Math.round(Number(result.topGap));
+  result.topGap = Number.isFinite(topGap) && topGap >= 0 && topGap <= 12 ? topGap : DEFAULT_SETTINGS.topGap;
+  const scale = Math.round(Number(result.scale));
+  result.scale = Number.isFinite(scale) && scale >= 80 && scale <= 130 ? scale : DEFAULT_SETTINGS.scale;
+  result.autoHideIdle = result.autoHideIdle === true;
+  const idleSecs = Math.round(Number(result.autoHideIdleSeconds));
+  result.autoHideIdleSeconds = Number.isFinite(idleSecs) && idleSecs >= 5 && idleSecs <= 300 ? idleSecs : DEFAULT_SETTINGS.autoHideIdleSeconds;
+  result.hoverToOpen = result.hoverToOpen === true;
+
   return result;
 }
 

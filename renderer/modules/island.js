@@ -32,7 +32,10 @@ const bubbleEls = [...document.querySelectorAll('.bubble')];
 const bubblePomodoro = $('bubble-pomodoro');
 
 // De menor a mayor (al crecer la isla rebota; al encoger, no)
-const SHAPE_ORDER = ['mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'drop', 'decision', 'expanded'];
+const SHAPE_ORDER = ['bar', 'mini', 'pill', 'activity', 'volume', 'banner', 'alert', 'drop', 'decision', 'expanded'];
+let lastInteractionTime = Date.now();
+let hoverOpenTimer = null;
+let hoverCloseTimer = null;
 const MAX_ACTIVITIES = 3; // 1 en la isla + 2 burbujas
 const WAKE_DELAY = 200; // ms con el ratón sobre la mini-muesca para que se despierte
 const SLEEP_DELAY = 800; // ms que espera antes de volver a encogerse cuando te alejas
@@ -121,6 +124,7 @@ function computeShape(activities) {
   if (now < bannerUntil || (state.shape === 'banner' && state.mouseInteractive)) return 'banner';
   if (activities.length) return 'activity';
   if (awake || now < keepAwakeUntil || !state.settings.autoHide) return 'pill';
+  if (state.settings.autoHideIdle && (now - lastInteractionTime >= (state.settings.autoHideIdleSeconds || 30) * 1000)) return 'bar';
   return 'mini';
 }
 
@@ -137,12 +141,12 @@ export function updateShape() {
     state.shape = next;
     island.dataset.motion = SHAPE_ORDER.indexOf(next) > SHAPE_ORDER.indexOf(previous) ? 'grow' : 'shrink';
     island.dataset.shape = next; // ← esto dispara la animación CSS
-    if (previous === 'mini') {
+    if (previous === 'mini' || previous === 'bar') {
       if (state.pointerInside) lookAt(state.lastPointer.x, state.lastPointer.y);
       wakeEyes();
     }
-    if (next === 'mini') {
-      setMouseInteractive(false); // la mini deja pasar los clics
+    if (next === 'mini' || next === 'bar') {
+      setMouseInteractive(false); // la mini y la bar dejan pasar los clics
       resetLook();
     }
   }
@@ -174,6 +178,11 @@ function scheduleShapeTimer() {
   const upcoming = [keepAwakeUntil, volumeUntil, bannerUntil, alertUntil, dropUntil, state.celebrateUntil, state.musicGraceUntil, state.aiDoneUntil].filter(
     (time) => time > now
   );
+  if (state.settings.autoHideIdle && !activities.length && !state.isExpanded && !awake) {
+    const idleMs = (state.settings.autoHideIdleSeconds || 30) * 1000;
+    const barAt = lastInteractionTime + idleMs;
+    if (barAt > now) upcoming.push(barAt);
+  }
   if (upcoming.length) shapeTimer = setTimeout(updateShape, Math.min(...upcoming) - now + 20);
 }
 
@@ -208,6 +217,10 @@ export function showDropResult(ms) {
 /** panel.js nos avisa de que el panel se abrió o se cerró. */
 export function handlePanelToggle(expanded) {
   cancelWake();
+  clearTimeout(hoverOpenTimer);
+  clearTimeout(hoverCloseTimer);
+  hoverOpenTimer = null;
+  hoverCloseTimer = null;
   if (expanded) {
     cancelSleep();
     // El panel sustituye a lo que hubiera (el volumen sale en su barra superior
@@ -273,11 +286,49 @@ export function initIsland() {
     element.addEventListener('mouseenter', () => {
       setMouseInteractive(true);
       cancelSleep();
+      clearTimeout(hoverCloseTimer);
+      hoverCloseTimer = null;
+      if (state.settings.hoverToOpen && !state.isExpanded && state.shape !== 'mini' && state.shape !== 'bar') {
+        clearTimeout(hoverOpenTimer);
+        hoverOpenTimer = setTimeout(() => {
+          if (!state.isExpanded && isPointerOnIsland() && !state.fileDrag) {
+            window.notch.expand();
+          }
+        }, 250);
+      }
     });
     element.addEventListener('mouseleave', () => {
+      clearTimeout(hoverOpenTimer);
+      hoverOpenTimer = null;
       setMouseInteractive(isPointerOnIsland());
       // Si el aviso ya caducó, ahora sí se va.
       if (state.shape === 'banner' || state.shape === 'alert') updateShape();
+      if (state.settings.hoverToOpen && state.isExpanded) {
+        clearTimeout(hoverCloseTimer);
+        hoverCloseTimer = setTimeout(() => {
+          if (state.isExpanded && !isPointerOnIsland() && !state.dialogOpen) {
+            window.notch.collapse();
+          }
+        }, 400);
+      }
+    });
+  }
+
+  const panelEl = document.querySelector('.panel');
+  if (panelEl) {
+    panelEl.addEventListener('mouseenter', () => {
+      clearTimeout(hoverCloseTimer);
+      hoverCloseTimer = null;
+    });
+    panelEl.addEventListener('mouseleave', () => {
+      if (state.settings.hoverToOpen && state.isExpanded) {
+        clearTimeout(hoverCloseTimer);
+        hoverCloseTimer = setTimeout(() => {
+          if (state.isExpanded && !isPointerOnIsland() && !state.dialogOpen) {
+            window.notch.collapse();
+          }
+        }, 400);
+      }
     });
   }
 
@@ -294,10 +345,18 @@ export function initIsland() {
   // (820x318 px arriba en el centro); el resto de la pantalla no nos llega.
   document.addEventListener('mousemove', (event) => {
     state.pointerInside = true;
+    lastInteractionTime = Date.now();
     const x = event.clientX;
     const y = event.clientY;
     state.lastPointer = { x, y };
-    if (state.shape !== 'mini') lookAt(x, y);
+    if (state.shape !== 'mini' && state.shape !== 'bar') lookAt(x, y);
+
+    if (state.shape === 'bar') {
+      const rect = island.getBoundingClientRect();
+      if (y <= 24 && x >= rect.left - 40 && x <= rect.right + 40) {
+        wake();
+      }
+    }
 
     if (state.shape === 'mini') {
       // Si el ratón se queda un instante sobre la mini-muesca, se despierta.
@@ -324,4 +383,15 @@ export function initIsland() {
     resetLook();
     scheduleSleep();
   });
+
+  if (window.notch.onFullscreenChange) {
+    window.notch.onFullscreenChange((isFullscreen) => {
+      if (isFullscreen) {
+        clearTimeout(wakeTimer);
+        clearTimeout(sleepTimer);
+        clearTimeout(hoverOpenTimer);
+        clearTimeout(hoverCloseTimer);
+      }
+    });
+  }
 }

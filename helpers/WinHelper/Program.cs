@@ -52,6 +52,7 @@ internal static class Program
         var mediaStarted = await MediaModule.StartAsync();
         VolumeModule.Start();
         AudioDevicesModule.Start();
+        FullscreenModule.Start();
 
         Send(new { type = "ready" });
         if (mediaStarted) MediaModule.RequestFullRefresh();

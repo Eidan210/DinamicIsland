@@ -38,7 +38,7 @@ let lastSlot = -1; // el último instante atendido (para no repetirlo)
 function schedule() {
   clearTimeout(timer);
   timer = null;
-  if (!users.size) return;
+  if (!users.size || isSuspended) return;
   const period = [...users.values()].some((user) => user.everyFrame) ? FRAME_MS : STEP_MS;
   // Siempre en múltiplos exactos del periodo (contados desde el reloj del PC):
   // así los pasos y los dibujos caen en los mismos instantes. Redondeamos la
@@ -128,4 +128,22 @@ export function makeBeatSpinner(name, selector) {
     if (spinning.length) runOnBeat(name, onTick, { onStop: () => rest(spinning) });
     else stopOnBeat(name);
   };
+}
+
+let isSuspended = false;
+
+/** Suspende o reanuda el reloj de animaciones (al estar en pantalla completa o pausado). */
+export function setBeatSuspended(suspended) {
+  isSuspended = Boolean(suspended);
+  if (isSuspended) {
+    clearTimeout(timer);
+    timer = null;
+  } else if (users.size && !timer) {
+    schedule();
+  }
+}
+
+if (typeof window !== 'undefined' && window.notch) {
+  window.notch.onFullscreenChange?.((fullscreen) => setBeatSuspended(fullscreen));
+  window.notch.onPausedChange?.((paused) => setBeatSuspended(paused));
 }
