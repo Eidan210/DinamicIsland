@@ -53,6 +53,7 @@ internal static class Program
         VolumeModule.Start();
         AudioDevicesModule.Start();
         FullscreenModule.Start();
+        KeyboardModule.Start();
 
         Send(new { type = "ready" });
         if (mediaStarted) MediaModule.RequestFullRefresh();
@@ -81,7 +82,8 @@ internal static class Program
                 // Cada módulo dice si la orden es suya.
                 if (!await MediaModule.TryRunCommandAsync(command, argument)
                     && !AudioDevicesModule.TryRunCommand(command, argument)
-                    && !ClipboardModule.TryRunCommand(command, argument))
+                    && !ClipboardModule.TryRunCommand(command, argument)
+                    && !KeyboardModule.TryRunCommand(command, argument))
                 {
                     LogError($"Orden desconocida: {command}");
                 }

@@ -44,6 +44,7 @@ const NEAR_DISTANCE = 28; // px alrededor de la píldora que cuentan como "cerca
 
 let awake = false; // ¿la despertaste pasando el ratón?
 let keepAwakeUntil = 0; // saludo al arrancar
+let chargingUntil = 0;
 let volumeUntil = 0; // barra de volumen
 let bannerUntil = 0; // aviso de canción nueva
 let alertUntil = 0; // aviso importante
@@ -118,6 +119,7 @@ function computeShape(activities) {
   // Arrastrando archivos encima (o recién soltados): eso es lo que estás haciendo ahora
   if (state.fileDrag || now < dropUntil) return 'drop';
   if (state.ai.pending.length) return 'decision';
+  if (now < chargingUntil) return 'charging';
   if (now < volumeUntil) return 'volume';
   // Los avisos no se van mientras tengas el ratón encima (para que te dé tiempo a leerlos).
   if (now < alertUntil || (state.shape === 'alert' && state.mouseInteractive)) return 'alert';
@@ -175,7 +177,7 @@ function updateBubbles(activities) {
 function scheduleShapeTimer() {
   clearTimeout(shapeTimer);
   const now = Date.now();
-  const upcoming = [keepAwakeUntil, volumeUntil, bannerUntil, alertUntil, dropUntil, state.celebrateUntil, state.musicGraceUntil, state.aiDoneUntil].filter(
+  const upcoming = [keepAwakeUntil, chargingUntil, volumeUntil, bannerUntil, alertUntil, dropUntil, state.celebrateUntil, state.musicGraceUntil, state.aiDoneUntil].filter(
     (time) => time > now
   );
   if (state.settings.autoHideIdle && !activities.length && !state.isExpanded && !awake) {
@@ -193,6 +195,12 @@ export function keepAwakeFor(ms) {
 }
 
 // Quien pide uno de estos llama después a updateShape().
+
+/** Muestra el aviso de carga estilo Apple durante `ms` milisegundos. */
+export function showCharging(ms) {
+  chargingUntil = Date.now() + ms;
+  updateShape();
+}
 
 /** Muestra la barra de volumen durante `ms` milisegundos. */
 export function showVolume(ms) {

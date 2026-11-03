@@ -29,6 +29,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 8 | «Casa de Clawd»: ventana de ajustes e historial | ⏳ Pendiente |
 | 9 | La ventana: pantalla completa (Win32), bandeja de Windows (Tray), inicio con Windows, escala y auto-ocultar | ✅ Hecha |
 | 10 | Motor de luz («Light Engine»): luz reactiva, 5 efectos, 16 eventos y derrame ambiental | ✅ Hecha |
+| 11 | Teclado: gestos globales con Raw Input (Shift, Bloq Mayús, Ctrl+C/X/V, doble Ctrl derecho) y carga estilo Apple | ✅ Hecha |
 
 ## Requisitos
 
@@ -499,6 +500,13 @@ assets/
 - **Muelles de verdad.** La isla cambia de forma con curvas de muelle amortiguado (escritas con `linear()` en `styles.css`): al crecer se pasa un poco y se asienta, como en el iPhone; al encoger, se asienta sin rebotar. Al pulsarla se hunde un poco. Al cambiar de forma, lo que se va se desenfoca y lo que llega se enfoca; el contenido del panel entra igual, en cascada.
 - **Iconos dibujados a mano.** Son SVG propios al estilo de los de Apple (rellenos y con las puntas redondeadas), definidos una sola vez en `index.html` y reutilizados con `<use>`: no se descarga ninguna fuente de iconos. La ola de la barra la dibuja `wave.js` en un `<canvas>` (lo que ya sonó y lo que falta): para cada punto, altura = envolvente × amplitud × seno; la envolvente la hace nacer y morir plana. Mientras suena, fluye y avanza 24 veces por segundo, solo con la página Música a la vista; en pausa, en cuanto se calma, se para. Al principio eran dos `<path>` de SVG, pero cada cambio obligaba a Chromium a recalcular estilos, maquetar y repintar: era lo que más gastaba de la página.
 - **Clawd.** Es un SVG dentro de `index.html` (para poder animar sus patas, brazos, ojos y gorros con CSS): 18 × 10 «píxeles», cada uno de 1 px en la mini-muesca y de 2 px en la píldora. `clawd.js` decide qué hace (`data-mode`) y su expresión (`data-eyes`) cada vez que la isla revisa su forma; lo que se mueve mientras dura (teclear, bailar, caminar, las «z») va a saltos de píxel, como un juego retro, con el reloj de pasos de `beat.js` (ver «Bajo consumo») y solo mientras se ve; las «z» suben 12 s y luego se quedan quietas (si duerme, es que no estás mirando). Parpadear, mirar al ratón y alrededor siguen en `eyes.js`, que mueve la cara que toque. Para saber si estás delante, `main/idle.js` pregunta cada 30 s cuánto llevas sin tocar el PC (`powerMonitor.getSystemIdleTime`), cada 3 s mientras duerme para despertarse enseguida, y escucha los avisos de bloquear, desbloquear, suspender y reanudar. La despedida es un único temporizador hasta esa hora.
+- **Teclado con Raw Input (Win32).** Un módulo en C# (`KeyboardModule.cs`) registra un receptor de entrada cruda (`RegisterRawInputDevices` con `RIDEV_INPUTSINK`) en un hilo STA con ventana oculta. Detecta de forma global y sin lag:
+  - `Shift` (destello sutil al pulsar o soltar).
+  - `Bloq Mayús` (aviso de estado activo/inactivo).
+  - `Ctrl+C` (copiar), `Ctrl+X` (cortar) y `Ctrl+V` (pegar): enlazados instantáneamente con las animaciones de barrido luminosas de la isla en cualquier programa de Windows.
+  - `Doble Ctrl derecho` (< 350 ms): abre o cierra el panel al instante.
+  - **Privacidad estricta:** Notch NUNCA registra ni guarda texto ni pulsaciones generales. Se suspende automáticamente al jugar a pantalla completa.
+- **Aviso de carga estilo Apple Dynamic Island.** Al conectar el cargador, la isla se expande con un muelle ágil a una píldora con el rayo verde pulsante, la etiqueta «Cargando», el porcentaje en negrita y el icono de la pila con su nivel real. Se oculta suavemente tras 2,6 segundos.
 - **Motor de luz («Light Engine»).** La isla «emite luz» alrededor de su contorno y proyecta un derrame ambiental suave hacia abajo (`#island-spill` en `#stage`, fuera de la isla para no ser recortado por `overflow: hidden`). Se organiza en una jerarquía estricta de prioridades con preclusión (preemption) automática:
   1. **Crítica** (Claude pide permiso): contorno con respiración ámbar (`#F59E0B`).
   2. **Alta** (Claude terminó, Focus terminado, aviso urgente): barrido turquesa o verde (`#2DD4BF` / `#22C55E`).

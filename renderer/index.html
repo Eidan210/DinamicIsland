@@ -349,6 +349,28 @@
         </div>
       </div>
 
+      <!-- Aviso de carga estilo Apple Dynamic Island -->
+      <div class="charging-alert" id="charging-alert" aria-hidden="true">
+        <div class="charging-leading">
+          <span class="charging-bolt-wrap">
+            <svg class="charging-bolt-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 2 4 13.2h6.2L9.2 22 18 10.8h-6.2z" fill="#22C55E" />
+            </svg>
+          </span>
+          <span class="charging-label" id="charging-label">Cargando</span>
+        </div>
+        <div class="charging-trailing">
+          <span class="charging-percent" id="charging-percent">0%</span>
+          <svg class="charging-battery-svg" viewBox="0 0 29 14" aria-hidden="true">
+            <defs><clipPath id="charging-battery-clip"><rect width="26" height="14" rx="4.4" /></clipPath></defs>
+            <rect class="battery-shell" width="26" height="14" rx="4.4" />
+            <path class="battery-nub" d="M27.3 4.7v4.6c.9-.3 1.5-1.2 1.5-2.3s-.6-2-1.5-2.3z" />
+            <g clip-path="url(#charging-battery-clip)"><rect class="battery-level" id="charging-battery-level" width="26" height="14" /></g>
+          </svg>
+        </div>
+      </div>
+
+
       <!-- Soltar archivos: al arrastrar archivos sobre la isla se abre para
            recibirlos y, al soltarlos, confirma que están en la bandeja. tray.js -->
       <div class="drop" id="drop" data-state="over" aria-hidden="true">

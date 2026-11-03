@@ -186,6 +186,22 @@ async function init() {
   keepAwakeFor(HELLO_MS);
   loadInitialNotices(loaded.notices);
   initBattery();
+  // 5. Escucha de teclado y portapapeles global (Fase 11)
+  if (window.notch.keyboard?.onEvent) {
+    window.notch.keyboard.onEvent((event) => {
+      if (!event) return;
+      if (event.action === 'copy') testLight('copy');
+      else if (event.action === 'cut') testLight('cut');
+      else if (event.action === 'paste') testLight('paste');
+      else if (event.action === 'caps-lock' && event.active) testLight('shiftCaps');
+      else if (event.action === 'shift' && event.down) testLight('shiftCaps');
+    });
+  }
+
+  // Respaldos directos de eventos del navegador para cuando Notch tiene el foco
+  window.addEventListener('copy', () => testLight('copy'), true);
+  window.addEventListener('cut', () => testLight('cut'), true);
+  window.addEventListener('paste', () => testLight('paste'), true);
 }
 
 init();

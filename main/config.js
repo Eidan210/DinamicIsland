@@ -65,6 +65,12 @@ const DEFAULT_SETTINGS = {
   light: true, // activar motor de luz
   lightIntensity: 100, // intensidad: 60, 100 o 140 %
   lightSpill: true, // derrame difuso hacia abajo
+  // Fase 11: Teclado («Keyboard Module»)
+  keyboard: true,
+  keyboardShift: true,
+  keyboardCaps: true,
+  keyboardShortcuts: true,
+  keyboardRightCtrl: true,
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -203,6 +209,13 @@ function validateSettings(data) {
   const intensity = Math.round(Number(result.lightIntensity));
   result.lightIntensity = Number.isFinite(intensity) && intensity >= 40 && intensity <= 200 ? intensity : DEFAULT_SETTINGS.lightIntensity;
   result.lightSpill = result.lightSpill !== false;
+
+  // Fase 11: Teclado («Keyboard Module»)
+  result.keyboard = result.keyboard !== false;
+  result.keyboardShift = result.keyboardShift !== false;
+  result.keyboardCaps = result.keyboardCaps !== false;
+  result.keyboardShortcuts = result.keyboardShortcuts !== false;
+  result.keyboardRightCtrl = result.keyboardRightCtrl !== false;
 
   return result;
 }

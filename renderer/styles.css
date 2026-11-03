@@ -396,6 +396,16 @@ img {
   --size-easing: var(--spring-bouncy);
 }
 
+.island[data-motion="grow"][data-shape="banner"] {
+  --size-duration: 380ms;
+  --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.island[data-motion="grow"][data-shape="charging"] {
+  --size-duration: 340ms;
+  --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .island[data-motion="grow"][data-shape="expanded"] {
   --size-duration: 740ms;
   --size-easing: var(--spring-open);
@@ -582,7 +592,7 @@ img {
 }
 
 /* En el volumen y en los avisos, los ojos dejan sitio al contenido */
-.island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"], [data-shape="drop"], [data-shape="decision"]) .face {
+.island:is([data-shape="volume"], [data-shape="banner"], [data-shape="alert"], [data-shape="drop"], [data-shape="decision"], [data-shape="charging"]) .face {
   opacity: 0;
   filter: blur(4px);
   scale: 0.6;
@@ -1171,23 +1181,23 @@ img {
 
 /* Entrada del aviso: la carátula "salta" y los textos suben uno tras otro */
 .island[data-shape="banner"] .banner-art-wrap {
-  animation: pop-in 560ms var(--spring-pop) 120ms backwards;
+  animation: pop-in 280ms var(--spring-pop) backwards;
 }
 
 .island[data-shape="banner"] .banner-text > * {
-  animation: rise-in 420ms var(--spring) backwards;
+  animation: rise-in 220ms var(--spring) backwards;
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(1) {
-  animation-delay: 200ms;
+  animation-delay: 20ms;
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(2) {
-  animation-delay: 250ms;
+  animation-delay: 50ms;
 }
 
 .island[data-shape="banner"] .banner-text > :nth-child(3) {
-  animation-delay: 300ms;
+  animation-delay: 80ms;
 }
 
 @keyframes rise-in {
@@ -7833,17 +7843,9 @@ code {
 }
 
 /* 4. Llenado: barra perimetral o borde inferior proporcional */
+/* 4. Llenado: oculto para no cortar la curvatura inferior de la isla */
 .light-fill {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2.5px;
-  width: var(--light-progress, 0%);
-  border-radius: 2px;
-  background: var(--light-color, #3dff8f);
-  box-shadow: 0 0 8px var(--light-color, #3dff8f);
-  opacity: 0;
-  transition: width 240ms ease, opacity 180ms ease;
+  display: none !important;
 }
 
 .island-light[data-effect="fill"] .light-fill {
@@ -7874,4 +7876,110 @@ code {
   opacity: calc(var(--light-intensity, 1) * 0.45);
   scale: 1;
   transform: translateY(12px);
+}
+
+
+/* -----------------------------------------------------------------------------
+   Aviso de carga estilo Apple Dynamic Island
+----------------------------------------------------------------------------- */
+.island[data-shape="charging"] {
+  width: 236px;
+  height: 38px;
+  border-radius: 20px;
+}
+
+.charging-alert {
+  position: absolute;
+  inset: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(4px);
+  scale: 0.85;
+  transition:
+    opacity 140ms ease,
+    filter 180ms ease,
+    scale 260ms var(--spring-close);
+}
+
+.island[data-shape="charging"] .charging-alert {
+  opacity: 1;
+  filter: none;
+  scale: 1;
+  transition:
+    opacity 180ms ease 40ms,
+    filter 200ms ease 20ms,
+    scale 380ms var(--spring-bouncy);
+}
+
+.charging-leading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.charging-bolt-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.16);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+  animation: pulse-bolt 1.6s ease-in-out infinite;
+}
+
+.charging-bolt-svg {
+  width: 14px;
+  height: 14px;
+}
+
+.charging-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+.charging-trailing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.charging-percent {
+  font-size: 14px;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.charging-battery-svg {
+  width: 24px;
+  height: 12px;
+  flex: none;
+}
+
+.charging-battery-svg .battery-shell {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-width: 1.5;
+}
+
+.charging-battery-svg .battery-nub {
+  fill: rgba(255, 255, 255, 0.4);
+}
+
+.charging-battery-svg .battery-level {
+  fill: #22c55e;
+  transition: width 240ms ease;
+}
+
+@keyframes pulse-bolt {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
 }

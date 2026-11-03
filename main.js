@@ -56,6 +56,7 @@ const clipboardHistory = require('./main/clipboard');
 const { registerIpcHandlers } = require('./main/ipc');
 const systemTray = require('./main/system-tray');
 const loginItem = require('./main/login-item');
+const keyboard = require('./main/keyboard');
 
 /** ¿Cambió algún atajo? (comparamos el texto de todos) */
 function shortcutsKey(settings) {
@@ -130,6 +131,7 @@ if (!hasSingleInstanceLock) {
     shortcuts.registerShortcuts();
     config.watchConfigFolder(onConfigChanged);
     helper.startHelper();
+    keyboard.initKeyboard();
     helper.onHelperMessage('fullscreen', (msg) => {
       notchWindow.setFullscreenHidden(Boolean(msg && msg.active));
     });

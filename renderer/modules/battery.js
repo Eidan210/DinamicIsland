@@ -14,7 +14,7 @@
 import { $, setRollingText } from './utils.js';
 import { state } from './state.js';
 import { addLocalNotice } from './notices.js';
-import { updateShape } from './island.js';
+import { updateShape, showCharging } from './island.js';
 import { testLight } from './light.js';
 
 const LOW_LEVEL = 0.2; // 20 %
@@ -27,6 +27,8 @@ const batteryText = $('battery-text');
 const batteryTextFill = $('battery-text-fill');
 const statusBattery = $('status-battery');
 const statusBatteryText = $('status-battery-text');
+const chargingPercent = $('charging-percent');
+const chargingBatteryLevel = $('charging-battery-level');
 
 let battery = null;
 const warned = { low: false, critical: false }; // para avisar solo una vez de cada
@@ -66,6 +68,8 @@ function renderBattery() {
   statusBattery.dataset.state = batteryState;
   statusBattery.style.setProperty('--level', String(level));
   setRollingText(statusBatteryText, `${percent}%`, { countDown: !charging });
+  if (chargingPercent) chargingPercent.textContent = `${percent}%`;
+  if (chargingBatteryLevel) chargingBatteryLevel.setAttribute('width', String(Math.max(2, Math.round(percent * 0.26))));
 }
 
 function checkWarnings() {
@@ -104,7 +108,10 @@ function checkWarnings() {
 
 function onBatteryChange() {
   if (previousCharging !== null && previousCharging !== battery.charging) {
-    if (battery.charging) testLight('chargerConnected');
+    if (battery.charging) {
+      showCharging(2600);
+      testLight('chargerConnected');
+    }
     else testLight('chargerDisconnected');
   }
   previousCharging = battery.charging;
@@ -134,3 +141,12 @@ export async function initBattery() {
   battery.addEventListener('dischargingtimechange', onBatteryChange);
   onBatteryChange();
 }
+
+
+// Para probar la animación de carga estilo Apple en consola
+window.__notchTestCharging = (percent = 85) => {
+  state.battery = { ...state.battery, level: percent / 100, charging: true };
+  renderBattery();
+  showCharging(2600);
+  testLight('chargerConnected');
+};

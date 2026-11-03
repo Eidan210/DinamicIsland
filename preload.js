@@ -251,6 +251,11 @@ contextBridge.exposeInMainWorld('notch', {
   /** Tras responder en la isla con el panel cerrado: devolver el foco a tu app. */
   releaseFocus: () => ipcRenderer.send('notch:release-focus'),
 
+  // ---------- Teclado (Fase 11) ----------
+  keyboard: {
+    onEvent: (callback) => subscribe('keyboard:event', callback),
+  },
+
   // ---------- Centro de avisos ----------
   notices: {
     /** Devuelve (Promise) los avisos del proceso principal (Pomodoro, errores...). */

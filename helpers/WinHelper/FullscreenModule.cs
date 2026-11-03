@@ -51,6 +51,7 @@ internal static class FullscreenModule
     private static IntPtr _hook;
     private static bool _appBarRegistered;
     private static volatile bool _isFullscreen;
+    public static bool IsFullscreen => _isFullscreen;
     private static readonly object StateLock = new();
 
     /// <summary>Inicia el detector de pantalla completa en su propio hilo.</summary>
