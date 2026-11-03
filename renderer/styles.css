@@ -36,7 +36,7 @@
   --drop-width: 380px; /* arrastras archivos encima: se abre para recibirlos */
   --drop-height: 84px;
   --decision-width: 548px; /* Claude Code espera tu respuesta (permiso, pregunta o plan) */
-  --decision-height: 180px;
+  --decision-height: 220px;
   --panel-width: 720px;
   --panel-height: 260px;
   --panel-chat-height: 360px;
@@ -1727,7 +1727,8 @@ img {
 
 /* Con el panel abierto: tarjeta flotante bajo la barra superior */
 .island[data-shape="expanded"][data-decision="true"] .decision {
-  inset: 46px auto auto 50%;
+  inset: 32px auto auto 50%;
+  max-height: calc(100% - 40px);
   width: var(--decision-width);
   height: var(--decision-height);
   margin-left: calc(var(--decision-width) / -2);
@@ -1849,6 +1850,12 @@ img {
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.35;
+  word-break: break-word;
+  max-height: 76px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
 }
 
 .decision-step {
@@ -1860,13 +1867,18 @@ img {
 .decision-choices {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  min-height: 0;
-  overflow: auto;
+  min-height: 32px;
+  max-height: 72px;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-width: thin;
+  padding: 1px 0;
 }
 
 .choice {
+  flex: 0 0 auto;
   max-width: 100%;
   height: 30px;
   padding: 0 13px;

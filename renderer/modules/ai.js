@@ -558,7 +558,12 @@ function nextQuestion(decision) {
     return;
   }
   const answers = {};
-  for (const question of decision.questions) answers[question.question] = answerFor(question);
+  for (let i = 0; i < decision.questions.length; i++) {
+    const question = decision.questions[i];
+    const ans = answerFor(question);
+    answers[question.question] = ans;
+    answers[i] = ans;
+  }
   decide('answer', { answers });
 }
 
@@ -608,7 +613,7 @@ async function decide(choice, data) {
   deciding = true;
   decisionActions.querySelectorAll('button').forEach((item) => (item.disabled = true));
   decisionEl.dataset.answered = choice;
-  if (choice === 'allow' || choice === 'always' || choice === 'approve') {
+  if (choice === 'allow' || choice === 'always' || choice === 'approve' || choice === 'answer') {
     testLight('autoApproved');
   }
   let applied = false;

@@ -412,13 +412,21 @@ function buildResponse(kind, payload, decision, data = {}) {
   if (decision === 'terminal') return null;
   if (kind === 'permission') {
     if (decision === 'allow') {
-      return { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'allow' } } };
-    }
-    if (decision === 'always' && Array.isArray(payload.permission_suggestions) && payload.permission_suggestions.length) {
       return {
         hookSpecificOutput: {
           hookEventName: 'PermissionRequest',
-          decision: { behavior: 'allow', updatedPermissions: payload.permission_suggestions },
+          permissionDecision: 'allow',
+          decision: { behavior: 'allow' },
+        },
+      };
+    }
+    if (decision === 'always') {
+      const suggestions = Array.isArray(payload.permission_suggestions) ? payload.permission_suggestions : [];
+      return {
+        hookSpecificOutput: {
+          hookEventName: 'PermissionRequest',
+          permissionDecision: 'allow',
+          decision: { behavior: 'allow', updatedPermissions: suggestions },
         },
       };
     }
@@ -426,6 +434,8 @@ function buildResponse(kind, payload, decision, data = {}) {
       return {
         hookSpecificOutput: {
           hookEventName: 'PermissionRequest',
+          permissionDecision: 'deny',
+          permissionDecisionReason: 'El usuario lo denegó desde Notch.',
           decision: { behavior: 'deny', message: 'El usuario lo denegó desde Notch.' },
         },
       };
@@ -435,7 +445,15 @@ function buildResponse(kind, payload, decision, data = {}) {
   if (kind === 'question') {
     const answers = cleanAnswers(payload, data.answers);
     if (decision !== 'answer' || !answers) return null;
-    return preToolUse({ permissionDecision: 'allow', updatedInput: { ...payload.tool_input, answers } });
+    const formatted = Object.entries(answers)
+      .map(([q, a]) => `Pregunta: ${q}\nRespuesta elegida: ${a}`)
+      .join('\n\n');
+    return preToolUse({
+      permissionDecision: 'deny',
+      permissionDecisionReason: `El usuario ya respondió a tu pregunta desde Notch:\n\n${formatted}`,
+      additionalContext: `Respuestas del usuario seleccionadas en Notch:\n${formatted}`,
+      updatedInput: { ...payload.tool_input, answers },
+    });
   }
   if (kind === 'plan') {
     if (decision === 'approve') return preToolUse({ permissionDecision: 'allow', updatedInput: { ...payload.tool_input } });
@@ -452,14 +470,32 @@ function buildResponse(kind, payload, decision, data = {}) {
 /**
  * Revisa las respuestas que manda la página: solo preguntas que existen y
  * textos razonables. Devuelve { "pregunta": "respuesta" } o null si falta alguna.
+ * Soporta coincidencia exacta, recortada a 300 caracteres (clip), por índice o posicional.
  */
 function cleanAnswers(payload, answers) {
   if (!answers || typeof answers !== 'object') return null;
   const questions = Array.isArray(payload.tool_input?.questions) ? payload.tool_input.questions : [];
+  if (questions.length === 0) return null;
+  const answerEntries = Object.entries(answers);
   const result = {};
-  for (const question of questions) {
+
+  for (let i = 0; i < questions.length; i++) {
+    const question = questions[i];
     const text = String(question?.question || '');
-    const answer = answers[text];
+    const clipped = clip(text, 300);
+
+    let answer =
+      answers[text] ??
+      answers[clipped] ??
+      answers[text.trim()] ??
+      answers[clipped.trim()] ??
+      answers[i] ??
+      answers[String(i)];
+
+    if (answer === undefined && answerEntries[i]) {
+      answer = answerEntries[i][1];
+    }
+
     if (typeof answer !== 'string' || !answer.trim()) return null;
     result[text] = answer.trim().slice(0, 2000);
   }
@@ -492,6 +528,7 @@ module.exports = {
   createSession,
   applyEvent,
   describeDecision,
+  cleanAnswers,
   buildResponse,
   buildAgyResponse,
   needsAgyPermission,
