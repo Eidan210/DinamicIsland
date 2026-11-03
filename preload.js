@@ -236,6 +236,7 @@ contextBridge.exposeInMainWorld('notch', {
     clear: () => ipcRenderer.send('chat:clear'),
     /** Avisa de cada mensaje nuevo o actualizado: callback({ message, busy }). */
     onUpdate: (callback) => subscribe('chat:update', callback),
+    onChange: (callback) => subscribe('chat:update', (payload) => callback(payload?.message || payload)),
     /** Avisa cuando se borra la conversación. */
     onClear: (callback) => subscribe('chat:cleared', callback),
   },

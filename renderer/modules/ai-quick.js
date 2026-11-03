@@ -8,7 +8,7 @@
 import { $ } from './utils.js';
 import { state } from './state.js';
 import { updateShape } from './island.js';
-import { triggerLight, clearLight } from './light.js';
+import { testLight, stopLight } from './light.js';
 
 let quickViewEl;
 let appChipEl;
@@ -186,7 +186,7 @@ export function initAiQuick() {
   }
 
   // Escuchar streaming del chat
-  window.notch.chat.onChange((msg) => {
+  window.notch.chat.onUpdate(({ message: msg }) => {
     if (!state.aiQuickOpen) return;
     if (!msg || msg.role !== 'assistant') return;
 
@@ -225,7 +225,7 @@ function resetQueryUI() {
   const island = $('island');
   if (island) delete island.dataset.aiExpanded;
   isWorking = false;
-  clearLight('aiWorking');
+  stopLight();
 }
 
 function closeQuick() {
@@ -246,7 +246,7 @@ async function submitQuery() {
   isWorking = true;
   if (statusEl) statusEl.hidden = false;
   if (statusTextEl) statusTextEl.textContent = 'Trabajando…';
-  triggerLight('aiWorking');
+  testLight('aiWorking');
 
   try {
     const res = await window.notch.chat.send(text);
@@ -261,7 +261,7 @@ async function submitQuery() {
 function finishWorking(cancelled = false, errorMessage = null) {
   isWorking = false;
   if (statusEl) statusEl.hidden = true;
-  clearLight('aiWorking');
+  stopLight();
 
   if (cancelled) {
     if (responseEl && !responseEl.textContent) {
@@ -275,6 +275,6 @@ function finishWorking(cancelled = false, errorMessage = null) {
     const island = $('island');
     if (island) island.dataset.aiExpanded = 'true';
   } else {
-    triggerLight('aiDone');
+    testLight('aiDone');
   }
 }
