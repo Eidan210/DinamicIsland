@@ -69,6 +69,7 @@ import { initClipPage } from './clip-page.js';
 import { initClipboard, loadClipboard } from './clipboard.js';
 import { initTray, loadTray } from './tray.js';
 import { initHome, loadHome, startHome } from './home.js';
+import { initLight, applyLightSettings, playLight, stopLight, testLight, LIGHT_EVENTS } from './light.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -110,6 +111,7 @@ async function init() {
   // 1. Cada módulo registra sus botones y los avisos de main.js que le tocan.
   initTheme();
   initMotion();
+  initLight();
   initIsland();
   initPanel();
   initTabs();
@@ -137,6 +139,7 @@ async function init() {
   window.notch.onSettingsChange((newSettings) => {
     state.settings = { ...state.settings, ...newSettings };
     applyMotionSetting();
+    applyLightSettings();
     if (typeof state.settings.topGap === "number") document.documentElement.style.setProperty("--top-gap", `${state.settings.topGap}px`);
     applyClockSettings();
     applyTabShortcuts();
@@ -186,3 +189,7 @@ async function init() {
 }
 
 init();
+
+
+// Para pruebas de luz en consola o scripts
+window.__notchLight = { playLight, stopLight, testLight, LIGHT_EVENTS };

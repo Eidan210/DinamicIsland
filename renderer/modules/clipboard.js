@@ -19,6 +19,7 @@ import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange } from './tabs.js';
 import { onClockTick } from './clock.js';
 import { getSegment, isSegmentVisible, moveSegmentIndicator, onSegmentChange, setSegmentCount } from './clip-page.js';
+import { testLight } from './light.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const COPIED_MS = 1100; // lo que dura el "Copiado" sobre la tarjeta
@@ -81,6 +82,9 @@ export function setClips(next) {
     items: Array.isArray(next.items) ? next.items.filter((item) => item && typeof item.id === 'string') : [],
   };
   setSegmentCount('clips', clips.items.length);
+  if (previousTop && clips.items[0]?.id && clips.items[0]?.id !== previousTop) {
+    testLight('copy');
+  }
   dirty = true;
   if (isSegmentVisible('clips')) render({ flip: true, scrollToStart: clips.items[0]?.id !== previousTop });
   changeListeners.forEach((listener) => listener());

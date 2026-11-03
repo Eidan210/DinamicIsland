@@ -13,6 +13,7 @@ import { $, setRollingText } from './utils.js';
 import { state } from './state.js';
 import { showVolume, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
+import { playLight } from './light.js';
 
 const VOLUME_MS = 1500;
 
@@ -52,6 +53,14 @@ function onVolumeChange(volume) {
   const previousLevel = state.volume.level;
   state.volume = { level: Math.min(1, Math.max(0, volume.level)), muted: volume.muted === true };
   renderVolume(previousLevel);
+  playLight('fill', {
+    name: 'volume',
+    color: '#ffffff',
+    priority: 'medium',
+    durationMs: 1200,
+    progress: Math.round(state.volume.level * 100),
+    spill: false,
+  });
   if (!state.settings.volumeIndicator) return;
 
   if (state.isExpanded) {

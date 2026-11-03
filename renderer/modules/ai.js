@@ -21,6 +21,7 @@ import { makeBeatSpinner } from './beat.js';
 import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange, syncTallState } from './tabs.js';
 import { focusChatInput, syncChatVisibility } from './chat.js';
+import { testLight, stopLight, getCurrentLight } from './light.js';
 
 const DONE_MS = 6000; // al terminar, la isla enseña "Hecho" estos milisegundos
 const MODES = ['sessions', 'chat'];
@@ -422,6 +423,7 @@ function renderDecision() {
   updateDecisionCount(pending.length);
 
   if (decision.kind === 'permission') {
+    testLight('permission');
     setText(decisionTitle, `${source.name} quiere ${ACTIONS[decision.tool] || `usar ${decision.tool}`}`);
     renderPermission(decision);
   } else if (decision.kind === 'question') {
@@ -606,6 +608,9 @@ async function decide(choice, data) {
   deciding = true;
   decisionActions.querySelectorAll('button').forEach((item) => (item.disabled = true));
   decisionEl.dataset.answered = choice;
+  if (choice === 'allow' || choice === 'always' || choice === 'approve') {
+    testLight('autoApproved');
+  }
   let applied = false;
   try {
     applied = await window.notch.ai.decide(decision.id, choice, data);

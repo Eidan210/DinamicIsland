@@ -22,6 +22,7 @@ import { getCurrentTab, onTabChange } from './tabs.js';
 import { readPalette } from './colors.js';
 import { makeSwipeable } from './swipe.js';
 import { drawWave, initWave, updateWave } from './wave.js';
+import { testLight, stopLight, getCurrentLight } from './light.js';
 
 const MEDIA_MESSAGES = {
   starting: ['Conectando…', 'Buscando qué suena en Windows'],
@@ -112,6 +113,12 @@ function onMediaState(newState) {
 
   const key = trackKey(state.media);
   renderMedia({ trackChanged: key !== previousKey });
+  if (isPlaying()) {
+    testLight('music');
+  } else {
+    const cur = getCurrentLight();
+    if (cur && cur.name === 'music') stopLight();
+  }
 
   // Suena una canción que aún no hemos anunciado → aviso "Ahora suena", como
   // la isla dinámica. (Comparamos con la última anunciada y no con el estado

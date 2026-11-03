@@ -61,6 +61,10 @@ const DEFAULT_SETTINGS = {
   autoHideIdle: false, // auto-ocultar a rayita de 120x6 tras inactividad
   autoHideIdleSeconds: 30, // segundos sin actividad para auto-ocultar
   hoverToOpen: false, // abrir el panel al pasar el ratón (250 ms / 400 ms)
+  // Fase 10: Motor de luz («Light Engine»)
+  light: true, // activar motor de luz
+  lightIntensity: 100, // intensidad: 60, 100 o 140 %
+  lightSpill: true, // derrame difuso hacia abajo
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -140,9 +144,8 @@ function normalizePageShortcuts(value) {
   return result;
 }
 
-/** settings.json mezclado con los valores por defecto y revisado. */
-function loadSettings() {
-  const data = readConfigJson('settings.json');
+/** Valida y corrige cualquier objeto de ajustes asegurando tipos válidos. */
+function validateSettings(data) {
   const result = { ...DEFAULT_SETTINGS };
   if (data && typeof data === 'object' && !Array.isArray(data)) Object.assign(result, data);
 
@@ -195,7 +198,19 @@ function loadSettings() {
   result.autoHideIdleSeconds = Number.isFinite(idleSecs) && idleSecs >= 5 && idleSecs <= 300 ? idleSecs : DEFAULT_SETTINGS.autoHideIdleSeconds;
   result.hoverToOpen = result.hoverToOpen === true;
 
+  // Fase 10: Motor de luz («Light Engine»)
+  result.light = result.light !== false;
+  const intensity = Math.round(Number(result.lightIntensity));
+  result.lightIntensity = Number.isFinite(intensity) && intensity >= 40 && intensity <= 200 ? intensity : DEFAULT_SETTINGS.lightIntensity;
+  result.lightSpill = result.lightSpill !== false;
+
   return result;
+}
+
+/** settings.json mezclado con los valores por defecto y revisado. */
+function loadSettings() {
+  const data = readConfigJson('settings.json');
+  return validateSettings(data);
 }
 
 /**
@@ -249,6 +264,7 @@ function watchConfigFolder(onChange) {
 
 module.exports = {
   DEFAULT_SETTINGS,
+  validateSettings,
   clampMinutes,
   stripBom,
   readConfigJson,

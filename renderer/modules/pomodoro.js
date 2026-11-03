@@ -12,6 +12,7 @@ import { $, animate, setText, setRollingText, formatCountdown, plural, SPRING, S
 import { state } from './state.js';
 import { getActivities, onShapeChange, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
+import { testLight } from './light.js';
 
 export const POMODORO_LABELS = { idle: 'Listo', running: 'Enfocado', paused: 'En pausa', finished: '¡Hecho!' };
 const POMODORO_BUTTON = { idle: 'Iniciar', running: 'Pausar', paused: 'Seguir', finished: 'Otra vez' };
@@ -70,7 +71,10 @@ function onPomodoroState(newState) {
   // Si el progreso salta (reinicio, cambio de duración...), el anillo se anima.
   const jumped = Math.abs(getProgress(previous) - getProgress(newState)) > 0.02;
   renderPomodoro({ animateRings: jumped });
-  if (previous.status === 'running' && newState.status === 'finished') celebrate();
+  if (previous.status === 'running' && newState.status === 'finished') {
+    celebrate();
+    testLight('focusDone');
+  }
   updateShape();
 }
 

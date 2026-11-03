@@ -15,6 +15,7 @@ import { $, setRollingText } from './utils.js';
 import { state } from './state.js';
 import { addLocalNotice } from './notices.js';
 import { updateShape } from './island.js';
+import { testLight } from './light.js';
 
 const LOW_LEVEL = 0.2; // 20 %
 const CRITICAL_LEVEL = 0.1; // 10 %
@@ -30,6 +31,7 @@ const statusBatteryText = $('status-battery-text');
 let battery = null;
 const warned = { low: false, critical: false }; // para avisar solo una vez de cada
 const updateListeners = [];
+let previousCharging = null;
 
 export { LOW_LEVEL, CRITICAL_LEVEL };
 
@@ -78,6 +80,7 @@ function checkWarnings() {
   if (level <= CRITICAL_LEVEL && !warned.critical) {
     warned.critical = true;
     warned.low = true;
+    testLight('batteryLow');
     addLocalNotice({
       key: 'battery',
       kind: 'battery',
@@ -100,6 +103,11 @@ function checkWarnings() {
 }
 
 function onBatteryChange() {
+  if (previousCharging !== null && previousCharging !== battery.charging) {
+    if (battery.charging) testLight('chargerConnected');
+    else testLight('chargerDisconnected');
+  }
+  previousCharging = battery.charging;
   state.battery = {
     level: battery.level,
     charging: battery.charging,
