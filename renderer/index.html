@@ -193,6 +193,11 @@
     <symbol id="i-k-mail" viewBox="0 0 24 24">
       <rect x="3" y="5.5" width="18" height="13" rx="2.8" /><path d="m4 7.2 8 6 8-6" />
     </symbol>
+    <!-- Dictado por voz (Fase 15) -->
+    <symbol id="i-mic" viewBox="0 0 24 24">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
   </svg>
 
   <!--
@@ -471,6 +476,52 @@
               <span>Pegar en la app</span>
             </button>
           </footer>
+        </div>
+      </div>
+
+      <!-- Banner de Dictado por Voz Local (Fase 15, estilo Murmur) -->
+      <div class="voice-banner" id="voice-banner" role="region" aria-label="Dictado por voz" data-state="idle" hidden>
+        <div class="voice-banner-left">
+          <div class="voice-mic-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><use href="#i-mic"></use></svg>
+            <div class="voice-spinner" id="voice-spinner" hidden></div>
+          </div>
+          <div class="voice-meta">
+            <span class="voice-status-text" id="voice-status-text">Escuchando…</span>
+            <span class="voice-shortcut-hint" id="voice-shortcut-hint">Ctrl+Alt+D para detener</span>
+          </div>
+        </div>
+
+        <div class="voice-waveform" id="voice-waveform" aria-hidden="true">
+          <div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+        </div>
+
+        <div class="voice-result-wrap" id="voice-result-wrap" hidden>
+          <div class="voice-transcript" id="voice-transcript"></div>
+        </div>
+
+        <div class="voice-actions" id="voice-actions" hidden>
+          <button class="voice-btn" id="voice-btn-copy" type="button" title="Copiar al portapapeles">
+            <svg viewBox="0 0 24 24"><use href="#i-copy"></use></svg>
+            <span>Copiar</span>
+          </button>
+          <button class="voice-btn" id="voice-btn-ai" type="button" title="Enviar a la IA rápida">
+            <svg viewBox="0 0 24 24"><use href="#i-gemini"></use></svg>
+            <span>IA</span>
+          </button>
+          <button class="voice-btn is-primary" id="voice-btn-paste" type="button" title="Pegar en la aplicación previa">
+            <svg viewBox="0 0 24 24"><use href="#i-send"></use></svg>
+            <span>Pegar</span>
+          </button>
+          <button class="voice-btn is-close" id="voice-btn-close" type="button" title="Cerrar (Esc)">
+            ✕
+          </button>
         </div>
       </div>
 

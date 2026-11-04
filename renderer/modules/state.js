@@ -86,4 +86,6 @@ export const state = {
 
   // Chat (chat.js)
   chat: { messages: [], busy: false, provider: 'gemini', claudeModel: 'sonnet' },
+  // Dictado por voz (Fase 15, voice.js)
+  voice: { status: 'idle', level: 0, transcript: '', error: null },
 };

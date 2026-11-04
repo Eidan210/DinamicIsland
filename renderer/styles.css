@@ -8952,3 +8952,217 @@ code {
   background: #2563eb;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
+
+
+/* =============================================================================
+   Dictado por Voz Local - Murmur Style (Fase 15)
+   ============================================================================= */
+.island[data-shape="voice"] {
+  width: 460px;
+  height: 76px;
+  border-radius: 38px;
+  background: #000;
+  cursor: default;
+}
+
+.island[data-shape="voice"][data-voice-state="done"],
+.island[data-shape="voice"][data-voice-state="transcribed"] {
+  height: 84px;
+  border-radius: 42px;
+}
+
+.island[data-shape="voice"] :is(.face, .status, .activity, .panel, .charging-alert, .volume, .volume-bar, .banner, .alert, .drop, .decision, .ai-input-view) {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.island[data-shape="voice"] .voice-banner {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.voice-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  gap: 14px;
+}
+
+.voice-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.voice-mic-icon {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.voice-mic-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.voice-spinner {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid transparent;
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: voice-spin 0.8s linear infinite;
+}
+
+@keyframes voice-spin {
+  to { transform: rotate(360deg); }
+}
+
+.voice-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.voice-status-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voice-shortcut-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+}
+
+/* Forma de onda con 7 barras reactivas */
+.voice-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.voice-bar {
+  width: 4px;
+  height: 6px;
+  min-height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #38bdf8, #818cf8);
+  transform-origin: center;
+  transition: transform 60ms ease-out, height 60ms ease-out, background 150ms ease;
+}
+
+.voice-result-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.voice-transcript {
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-width: 190px;
+}
+
+.voice-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.voice-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.voice-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.voice-btn.is-primary {
+  background: #38bdf8;
+  border-color: #38bdf8;
+  color: #000;
+  font-weight: 600;
+}
+
+.voice-btn.is-primary:hover {
+  background: #7dd3fc;
+  border-color: #7dd3fc;
+}
+
+.voice-btn.is-close {
+  padding: 4px 8px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.voice-btn.is-close:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+/* Reducción de movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .voice-bar,
+  .voice-waveform {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+:root[data-reduce-motion="true"] .voice-bar,
+:root[data-reduce-motion="true"] .voice-waveform {
+  transition: none !important;
+  animation: none !important;
+}

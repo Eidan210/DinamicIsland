@@ -152,6 +152,16 @@ function registerIpcHandlers() {
   onRendererRequest('ai:capture-screen', () => aiQuick.captureScreen());
   onRendererRequest('ai:get-active-app', () => aiQuick.getActiveApp());
 
+  // Dictado por voz (Fase 15)
+  const voice = require('./voice');
+  onRendererMessage('voice:start', () => voice.startVoice());
+  onRendererMessage('voice:stop', () => voice.stopVoice());
+  onRendererMessage('voice:cancel', () => voice.cancelVoice());
+  onRendererRequest('voice:status', () => voice.getVoiceStatus());
+  onRendererMessage('voice:paste', (text) => voice.pasteToApp(String(text || '')));
+  onRendererMessage('voice:open-privacy', () => voice.openMicPrivacySettings());
+  onRendererRequest('voice:download-model', () => voice.downloadModel());
+
 }
 
 module.exports = { registerIpcHandlers };

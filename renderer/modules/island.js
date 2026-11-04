@@ -32,7 +32,7 @@ const bubbleEls = [...document.querySelectorAll('.bubble')];
 const bubblePomodoro = $('bubble-pomodoro');
 
 // De menor a mayor (al crecer la isla rebota; al encoger, no)
-const SHAPE_ORDER = ['bar', 'mini', 'pill', 'activity', 'volume', 'charging', 'banner', 'alert', 'drop', 'decision', 'ai-input', 'expanded'];
+const SHAPE_ORDER = ['bar', 'mini', 'pill', 'activity', 'volume', 'charging', 'banner', 'alert', 'drop', 'decision', 'ai-input', 'voice', 'expanded'];
 let lastInteractionTime = Date.now();
 let hoverOpenTimer = null;
 let hoverCloseTimer = null;
@@ -68,7 +68,7 @@ export function setMouseInteractive(interactive) {
 /** ¿Está el ratón encima de la isla o de una burbuja visible? */
 function isPointerOnIsland() {
   if (state.shape === 'mini') return false; // la mini-muesca nunca "atrapa" el ratón
-  if (state.shape === 'ai-input') return true;
+  if (state.shape === 'ai-input' || state.shape === 'voice') return true;
   return island.matches(':hover') || bubbleEls.some((bubble) => isBubbleVisible(bubble) && bubble.matches(':hover'));
 }
 
@@ -117,6 +117,7 @@ export function getActivity() {
 function computeShape(activities) {
   const now = Date.now();
   if (state.isExpanded) return 'expanded';
+  if (state.voice && state.voice.status && state.voice.status !== 'idle') return 'voice';
   if (state.aiQuickOpen) return 'ai-input';
   // Arrastrando archivos encima (o recién soltados): eso es lo que estás haciendo ahora
   if (state.fileDrag || now < dropUntil) return 'drop';
@@ -149,7 +150,7 @@ export function updateShape() {
       if (state.pointerInside) lookAt(state.lastPointer.x, state.lastPointer.y);
       wakeEyes();
     }
-    if (next === 'ai-input') {
+    if (next === 'ai-input' || next === 'voice') {
       setMouseInteractive(true);
     }
     if (next === 'mini' || next === 'bar') {

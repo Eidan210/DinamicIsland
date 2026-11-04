@@ -316,6 +316,32 @@ contextBridge.exposeInMainWorld('notch', {
     onEvent: (callback) => subscribe('keyboard:event', callback),
   },
 
+  // ---------- Dictado por Voz Local (Fase 15) ----------
+  voice: {
+    /** Inicia la grabación del micrófono. */
+    start: () => ipcRenderer.send('voice:start'),
+    /** Detiene la grabación y activa la transcripción en WinHelper. */
+    stop: () => ipcRenderer.send('voice:stop'),
+    /** Cancela la grabación sin transcribir. */
+    cancel: () => ipcRenderer.send('voice:cancel'),
+    /** Devuelve (Promise) el estado actual: { state, modelAvailable, micAllowed, language, shortcut }. */
+    getStatus: () => ipcRenderer.invoke('voice:status'),
+    /** Pega el texto proporcionado (o el último transcrito) en la aplicación activa previa. */
+    paste: (text) => ipcRenderer.send('voice:paste', String(text || '')),
+    /** Abre la configuración de privacidad del micrófono de Windows 11. */
+    openPrivacySettings: () => ipcRenderer.send('voice:open-privacy'),
+    /** Inicia la descarga automática del modelo ggml-base.bin si no existe. */
+    downloadModel: () => ipcRenderer.invoke('voice:download-model'),
+    /** Avisa de cambios de estado: callback({ state, error?, ... }). */
+    onStatus: (callback) => subscribe('voice:status', callback),
+    /** Avisa de variaciones de nivel de audio (0 a 1): callback({ level, peak, rms }). */
+    onLevel: (callback) => subscribe('voice:onLevel', callback),
+    /** Avisa de transcripción completada: callback({ text, durationMs }). */
+    onTranscript: (callback) => subscribe('voice:onTranscript', callback),
+    /** Avisa del progreso de descarga del modelo: callback({ percent, downloadedBytes, totalBytes }). */
+    onDownloadProgress: (callback) => subscribe('voice:download-progress', callback),
+  },
+
   // ---------- Centro de avisos ----------
   notices: {
     /** Devuelve (Promise) los avisos del proceso principal (Pomodoro, errores...). */

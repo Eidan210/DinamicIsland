@@ -55,6 +55,7 @@ internal static class Program
         FullscreenModule.Start();
         KeyboardModule.Start();
         ActiveAppModule.Start();
+        VoiceModule.Start();
 
         Send(new { type = "ready" });
         if (mediaStarted) MediaModule.RequestFullRefresh();
@@ -85,7 +86,8 @@ internal static class Program
                     && !AudioDevicesModule.TryRunCommand(command, argument)
                     && !ClipboardModule.TryRunCommand(command, argument)
                     && !KeyboardModule.TryRunCommand(command, argument)
-                    && !ActiveAppModule.TryRunCommand(command, argument))
+                    && !ActiveAppModule.TryRunCommand(command, argument)
+                    && !await VoiceModule.TryRunCommandAsync(command, argument))
                 {
                     LogError($"Orden desconocida: {command}");
                 }

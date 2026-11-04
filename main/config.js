@@ -89,6 +89,12 @@ const DEFAULT_SETTINGS = {
   aiShortcut: 'Control+Alt+I',
   aiActiveAppChip: false,
   aiQuickReplyRightCtrl: false,
+  // Fase 15: Dictado por voz local (estilo «Murmur»)
+  voiceShortcut: 'Control+Alt+D',
+  voiceLanguage: 'es',
+  voiceModelPath: '',
+  voicePasteOnFinish: false,
+  voiceMicDevice: 'default',
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -282,6 +288,29 @@ function validateSettings(data) {
   result.aiShortcut = result.aiShortcut.trim();
   result.aiActiveAppChip = result.aiActiveAppChip === true;
   result.aiQuickReplyRightCtrl = result.aiQuickReplyRightCtrl === true;
+
+  // Fase 15: Dictado por voz local (estilo «Murmur»)
+  if (typeof result.voiceShortcut !== 'string' || !result.voiceShortcut.trim()) {
+    result.voiceShortcut = DEFAULT_SETTINGS.voiceShortcut;
+  }
+  result.voiceShortcut = result.voiceShortcut.trim();
+
+  if (typeof result.voiceLanguage !== 'string' || !result.voiceLanguage.trim()) {
+    result.voiceLanguage = DEFAULT_SETTINGS.voiceLanguage;
+  }
+  result.voiceLanguage = result.voiceLanguage.trim().toLowerCase();
+
+  if (typeof result.voiceModelPath !== 'string') {
+    result.voiceModelPath = DEFAULT_SETTINGS.voiceModelPath;
+  }
+  result.voiceModelPath = result.voiceModelPath.trim();
+
+  result.voicePasteOnFinish = result.voicePasteOnFinish === true;
+
+  if (typeof result.voiceMicDevice !== 'string' || !result.voiceMicDevice.trim()) {
+    result.voiceMicDevice = DEFAULT_SETTINGS.voiceMicDevice;
+  }
+  result.voiceMicDevice = result.voiceMicDevice.trim();
 
   return result;
 }

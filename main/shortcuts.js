@@ -54,6 +54,14 @@ function registerShortcuts() {
     if (!ok) failed.push(state.settings.aiShortcut);
   }
 
+  // Fase 15: Atajo global de dictado por voz (Control+Alt+D por defecto)
+  if (state.settings.voiceShortcut) {
+    const voice = require('./voice');
+    if (!tryRegister(state.settings.voiceShortcut, () => voice.toggleVoice())) {
+      failed.push(state.settings.voiceShortcut);
+    }
+  }
+
   for (const page of PAGES) {
     const accelerator = state.settings.pageShortcuts[page];
     if (!accelerator) continue; // "" = esta página no tiene atajo

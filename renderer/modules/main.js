@@ -71,6 +71,7 @@ import { initClipboard, loadClipboard } from './clipboard.js';
 import { initTray, loadTray } from './tray.js';
 import { initHome, loadHome, startHome } from './home.js';
 import { initLight, applyLightSettings, playLight, stopLight, testLight, LIGHT_EVENTS } from './light.js';
+import { initVoice } from './voice.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -129,6 +130,7 @@ async function init() {
   initNote();
   initChat();
   initAiQuick();
+  initVoice();
   initAi();
   initGlow();
   initClawd({ keepAwakeFor });
