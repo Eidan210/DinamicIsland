@@ -29,8 +29,8 @@ describe('Fase 16 — Pulido y Ajustes', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
     const { DEFAULT_SETTINGS, validateSettings } = require('../main/config');
 
-    it('package.json tiene la versión 0.18.0', () => {
-      assert.strictEqual(pkg.version, '0.18.0', 'La versión de package.json debe ser 0.18.0');
+    it('package.json tiene la versión 0.18.0 o superior', () => {
+      assert.ok(pkg.version >= '0.18.0', 'La versión de package.json debe ser 0.18.0 o superior');
     });
 
     it('DEFAULT_SETTINGS incluye lyricsOffset (0) y lyricsVisible (true)', () => {

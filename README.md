@@ -37,6 +37,7 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 16 | Pulido y ajustes: transiciones Glance, música, bandeja, Casa de Clawd | ✅ Hecha |
 | A | Sistema de movimiento: tokens semánticos, factor global --motion-scale, curvas de muelle y monitor dev | ✅ Hecha |
 | B | Morph de la isla: apertura elástica (ancho → alto → contenido), cierre suave (contenido → encoger), intercambio compacto, cambio de pestaña y micro-respuestas | ✅ Hecha |
+| C | Avisos: pastilla temporal C1 con hover freeze y aviso que baja del notch C2 en degradado azul-violeta | ✅ Hecha |
 
 ## Requisitos
 

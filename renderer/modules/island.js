@@ -48,6 +48,9 @@ let chargingUntil = 0;
 let volumeUntil = 0; // barra de volumen
 let bannerUntil = 0; // aviso de canción nueva
 let alertUntil = 0; // aviso importante
+let alertRemaining = 0; // Fase C1: tiempo restante para congelación por hover
+let alertFrozen = false;
+let alertVariant = 'pill'; // Fase C: 'pill' (C1) o 'notch-drop' (C2)
 let dropUntil = 0; // "Guardado en la bandeja" tras soltar archivos
 let wakeTimer = null;
 let sleepTimer = null;
@@ -198,6 +201,18 @@ export function updateShape() {
       if (state.pointerInside) lookAt(state.lastPointer.x, state.lastPointer.y);
       wakeEyes();
     }
+    if (previous === 'alert') {
+      if (alertVariant === 'notch-drop' && island) {
+        island.dataset.closingVariant = 'notch-drop';
+        setTimeout(() => {
+          if (island) island.dataset.closingVariant = '';
+        }, 300);
+      }
+      alertUntil = 0;
+      alertFrozen = false;
+      alertRemaining = 0;
+      if (island) island.dataset.alertVariant = '';
+    }
     if (next === 'ai-input' || next === 'voice') {
       setMouseInteractive(true);
     }
@@ -266,9 +281,27 @@ export function showBanner(ms) {
   bannerUntil = Date.now() + ms;
 }
 
-/** Muestra el aviso importante durante `ms` milisegundos. */
-export function showAlert(ms) {
-  alertUntil = Date.now() + ms;
+/** Muestra el aviso importante durante `ms` milisegundos (Fase C1/C2). */
+export function showAlert(ms, options = {}) {
+  alertRemaining = ms;
+  alertVariant = options.variant || 'pill';
+  if (island) island.dataset.alertVariant = alertVariant;
+
+  if (state.mouseInteractive || (island && isPointerOnIsland())) {
+    alertFrozen = true;
+    alertUntil = Infinity;
+  } else {
+    alertFrozen = false;
+    alertUntil = Date.now() + ms;
+  }
+}
+
+export function isAlertFrozen() {
+  return alertFrozen;
+}
+
+export function getAlertVariant() {
+  return alertVariant;
 }
 
 /** Tras soltar archivos, la isla cuenta cómo fue durante `ms` milisegundos. */
@@ -350,6 +383,14 @@ export function initIsland() {
       cancelSleep();
       clearTimeout(hoverCloseTimer);
       hoverCloseTimer = null;
+
+      // Fase C1: congelar tiempo del aviso si el ratón está encima (hover freeze)
+      if (state.shape === 'alert' && alertUntil > 0 && !alertFrozen) {
+        alertFrozen = true;
+        alertRemaining = Math.max(0, alertUntil - Date.now());
+        alertUntil = Infinity;
+      }
+
       if (state.settings.hoverToOpen && !state.isExpanded && state.shape !== 'mini' && state.shape !== 'bar') {
         clearTimeout(hoverOpenTimer);
         hoverOpenTimer = setTimeout(() => {
@@ -363,8 +404,16 @@ export function initIsland() {
       clearTimeout(hoverOpenTimer);
       hoverOpenTimer = null;
       setMouseInteractive(isPointerOnIsland());
-      // Si el aviso ya caducó, ahora sí se va.
-      if (state.shape === 'banner' || state.shape === 'alert') updateShape();
+
+      // Fase C1: reanudar tiempo restante del aviso al salir el ratón
+      if (state.shape === 'alert' && alertFrozen) {
+        alertFrozen = false;
+        alertUntil = Date.now() + Math.max(800, alertRemaining);
+        scheduleShapeTimer();
+      } else if (state.shape === 'banner' || state.shape === 'alert') {
+        updateShape();
+      }
+
       if (state.settings.hoverToOpen && state.isExpanded) {
         clearTimeout(hoverCloseTimer);
         hoverCloseTimer = setTimeout(() => {

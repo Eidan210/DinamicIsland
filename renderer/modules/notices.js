@@ -12,7 +12,7 @@
 //  Solo viven en memoria: al cerrar Notch se olvidan.
 // =============================================================================
 
-import { $, animate, setText } from './utils.js';
+import { $, animate, setText, getMotionScale } from './utils.js';
 import { state } from './state.js';
 import { showAlert, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
@@ -116,14 +116,89 @@ function clearAll() {
 // Dibujar
 // -----------------------------------------------------------------------------
 
-/** El aviso grande de la isla. */
+/** Determina si el aviso usa C2 (notch-drop) o C1 (pastilla corta). */
+export function getAlertVariant(notice) {
+  if (notice.variant) return notice.variant;
+  if (notice.kind === 'water' || notice.kind === 'pomodoro' || notice.kind === 'task') {
+    return 'notch-drop';
+  }
+  return 'pill';
+}
+
+export function getAlertDuration(variant) {
+  return variant === 'notch-drop' ? 5000 : 2500;
+}
+
+/**
+ * Sustituye fluidamente el contenido del aviso actual (Fase C1 / B3)
+ * sin contraer y reabrir la forma de la isla.
+ */
+function animateAlertSwap(notice, duration, variant) {
+  const scale = typeof getMotionScale === 'function' ? getMotionScale() : 1;
+  const exitDuration = Math.round(120 * scale);
+  const enterDuration = Math.round(220 * scale);
+  const enterDelay = Math.round(60 * scale);
+
+  animate(
+    alertTitle,
+    [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-6px)' },
+    ],
+    { duration: exitDuration, easing: 'ease-in' }
+  );
+  animate(
+    alertBody,
+    [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-6px)' },
+    ],
+    { duration: exitDuration, easing: 'ease-in' }
+  );
+
+  setTimeout(() => {
+    alertEl.dataset.tone = notice.tone;
+    alertIcon.setAttribute('href', `#${iconFor(notice)}`);
+    setText(alertTitle, notice.title);
+    setText(alertBody, notice.text);
+    showAlert(duration, { variant });
+    updateShape();
+
+    animate(
+      alertTitle,
+      [
+        { opacity: 0, transform: 'translateY(6px)' },
+        { opacity: 1, transform: 'translateY(0)' },
+      ],
+      { duration: enterDuration, delay: enterDelay, easing: 'ease-out' }
+    );
+    animate(
+      alertBody,
+      [
+        { opacity: 0, transform: 'translateY(6px)' },
+        { opacity: 1, transform: 'translateY(0)' },
+      ],
+      { duration: enterDuration, delay: enterDelay, easing: 'ease-out' }
+    );
+  }, exitDuration);
+}
+
+/** El aviso grande de la isla (Fase C: pastilla corta C1 o aviso que baja C2). */
 function presentAlert(notice) {
-  alertEl.dataset.tone = notice.tone;
-  alertIcon.setAttribute('href', `#${iconFor(notice)}`);
-  setText(alertTitle, notice.title);
-  setText(alertBody, notice.text);
-  showAlert(ALERT_MS);
-  updateShape();
+  const variant = getAlertVariant(notice);
+  const duration = getAlertDuration(variant);
+
+  if (state.shape === 'alert') {
+    // Si ya hay un aviso en pantalla, animación B3 sin cerrar y reabrir
+    animateAlertSwap(notice, duration, variant);
+  } else {
+    alertEl.dataset.tone = notice.tone;
+    alertIcon.setAttribute('href', `#${iconFor(notice)}`);
+    setText(alertTitle, notice.title);
+    setText(alertBody, notice.text);
+    showAlert(duration, { variant });
+    updateShape();
+  }
 }
 
 /** El número de la campana y el punto azul de la mini-muesca. */
@@ -193,13 +268,28 @@ function createIcon(id) {
   return svg;
 }
 
-/** "Ahora", "Hace 5 min", "Hace 2 h" o la fecha. */
-function timeAgo(time) {
+let minuteScheduleTimer = null;
+
+/** Programa la actualización de los textos relativos al segundo exacto :00 de cada minuto. */
+export function scheduleMinuteUpdate() {
+  clearTimeout(minuteScheduleTimer);
+  const now = new Date();
+  const msToNext = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+  minuteScheduleTimer = setTimeout(() => {
+    if (isOpen()) {
+      renderList();
+    }
+    scheduleMinuteUpdate();
+  }, Math.max(1000, msToNext));
+}
+
+/** "ahora", "12 min", "1 h" o la fecha (Fase C1, actualizado una vez por minuto). */
+export function timeAgo(time) {
   const minutes = Math.floor((Date.now() - time) / 60000);
-  if (minutes < 1) return 'Ahora';
-  if (minutes < 60) return `Hace ${minutes} min`;
+  if (minutes < 1) return 'ahora';
+  if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Hace ${hours} h`;
+  if (hours < 24) return `${hours} h`;
   try {
     return new Date(time).toLocaleDateString(state.settings.locale, { day: 'numeric', month: 'short' });
   } catch {
@@ -298,4 +388,5 @@ export function initNotices() {
   window.notch.notices.onAdd((notice) => addNotice(notice));
   window.notch.notices.onRemove(removeByKey);
   renderCount();
+  scheduleMinuteUpdate();
 }
