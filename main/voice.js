@@ -48,14 +48,8 @@ function getModelsDirectory() {
 /** Resuelve la ruta efectiva del archivo ggml-base.bin en el sistema. */
 function resolveModelPath() {
   const configured = state.settings?.voiceModelPath;
-  if (configured && typeof configured === 'string' && fs.existsSync(configured)) {
-    try {
-      if (!fs.statSync(configured).isDirectory()) {
-        return configured;
-      }
-    } catch {
-      // Ignorar error si no se puede consultar estadísticas del archivo
-    }
+  if (configured && typeof configured === 'string' && configured.trim()) {
+    return configured.trim();
   }
 
   const defaultDir = getModelsDirectory();

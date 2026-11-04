@@ -44,7 +44,7 @@ describe('Milestone 2 Adversarial Timer & State Machine Challenge Suite', () => 
       state.settings = {
         voiceShortcut: 'Control+Alt+D',
         voiceLanguage: 'es',
-        voiceModelPath: '',
+        voiceModelPath: path.join(ROOT, 'test', 'nonexistent_missing_model.bin'),
         voicePasteOnFinish: false,
       };
 
@@ -213,7 +213,7 @@ describe('Milestone 2 Adversarial Timer & State Machine Challenge Suite', () => 
       state.settings = {
         voiceShortcut: 'Control+Alt+D',
         voiceLanguage: 'es',
-        voiceModelPath: '',
+        voiceModelPath: path.join(ROOT, 'test', 'nonexistent_missing_model.bin'),
         voicePasteOnFinish: false,
       };
 
@@ -337,7 +337,7 @@ describe('Milestone 2 Adversarial Timer & State Machine Challenge Suite', () => 
       state.settings = {
         voiceShortcut: 'Control+Alt+D',
         voiceLanguage: 'es',
-        voiceModelPath: '',
+        voiceModelPath: path.join(ROOT, 'test', 'nonexistent_missing_model.bin'),
         voicePasteOnFinish: false,
       };
 
@@ -438,7 +438,7 @@ describe('Milestone 2 Adversarial Timer & State Machine Challenge Suite', () => 
       state.settings = {
         voiceShortcut: 'Control+Alt+D',
         voiceLanguage: 'es',
-        voiceModelPath: '',
+        voiceModelPath: path.join(ROOT, 'test', 'nonexistent_missing_model.bin'),
         voicePasteOnFinish: false,
       };
 

@@ -21,6 +21,11 @@ helpers/**/publish/
 *.log
 npm-debug.log*
 
+# Modelos locales de IA / Whisper
+models/*.bin
+models/*.gguf
+models/*.onnx
+
 # Variables de entorno y secretos
 .env
 .env.*
