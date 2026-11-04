@@ -98,9 +98,6 @@ const DEFAULT_SETTINGS = {
   // Fase 16: Pulido y ajustes
   lyricsOffset: 0, // desfase de la letra sincronizada en segundos (-2 a +2 s)
   lyricsVisible: true, // mostrar u ocultar la letra en la página Música (botón 💬)
-  // Fase D: Anillo de estado
-  statusRing: true, // anillo fino de 2 px alrededor de la isla
-  statusRingPriority: ['pomodoro', 'charging', 'water', 'music'], // prioridad de llenado
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -324,20 +321,6 @@ function validateSettings(data) {
     ? Math.round(lyricsOffset * 10) / 10
     : DEFAULT_SETTINGS.lyricsOffset;
   result.lyricsVisible = result.lyricsVisible !== false;
-
-  // Fase D: Anillo de estado
-  result.statusRing = result.statusRing !== false;
-  const ALLOWED_RING_PRIORITIES = ['pomodoro', 'charging', 'water', 'music'];
-  if (Array.isArray(result.statusRingPriority)) {
-    result.statusRingPriority = result.statusRingPriority
-      .filter((p) => typeof p === 'string' && ALLOWED_RING_PRIORITIES.includes(p.toLowerCase()))
-      .map((p) => p.toLowerCase());
-    if (result.statusRingPriority.length === 0) {
-      result.statusRingPriority = [...DEFAULT_SETTINGS.statusRingPriority];
-    }
-  } else {
-    result.statusRingPriority = [...DEFAULT_SETTINGS.statusRingPriority];
-  }
 
   return result;
 }

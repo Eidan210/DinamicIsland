@@ -78,20 +78,10 @@ function onPomodoroState(newState) {
   // Si el progreso salta (reinicio, cambio de duración...), el anillo se anima.
   const jumped = Math.abs(getProgress(previous) - getProgress(newState)) > 0.02;
   renderPomodoro({ animateRings: jumped });
-  if (newState.status === 'running') {
-    const remaining = newState.endsAt
-      ? Math.max(0, newState.endsAt - Date.now())
-      : (newState.remainingMs || 0);
-    applyPomodoroLinearProgress(remaining, newState.durationMs || remaining);
-  } else if (newState.status === 'paused') {
-    freezePomodoroLinearProgress();
-  }
-
   if (previous.status === 'running' && newState.status === 'finished') {
     celebrate();
     testLight('focusDone');
   }
-  updateStatusRing();
   updateShape();
 }
 
@@ -121,7 +111,6 @@ export function renderPomodoro({ animateRings = false } = {}) {
   setRollingText(activityText, status === 'finished' ? '¡Listo!' : time, { countDown: true });
 
   setRings(getProgress(), animateRings);
-  updateStatusRing();
   renderListeners.forEach((listener) => listener({ animateRings, tick: false }));
 }
 
@@ -198,7 +187,6 @@ function celebrate() {
   updateShape(); // la isla muestra "¡Listo!" aunque estuviera encogida
 
   // D1 y D2: Destello de brillo de 500 ms y aviso C1 al concluir el bloque
-  triggerRingFlash();
   addLocalNotice({
     title: '¡Bloque terminado!',
     text: 'Has completado tu sesión de concentración.',
