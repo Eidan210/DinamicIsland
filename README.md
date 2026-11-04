@@ -30,6 +30,13 @@ Hecha con **Electron + HTML/CSS/JS sin frameworks**, más un pequeño helper en 
 | 9 | La ventana: pantalla completa (Win32), bandeja de Windows (Tray), inicio con Windows, escala y auto-ocultar | ✅ Hecha |
 | 10 | Motor de luz («Light Engine»): luz reactiva, 5 efectos, 16 eventos y derrame ambiental | ✅ Hecha |
 | 11 | Teclado: gestos globales con Raw Input (Shift, Bloq Mayús, Ctrl+C/X/V, doble Ctrl derecho) y carga estilo Apple | ✅ Hecha |
+| 12 | Tareas, agua y horario | ✅ Hecha |
+| 13 | Búsqueda y comandos | ✅ Hecha |
+| 14 | IA ampliada y selector de modelos | ✅ Hecha |
+| 15 | Dictado por voz local (NAudio + Whisper.net) | ✅ Hecha |
+| 16 | Pulido y ajustes: transiciones Glance, música, bandeja, Casa de Clawd | ✅ Hecha |
+| A | Sistema de movimiento: tokens semánticos, factor global --motion-scale, curvas de muelle y monitor dev | ✅ Hecha |
+| B | Morph de la isla: apertura elástica (ancho → alto → contenido), cierre suave (contenido → encoger), intercambio compacto, cambio de pestaña y micro-respuestas | ✅ Hecha |
 
 ## Requisitos
 

@@ -23,6 +23,18 @@ export function isMotionReduced() {
   return document.documentElement.dataset.reduceMotion === 'true';
 }
 
+/**
+ * Devuelve el factor de escala de movimiento actual (--motion-scale).
+ * 1 = normal, 4 = cámara lenta, 0 = animaciones reducidas o apagadas.
+ */
+export function getMotionScale() {
+  if (typeof document === 'undefined') return 1;
+  if (isMotionReduced()) return 0;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--motion-scale').trim();
+  const val = parseFloat(raw);
+  return Number.isFinite(val) ? val : 1;
+}
+
 /** Atajo para buscar un elemento por su id. */
 export const $ = (id) => document.getElementById(id);
 

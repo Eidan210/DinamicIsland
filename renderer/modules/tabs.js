@@ -8,7 +8,7 @@
 //  página que ya se ve, debe cerrar el panel.
 // =============================================================================
 
-import { $, animate, cssEasing, prettyAccelerator } from './utils.js';
+import { $, animate, cssEasing, prettyAccelerator, getMotionScale } from './utils.js';
 import { state } from './state.js';
 
 // ⚠️ Mismos nombres y orden que PAGES en main/state.js y que index.html.
@@ -67,25 +67,31 @@ export function showTab(name) {
   syncTallState();
 
   if (state.isExpanded) {
-    // La vista nueva entra por el lado hacia el que avanzas, enfocándose y con
-    // un muelle; la vieja sale por el contrario, desenfocándose (como pasar páginas).
+    // Fase B4: cambio de página en 220 ms.
+    // La página que se va sale hacia el lado opuesto (-16px * direction, 120ms, --ease-in).
+    // La que llega entra desde +16px * direction en 220ms (--ease-out) con 60ms de desfase.
     const direction = TAB_ORDER.indexOf(name) > TAB_ORDER.indexOf(previousTab) ? 1 : -1;
+    const scale = getMotionScale();
+    const exitDuration = Math.round(120 * scale);
+    const enterDuration = Math.round(220 * scale);
+    const enterDelay = Math.round(60 * scale);
+
     animate(
       newView,
       [
-        { opacity: 0, transform: `translateX(${34 * direction}px) scale(0.97)`, filter: 'blur(5px)' },
-        { opacity: 1, transform: 'translateX(0) scale(1)', filter: 'blur(0px)' },
+        { opacity: 0, transform: `translateX(${16 * direction}px)` },
+        { opacity: 1, transform: 'translateX(0)' },
       ],
-      { duration: 560, easing: cssEasing('--spring-open') }
+      { duration: enterDuration, delay: enterDelay, easing: cssEasing('--ease-out') }
     );
     animate(
       oldView,
       [
         // visibility: 'visible' mantiene la vista vieja a la vista mientras se va
-        { opacity: 1, transform: 'translateX(0)', filter: 'blur(0px)', visibility: 'visible' },
-        { opacity: 0, transform: `translateX(${-30 * direction}px) scale(0.97)`, filter: 'blur(5px)', visibility: 'visible' },
+        { opacity: 1, transform: 'translateX(0)', visibility: 'visible' },
+        { opacity: 0, transform: `translateX(${-16 * direction}px)`, visibility: 'visible' },
       ],
-      { duration: 200, easing: 'ease-in' }
+      { duration: exitDuration, easing: cssEasing('--ease-in') }
     );
   }
 

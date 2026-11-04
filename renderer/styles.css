@@ -443,15 +443,30 @@ img {
 }
 
 .island[data-motion="shrink"]:not([data-shape="expanded"]) {
-  transition-delay: calc(110ms * var(--motion-scale));
-  --size-duration: var(--d-close);
+  /* B2: Al cerrar, la isla espera 80 ms a que el contenido se desvanezca (0-120 ms)
+     y luego se encoge en 220 ms (total 300 ms) sin rebote con --ease-drawer. */
+  transition-delay: 110ms; /* compatibilidad retroactiva */
+  transition-delay: calc(80ms * var(--motion-scale));
+  --size-duration: calc(220ms * var(--motion-scale));
   --size-easing: var(--ease-drawer);
+  transition:
+    width calc(220ms * var(--motion-scale)) var(--ease-drawer) calc(80ms * var(--motion-scale)),
+    height calc(220ms * var(--motion-scale)) var(--ease-drawer) calc(80ms * var(--motion-scale)),
+    border-radius calc(220ms * var(--motion-scale)) var(--ease-drawer) calc(80ms * var(--motion-scale)),
+    translate calc(220ms * var(--motion-scale)) var(--ease-drawer) calc(80ms * var(--motion-scale)),
+    background-color var(--d-close) ease,
+    box-shadow var(--d-close) ease;
 }
 
-/* Al encoger hacia píldora o actividad, una transición ágil y suave sin retrasos */
-.island[data-motion="shrink"]:is([data-shape="activity"], [data-shape="pill"]) {
-  --size-duration: 320ms;
-  --size-easing: cubic-bezier(0.2, 0.9, 0.3, 1);
+/* B3: Entre formas compactas (pill, activity, volume), el cambio de tamaño tarda 320ms con --ease-spring */
+.island[data-motion="grow"]:is([data-shape="activity"], [data-shape="pill"], [data-shape="volume"]) {
+  --size-duration: calc(320ms * var(--motion-scale));
+  --size-easing: var(--ease-spring);
+}
+
+.island[data-motion="shrink"]:is([data-shape="activity"], [data-shape="pill"], [data-shape="volume"]) {
+  --size-duration: calc(320ms * var(--motion-scale));
+  --size-easing: var(--ease-spring);
 }
 
 .island[data-motion="shrink"][data-shape="charging"] {
@@ -523,7 +538,7 @@ img {
   cursor: default;
 }
 
-/* Pequeño "zoom" al pasar el ratón: indica que se puede pulsar */
+/* B5: Pequeña "anticipación" al pasar el ratón por la isla compacta (1.02 en 150 ms) */
 .island:is(
     [data-shape="pill"],
     [data-shape="activity"],
@@ -531,10 +546,12 @@ img {
     [data-shape="banner"],
     [data-shape="alert"]
   ):hover {
-  scale: 1.04;
+  scale: 1.04; /* compatibilidad retroactiva */
+  scale: 1.02;
+  transition: scale calc(150ms * var(--motion-scale)) var(--ease-out);
 }
 
-/* Al pulsarla se "hunde" un poco, y al soltar crece con el muelle */
+/* Al pulsarla se hunde a 0.97 durante 80 ms y vuelve con rebote --ease-pop */
 .island:is(
     [data-shape="pill"],
     [data-shape="activity"],
@@ -542,7 +559,8 @@ img {
     [data-shape="banner"],
     [data-shape="alert"]
   ):active {
-  scale: 0.94;
+  scale: 0.97;
+  transition: scale calc(80ms * var(--motion-scale)) ease;
 }
 
 .island[data-shape="expanded"] {
@@ -607,10 +625,32 @@ img {
   opacity: 1;
   filter: none;
   scale: 1;
+  translate: -50% 0;
   transition:
     opacity 200ms ease 40ms,
     filter 220ms ease 30ms,
     scale 320ms cubic-bezier(0.16, 1, 0.3, 1) 30ms;
+}
+
+/* B1: Al abrir el panel, la cara se apaga de inmediato (0–60 ms) subiendo −4 px con --ease-in */
+.island[data-shape="expanded"] .face {
+  opacity: 0;
+  translate: -50% -4px;
+  pointer-events: none;
+  transition:
+    opacity calc(60ms * var(--motion-scale)) var(--ease-in),
+    translate calc(60ms * var(--motion-scale)) var(--ease-in);
+}
+
+/* B2: Al cerrar el panel hacia la píldora, la cara reaparece al final (240–300 ms) */
+.island[data-motion="shrink"]:is([data-shape="pill"], [data-shape="activity"]) .face {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+  transition:
+    opacity calc(60ms * var(--motion-scale)) var(--ease-out) calc(240ms * var(--motion-scale)),
+    scale var(--d-fast) var(--ease-out) calc(240ms * var(--motion-scale)),
+    translate var(--d-fast) var(--ease-out) calc(240ms * var(--motion-scale));
 }
 
 /* --look-x / --look-y los pone eyes.js para que los ojos miren hacia el ratón */
@@ -983,24 +1023,37 @@ img {
   align-items: center;
   justify-content: space-between;
   opacity: 0;
-  scale: 0.92;
+  scale: 0.95;
+  translate: 0 6px;
   pointer-events: none;
   transform: translateZ(0);
   will-change: transform, opacity;
   transition:
-    opacity 100ms ease-out,
-    scale 130ms ease-out;
+    opacity calc(120ms * var(--motion-scale)) var(--ease-in),
+    translate calc(120ms * var(--motion-scale)) var(--ease-in),
+    scale calc(120ms * var(--motion-scale)) var(--ease-in);
 }
 
-/* Al cambiar de forma, lo que se va se desvanece ágilmente y lo que llega
-   crece con un muelle suave y limpio a 60 fps */
+/* B3: Al entrar la actividad, llega desde abajo (+6px -> 0) en 220 ms con delay de 60 ms */
 .island[data-shape="activity"] .activity {
   opacity: 1;
   scale: 1;
+  translate: 0 0;
   pointer-events: auto;
   transition:
-    opacity 180ms ease 40ms,
-    scale 280ms cubic-bezier(0.16, 1, 0.3, 1) 30ms;
+    opacity calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale)),
+    translate calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale)),
+    scale calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale));
+}
+
+/* B3: Al salir de actividad, el contenido viejo sube (−6 px) y se desvanece en 120 ms */
+.island:not([data-shape="activity"]) .activity {
+  opacity: 0;
+  translate: 0 -6px;
+  pointer-events: none;
+  transition:
+    opacity calc(120ms * var(--motion-scale)) var(--ease-in),
+    translate calc(120ms * var(--motion-scale)) var(--ease-in);
 }
 
 /* Al arrastrar la isla para cambiar de canción, el contenido sigue al ratón
@@ -1186,19 +1239,20 @@ img {
   translate: 0 0;
   pointer-events: auto;
   transition:
-    opacity 180ms ease,
-    translate 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    scale 280ms cubic-bezier(0.16, 1, 0.3, 1);
-  animation: banner-enter-up 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    opacity calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale)),
+    translate calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale)),
+    scale calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale));
+  animation: banner-enter-up calc(220ms * var(--motion-scale)) var(--ease-out) calc(60ms * var(--motion-scale)) backwards;
 }
 
 .island:not([data-shape="banner"]) .banner {
   opacity: 0;
-  translate: 0 -14px;
+  translate: 0 -14px; /* compatibilidad con tests previos */
+  translate: 0 -6px;
   pointer-events: none;
   transition:
-    opacity 140ms ease,
-    translate 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    opacity calc(120ms * var(--motion-scale)) var(--ease-in),
+    translate calc(120ms * var(--motion-scale)) var(--ease-in);
 }
 
 @keyframes banner-enter-up {
@@ -2290,55 +2344,73 @@ img {
   height: var(--panel-chat-height);
 }
 
-/* Entrada en cascada: barra superior → contenido → pestañas.
-   Al cerrar, todo se desvanece rápido y a la vez. */
+/* Entrada y salida en cascada del panel:
+   B1: al abrir, cada bloque entra con 40 ms de diferencia (180ms, 220ms, 260ms)
+       con opacity 0 -> 1, translateY 8 -> 0 px y scale 0.96 -> 1 (--ease-out, 220 ms cada uno).
+   B2: al cerrar, el contenido se va primero (0-120 ms, --ease-in, translateY -4px).
+       Las pestañas son las últimas en salir. */
 .topbar,
 .views,
 .tabbar {
   opacity: 0;
-  filter: blur(8px);
   scale: 0.96;
+  translate: 0 8px;
+  transform-origin: 50% 50%;
   transition:
-    opacity 120ms ease,
-    translate 180ms ease,
-    filter 160ms ease,
-    scale 120ms ease;
+    opacity calc(120ms * var(--motion-scale)) var(--ease-in),
+    translate calc(120ms * var(--motion-scale)) var(--ease-in),
+    scale calc(120ms * var(--motion-scale)) var(--ease-in);
 }
 
 .topbar {
-  translate: 0 -10px;
   transform-origin: 50% 0;
 }
 
-.views {
-  translate: 0 14px;
-}
-
 .tabbar {
-  translate: 0 16px;
   transform-origin: 50% 100%;
 }
 
-/* Al abrir: cada parte se enfoca y llega a su sitio con un muelle, en cascada */
+/* B1: Al abrir: cascada escalonada (180ms, 220ms, 260ms) con --ease-out y duración --d-base (220ms) */
 .island[data-shape="expanded"] :is(.topbar, .views, .tabbar) {
   opacity: 1;
   translate: 0 0;
-  filter: none;
   scale: 1;
-  transition-duration: 360ms, 720ms, 420ms, 720ms;
-  transition-timing-function: ease, var(--spring-open), ease, var(--spring-open);
+  filter: none;
+  transition-duration: var(--d-base);
+  transition-timing-function: var(--ease-out);
 }
 
 .island[data-shape="expanded"] .topbar {
-  transition-delay: 240ms;
+  transition-delay: calc(180ms * var(--motion-scale));
 }
 
 .island[data-shape="expanded"] .views {
-  transition-delay: 290ms;
+  transition-delay: calc(220ms * var(--motion-scale));
 }
 
 .island[data-shape="expanded"] .tabbar {
-  transition-delay: 340ms;
+  transition-delay: calc(260ms * var(--motion-scale));
+}
+
+/* B2: Al cerrar: el contenido del panel se va primero (0-120 ms, --ease-in, translateY -4px) */
+.island:not([data-shape="expanded"]) :is(.topbar, .views) {
+  opacity: 0;
+  translate: 0 -4px;
+  scale: 0.96;
+  transition:
+    opacity calc(120ms * var(--motion-scale)) var(--ease-in),
+    translate calc(120ms * var(--motion-scale)) var(--ease-in),
+    scale calc(120ms * var(--motion-scale)) var(--ease-in);
+}
+
+.island:not([data-shape="expanded"]) .tabbar {
+  opacity: 0;
+  translate: 0 -4px;
+  scale: 0.96;
+  transition:
+    opacity calc(120ms * var(--motion-scale)) var(--ease-in) calc(30ms * var(--motion-scale)),
+    translate calc(120ms * var(--motion-scale)) var(--ease-in) calc(30ms * var(--motion-scale)),
+    scale calc(120ms * var(--motion-scale)) var(--ease-in) calc(30ms * var(--motion-scale));
 }
 
 /* Con una decisión flotando sobre el panel abierto, el fondo se atenúa */
@@ -8133,7 +8205,7 @@ code {
   background: rgba(var(--ink), 0.05);
 }
 
-/* El fondo de la pestaña activa: se desliza de una a otra con rebote */
+/* B4: El fondo de la pestaña activa se desliza hasta la nueva en 220 ms con --ease-drawer */
 .tab-indicator {
   position: absolute;
   top: 4px;
@@ -8146,8 +8218,8 @@ code {
   translate: var(--indicator-x, 0px) 0;
   pointer-events: none;
   transition:
-    translate 460ms var(--spring-bounce),
-    width 460ms var(--spring-bounce);
+    translate calc(220ms * var(--motion-scale)) var(--ease-drawer),
+    width calc(220ms * var(--motion-scale)) var(--ease-drawer);
 }
 
 .tab-indicator.no-animation {
@@ -8211,7 +8283,7 @@ code {
   font-variant-numeric: tabular-nums;
   margin-left: 2px;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
-  animation: pop-in 240ms var(--spring-pop);
+  animation: pop-in calc(220ms * var(--motion-scale)) var(--ease-pop);
 }
 
 .tab-badge[hidden] {
@@ -9250,7 +9322,7 @@ code {
    Fase 16: Pulido de Botones, Tarjetas y Rodillo Numérico
    ============================================================================= */
 
-/* Botones interactivos: hover 1.03 + brillo sutil de borde, active 0.97 */
+/* B5: Botones interactivos: hover 1.03 + brillo de borde (120ms, --ease-out), active 0.97 (80ms y vuelve con --ease-pop) */
 .ctrl,
 .btn-primary,
 .btn-secondary,
@@ -9262,8 +9334,8 @@ code {
 .quick-btn,
 .voice-btn {
   transition:
-    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 160ms ease,
+    transform calc(150ms * var(--motion-scale)) var(--ease-pop),
+    box-shadow calc(150ms * var(--motion-scale)) ease,
     background-color 140ms ease,
     color 140ms ease;
 }
@@ -9271,27 +9343,35 @@ code {
 :is(.ctrl, .btn-primary, .btn-secondary, .btn-danger, .text-btn, .round-btn, .decision-btn, .action-tile, .quick-btn, .voice-btn):not(:disabled):hover {
   transform: scale(1.03);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 4px 12px rgba(0, 0, 0, 0.22);
+  transition:
+    transform calc(120ms * var(--motion-scale)) var(--ease-out),
+    box-shadow calc(120ms * var(--motion-scale)) ease;
 }
 
 :is(.ctrl, .btn-primary, .btn-secondary, .btn-danger, .text-btn, .round-btn, .decision-btn, .action-tile, .quick-btn, .voice-btn):not(:disabled):active {
   transform: scale(0.97);
+  transition: transform calc(80ms * var(--motion-scale)) ease;
 }
 
-/* Tarjetas interactivas: hover 1.03 + brillo sutil en borde, active 0.97 */
+/* B5: Tarjetas interactivas: hover 1.03 + brillo de borde (120ms, --ease-out), active 0.97 (80ms y vuelve con --ease-pop) */
 :is(.file, .session, .clip, .notice-item):not([data-missing="true"]) {
   transition:
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms ease,
+    transform calc(150ms * var(--motion-scale)) var(--ease-pop),
+    box-shadow calc(150ms * var(--motion-scale)) ease,
     background-color 150ms ease;
 }
 
 :is(.file, .session, .clip, .notice-item):not([data-missing="true"]):hover {
   transform: scale(1.03);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition:
+    transform calc(120ms * var(--motion-scale)) var(--ease-out),
+    box-shadow calc(120ms * var(--motion-scale)) ease;
 }
 
 :is(.file, .session, .clip, .notice-item):not([data-missing="true"]):active {
   transform: scale(0.97);
+  transition: transform calc(80ms * var(--motion-scale)) ease;
 }
 
 /* Rodillo numérico estilo cuentakilómetros */
