@@ -133,6 +133,53 @@ function computeShape(activities) {
   return 'mini';
 }
 
+// -----------------------------------------------------------------------------
+// Director de Transiciones (Fase A)
+// -----------------------------------------------------------------------------
+let transitionGen = 0;
+let transitionSafetyTimer = null;
+let activeTransition = null;
+
+export const transitionDirector = {
+  getGeneration: () => transitionGen,
+  getActiveTransition: () => activeTransition,
+  start: (fromShape, toShape) => {
+    transitionGen++;
+    const currentGen = transitionGen;
+    activeTransition = { fromShape, toShape, gen: currentGen, startTime: Date.now() };
+
+    // will-change temporal solo durante la transición para liberar memoria GPU en reposo
+    if (island) {
+      island.style.willChange = 'width, height, border-radius, transform';
+    }
+
+    clearTimeout(transitionSafetyTimer);
+    let motionScale = 1;
+    try {
+      motionScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-scale')) || 1;
+    } catch {}
+    const safetyMs = Math.max(120, Math.round(700 * motionScale));
+
+    transitionSafetyTimer = setTimeout(() => {
+      if (transitionGen === currentGen) {
+        transitionDirector.finish(currentGen);
+      }
+    }, safetyMs);
+
+    return currentGen;
+  },
+  finish: (gen) => {
+    if (gen === undefined || gen === transitionGen) {
+      clearTimeout(transitionSafetyTimer);
+      transitionSafetyTimer = null;
+      activeTransition = null;
+      if (island) {
+        island.style.willChange = 'auto';
+      }
+    }
+  },
+};
+
 export function updateShape() {
   const activities = getActivities();
   const next = computeShape(activities);
@@ -144,6 +191,7 @@ export function updateShape() {
   if (next !== state.shape) {
     const previous = state.shape;
     state.shape = next;
+    transitionDirector.start(previous, next);
     island.dataset.motion = SHAPE_ORDER.indexOf(next) > SHAPE_ORDER.indexOf(previous) ? 'grow' : 'shrink';
     island.dataset.shape = next; // ← esto dispara la animación CSS
     if (previous === 'mini' || previous === 'bar') {
@@ -350,7 +398,12 @@ export function initIsland() {
   // que el cursor (quieto) haya quedado dentro o fuera: lo comprobamos de nuevo.
   const recheckPointer = (event) => {
     if (event.target !== event.currentTarget) return;
-    if (['height', 'width', 'translate', 'scale'].includes(event.propertyName)) setMouseInteractive(isPointerOnIsland());
+    if (['height', 'width', 'translate', 'scale'].includes(event.propertyName)) {
+      setMouseInteractive(isPointerOnIsland());
+      if (event.currentTarget === island) {
+        transitionDirector.finish();
+      }
+    }
   };
   island.addEventListener('transitionend', recheckPointer);
   bubbleEls.forEach((bubble) => bubble.addEventListener('transitionend', recheckPointer));

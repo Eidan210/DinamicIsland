@@ -78,10 +78,28 @@
   --music-color: #fa586a;
   --links-color: #4dabf7;
 
-  /* Curvas de animación */
-  --spring: cubic-bezier(0.32, 0.72, 0, 1); /* suave, sin rebote (tipo iOS) */
-  --spring-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* rebote ligero (se pasa un 4 %) */
-  --spring-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* rebote marcado (se pasa un 9 %) */
+  /* ---------- Tokens del Sistema de Movimiento (Fase A) ---------- */
+  --motion-scale: 1; /* Factor global: 1 = normal, 4 = cámara lenta, 0 = apagado */
+
+  /* Duraciones semánticas calculadas con el factor de escala */
+  --d-instant: calc(80ms * var(--motion-scale));
+  --d-fast: calc(150ms * var(--motion-scale));
+  --d-base: calc(220ms * var(--motion-scale));
+  --d-open: calc(420ms * var(--motion-scale));
+  --d-close: calc(300ms * var(--motion-scale));
+  --d-slow: calc(600ms * var(--motion-scale));
+
+  /* Curvas maestras de aceleración */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* Salida suave quint */
+  --ease-in: cubic-bezier(0.64, 0, 0.78, 0); /* Entrada rápida */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* Curva drawer estilo iOS (asienta sin rebote) */
+  --ease-spring: linear(0, 0.024, 0.085, 0.171, 0.27, 0.374, 0.477, 0.574, 0.663, 0.742, 0.811, 0.868, 0.916, 0.953, 0.982, 1.004, 1.019, 1.03, 1.035, 1.038, 1.038, 1.037, 1.034, 1.03, 1.026, 1.022, 1.018, 1.015, 1.012, 1.009, 1); /* Muelle con ~4% de rebote para abrir */
+  --ease-pop: linear(0, 0.041, 0.145, 0.285, 0.441, 0.596, 0.739, 0.861, 0.96, 1.033, 1.083, 1.113, 1.125, 1.124, 1.114, 1.098, 1.079, 1.059, 1.04, 1.024, 1.01, 0.999, 0.992, 0.987, 0.985, 0.984, 0.985, 0.987, 0.989, 0.992, 1); /* Muelle vivo con ~12% de rebote */
+
+  /* Curvas de animación (retrocompatibilidad) */
+  --spring: var(--ease-drawer);
+  --spring-bounce: var(--ease-spring);
+  --spring-pop: var(--ease-pop);
   /* Muelles "de verdad", como los de iOS: la curva de un muelle amortiguado
      muestreada con linear() (se pasa, vuelve y se asienta). La isla los usa
      al cambiar de forma. */
@@ -293,7 +311,7 @@ img {
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transform-origin: 50% 0;
-  will-change: width, height, border-radius;
+  will-change: auto;
   transform: translateZ(0);
   transition:
     width var(--size-duration) var(--size-easing),
@@ -394,39 +412,40 @@ img {
 }
 
 .island[data-motion="grow"] {
-  --size-duration: 480ms;
-  --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --size-duration: var(--d-open);
+  --size-easing: var(--ease-spring);
 }
 
 .island[data-motion="grow"][data-shape="banner"] {
   --size-duration: 380ms;
-  --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --size-duration: calc(380ms * var(--motion-scale));
+  --size-easing: var(--ease-spring);
 }
 
 .island[data-motion="shrink"][data-shape="banner"] {
-  --size-duration: 340ms;
-  --size-easing: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --size-duration: calc(260ms * var(--motion-scale));
+  --size-easing: var(--ease-drawer);
 }
 
 .island[data-motion="grow"][data-shape="charging"] {
-  --size-duration: 320ms;
-  --size-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --size-duration: calc(320ms * var(--motion-scale));
+  --size-easing: var(--ease-spring);
 }
 
 .island[data-motion="grow"][data-shape="expanded"] {
-  --size-duration: 540ms;
+  --size-duration: var(--d-open);
   transition:
-    width 300ms cubic-bezier(0.16, 1, 0.3, 1),
-    height 360ms cubic-bezier(0.25, 1.04, 0.38, 1.04) 140ms,
-    border-radius 300ms cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 260ms ease,
-    box-shadow 300ms ease;
+    width calc(250ms * var(--motion-scale)) var(--ease-spring),
+    height calc(330ms * var(--motion-scale)) var(--ease-spring) calc(90ms * var(--motion-scale)),
+    border-radius calc(250ms * var(--motion-scale)) var(--ease-spring),
+    background-color var(--d-base) ease,
+    box-shadow var(--d-close) ease;
 }
 
 .island[data-motion="shrink"]:not([data-shape="expanded"]) {
-  transition-delay: 110ms;
-  --size-duration: 340ms;
-  --size-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(110ms * var(--motion-scale));
+  --size-duration: var(--d-close);
+  --size-easing: var(--ease-drawer);
 }
 
 /* Al encoger hacia píldora o actividad, una transición ágil y suave sin retrasos */
@@ -8409,6 +8428,11 @@ code {
 /* Sin animaciones: con "animations": "off", o con "system" y los "Efectos de
    animación" de Windows apagados (motion.js pone data-reduce-motion). Por
    defecto ("always") Notch anima siempre. */
+:root[data-reduce-motion="true"],
+:root[data-animations="off"] {
+  --motion-scale: 0 !important;
+}
+
 :root[data-reduce-motion="true"],
 :root[data-reduce-motion="true"] *,
 :root[data-reduce-motion="true"] *::before,

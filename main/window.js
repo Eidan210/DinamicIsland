@@ -142,7 +142,10 @@ function createWindow() {
     win.reload();
   });
 
-  if (IS_DEV) win.webContents.openDevTools({ mode: 'detach' });
+  if (IS_DEV) {
+    win.webContents.openDevTools({ mode: 'detach' });
+    startDevMetricsLogger();
+  }
 }
 
 /** Recoloca la ventana cuando cambian los monitores (resolución, escala, conectar/desconectar...). */
@@ -152,6 +155,30 @@ function repositionWindow() {
     win.setBounds(getWindowBounds());
     const zoomFactor = ((state.settings && state.settings.scale) || 100) / 100;
     win.webContents.setZoomFactor(zoomFactor);
+  }
+}
+
+let metricsInterval = null;
+
+/** Medidor de consumo de CPU y memoria exclusivo para modo desarrollo (npm run dev). */
+function startDevMetricsLogger() {
+  if (metricsInterval || !IS_DEV) return;
+  metricsInterval = setInterval(() => {
+    try {
+      if (!app || typeof app.getAppMetrics !== 'function') return;
+      const metrics = app.getAppMetrics();
+      const totalCpu = metrics.reduce((acc, m) => acc + (m.cpu?.percentCPUUsage || 0), 0);
+      const rssMb = (process.memoryUsage().rss / (1024 * 1024)).toFixed(1);
+      console.log(`[dev:perf] CPU: ${totalCpu.toFixed(1)}% | RAM (main): ${rssMb} MB | Procesos: ${metrics.length}`);
+    } catch {}
+  }, 5000);
+  if (metricsInterval.unref) metricsInterval.unref();
+}
+
+function stopDevMetricsLogger() {
+  if (metricsInterval) {
+    clearInterval(metricsInterval);
+    metricsInterval = null;
   }
 }
 
@@ -335,6 +362,8 @@ function showEditMenu() {
 }
 
 module.exports = {
+  startDevMetricsLogger,
+  stopDevMetricsLogger,
   createWindow,
   repositionWindow,
   setExpanded,
