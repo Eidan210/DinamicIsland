@@ -14,13 +14,6 @@ import { getActivities, onShapeChange, updateShape } from './island.js';
 import { onPanelChange } from './panel.js';
 import { testLight } from './light.js';
 import { addLocalNotice } from './notices.js';
-import {
-  updateStatusRing,
-  triggerRingFlash,
-  applyPomodoroLinearProgress,
-  freezePomodoroLinearProgress,
-} from './status-ring.js';
-
 export const POMODORO_LABELS = { idle: 'Listo', running: 'Enfocado', paused: 'En pausa', finished: '¡Hecho!' };
 const POMODORO_BUTTON = { idle: 'Iniciar', running: 'Pausar', paused: 'Seguir', finished: 'Otra vez' };
 const STEP_MINUTES = 5;
