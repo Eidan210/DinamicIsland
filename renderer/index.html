@@ -230,6 +230,12 @@
         <div class="light-fill"></div>
       </div>
 
+      <!-- Anillo de estado (Fase D): contorno de 2 px que se llena según la actividad prioritaria -->
+      <svg id="status-ring" class="status-ring" aria-hidden="true" data-active="false">
+        <rect class="status-ring-track" pathLength="100" />
+        <rect id="status-ring-progress" class="status-ring-progress" pathLength="100" />
+      </svg>
+
       <!-- La cara, siempre arriba en el centro: Clawd (o los dos ojos verdes de
            siempre, con "clawd": false). clawd.js y eyes.js le dan vida. -->
       <div class="face" id="face" aria-hidden="true">
@@ -334,6 +340,9 @@
           <svg class="activity-ring" viewBox="0 0 20 20">
             <circle class="ring-track" cx="10" cy="10" r="7" />
             <circle class="ring-progress" id="activity-progress" cx="10" cy="10" r="7" pathLength="100" />
+          </svg>
+          <svg class="activity-timer-icon" id="activity-timer-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <use href="#i-timer"></use>
           </svg>
           <img class="activity-art" id="activity-art" alt="" />
           <span class="activity-ai">

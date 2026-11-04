@@ -72,6 +72,7 @@ import { initTray, loadTray } from './tray.js';
 import { initHome, loadHome, startHome } from './home.js';
 import { initLight, applyLightSettings, playLight, stopLight, testLight, LIGHT_EVENTS } from './light.js';
 import { initVoice } from './voice.js';
+import { initStatusRing, updateStatusRing } from './status-ring.js';
 
 const HELLO_MS = 2400; // al arrancar, la isla se ve como píldora este tiempo
 
@@ -151,6 +152,7 @@ async function init() {
     renderLyricsToggle();
     applyChatSettings();
     scheduleBye(); // "clawdByeTime" puede haber cambiado
+    updateStatusRing();
     updateShape(); // (también revisa el glow y a Clawd)
   });
 
@@ -192,6 +194,7 @@ async function init() {
   keepAwakeFor(HELLO_MS);
   loadInitialNotices(loaded.notices);
   initBattery();
+  initStatusRing();
   // 5. Escucha de teclado y portapapeles global (Fase 11)
   if (window.notch.keyboard?.onEvent) {
     window.notch.keyboard.onEvent((event) => {

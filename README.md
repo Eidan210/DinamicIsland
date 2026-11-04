@@ -613,3 +613,18 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **Recordatorio inteligente de agua:** Notch te recuerda hidratarte cada hora (solo entre las 7:00 y las 22:00) con aviso en la isla y luz celeste. Se recalcula solo al suspender y reanudar Windows sin gastar CPU.
 - **Horario semanal:** Programación de eventos recurrentes en `%APPDATA%\Notch\eventos.json` con temporizadores exactos.
 - **Historial de Focus:** Acumula minutos diarios de concentración en `%APPDATA%\Notch\focus.json` y premia 4 bloques de Pomodoro con aviso de descanso largo de 15 minutos.
+
+---
+
+## Fase D: Anillo de Estado y Temporizador en la Píldora
+
+- **Anillo de estado continuo (D1):** Anillo perimetral fino de 2 px alrededor de la isla que se llena según la actividad prioritaria del momento (Pomodoro, batería cargando, agua del día o progreso de la canción).
+  - Ajustes en `settings.json`: `"statusRing": true|false` y `"statusRingPriority": ["pomodoro", "charging", "water", "music"]`.
+  - **Aparición y transiciones fluidas:** Dibuja el contorno al aparecer en 600 ms (`--ease-out`), cambios de valor en 400 ms y transición de color reactivo en 300 ms.
+  - **Colores reactivos:** Batería (>20% verde, 10–20% ámbar, <10% rojo), Pomodoro (naranja tomate `#ff6347`, ámbar en pausa), agua (cian `#38bdf8`) y música (tinte de carátula).
+  - **Destello al 100%:** Al completarse la meta o bloque, emite un pulso luminoso de 500 ms (`@keyframes status-ring-flash`).
+  - **Consumo 0% en Pomodoro:** El avance del bloque se interpola con una única transición CSS lineal en la GPU, sin temporizadores de JavaScript en cada segundo. Pausar la congela instantáneamente.
+- **Temporizador en la píldora compacta (D2):**
+  - Icono de temporizador `#i-timer` a la izquierda, anillo D1 envolviendo la cápsula y cifras de cuenta atrás rodando en 150 ms con `font-variant-numeric: tabular-nums` a la derecha.
+  - Al concluir la sesión, la isla emite el aviso C1 («🍅 ¡Bloque terminado!») y el destello de brillo en el anillo.
+
