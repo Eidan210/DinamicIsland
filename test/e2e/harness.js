@@ -213,6 +213,9 @@ function loadFreshAiChat() {
   delete require.cache[require.resolve(bridgePath)];
   delete require.cache[require.resolve(configPath)];
 
+  const config = require(configPath);
+  config.saveSetting = () => {};
+
   const aiChat = require(aiChatPath);
   const stateModule = require(statePath);
 

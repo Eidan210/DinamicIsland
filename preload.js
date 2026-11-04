@@ -26,6 +26,10 @@ contextBridge.exposeInMainWorld('notch', {
 
   /** Devuelve (Promise) config/settings.json con sus valores por defecto. */
   getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSetting: (key, value) => ipcRenderer.invoke('settings:save-key', String(key), value),
+  openCasaDeClawd: () => ipcRenderer.send('casa:open'),
+  openDataFolder: () => ipcRenderer.send('app:open-data-folder'),
+  getVersion: () => ipcRenderer.invoke('app:get-version'),
 
   /** true = el ratón está sobre el notch (recibir clics); false = dejar pasar los clics. */
   setMouseInteractive: (interactive) =>
@@ -122,6 +126,7 @@ contextBridge.exposeInMainWorld('notch', {
     get: () => ipcRenderer.invoke('lyrics:get'),
     /** Vuelve a buscarla (tras un error de conexión). */
     retry: () => ipcRenderer.send('lyrics:retry'),
+    clearCache: () => ipcRenderer.invoke('lyrics:clear-cache'),
     /** Avisa cuando cambia (otra canción, ya llegó...): callback(estado). */
     onChange: (callback) => subscribe('lyrics:state', callback),
   },
@@ -203,6 +208,7 @@ contextBridge.exposeInMainWorld('notch', {
     /** Avisa cuando termina ese arrastre (soltaste o lo cancelaste). */
     onDragEnd: (callback) => subscribe('tray:drag-end', callback),
     /** Abre el Explorador con el archivo marcado. */
+    open: (id) => ipcRenderer.invoke('tray:open', String(id)),
     showInFolder: (id) => ipcRenderer.send('tray:show', String(id)),
   },
 

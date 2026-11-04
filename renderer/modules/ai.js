@@ -19,7 +19,7 @@ import { state } from './state.js';
 import { getActivities, onShapeChange, updateShape } from './island.js';
 import { makeBeatSpinner } from './beat.js';
 import { onPanelChange } from './panel.js';
-import { getCurrentTab, onTabChange, syncTallState } from './tabs.js';
+import { getCurrentTab, onTabChange, setTabBadge, syncTallState } from './tabs.js';
 import { focusChatInput, syncChatVisibility } from './chat.js';
 import { testLight, stopLight, getCurrentLight } from './light.js';
 
@@ -109,6 +109,7 @@ export function setAiState(next) {
     }
   }
   renderAll();
+  setTabBadge('ai', state.ai.pending.length, 'warning');
   updateShape();
 }
 

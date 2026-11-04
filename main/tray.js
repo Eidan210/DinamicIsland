@@ -36,7 +36,8 @@ const tray = {
 };
 
 function getTrayPath() {
-  return path.join(app.getPath('userData'), 'bandeja.json');
+  const base = app?.getPath ? app.getPath('userData') : path.join(process.env.APPDATA || process.cwd(), 'Notch');
+  return path.join(base, 'bandeja.json');
 }
 
 /** En Windows, "C:\Fotos" y "c:\fotos" son la misma carpeta. */
@@ -370,6 +371,24 @@ function showInFolder(id) {
   if (item && !item.missing) shell.showItemInFolder(item.path);
 }
 
+/**
+ * Abre el archivo directamente en el sistema operativo mediante shell.openPath (Fase 16).
+ */
+async function openFile(id) {
+  await ensureLoaded();
+  const item = tray.items.find((other) => other.id === String(id));
+  if (item && !item.missing) {
+    if (typeof shell?.openPath !== 'function') return { ok: true, fallback: true };
+    const error = await shell.openPath(item.path);
+    if (error) {
+      console.warn(`[bandeja] No se pudo abrir ${item.path}: ${error}`);
+      return { ok: false, error };
+    }
+    return { ok: true };
+  }
+  return { ok: false, error: 'not_found' };
+}
+
 module.exports = {
   getTrayState,
   addPaths,
@@ -379,5 +398,6 @@ module.exports = {
   refreshTray,
   startDragOut,
   showInFolder,
+  openFile,
   MAX_ITEMS,
 };

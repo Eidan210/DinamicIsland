@@ -95,6 +95,9 @@ const DEFAULT_SETTINGS = {
   voiceModelPath: '',
   voicePasteOnFinish: false,
   voiceMicDevice: 'default',
+  // Fase 16: Pulido y ajustes
+  lyricsOffset: 0, // desfase de la letra sincronizada en segundos (-2 a +2 s)
+  lyricsVisible: true, // mostrar u ocultar la letra en la página Música (botón 💬)
 };
 
 const THEMES = ['auto', 'light', 'dark'];
@@ -311,6 +314,13 @@ function validateSettings(data) {
     result.voiceMicDevice = DEFAULT_SETTINGS.voiceMicDevice;
   }
   result.voiceMicDevice = result.voiceMicDevice.trim();
+
+  // Fase 16: Pulido y ajustes
+  const lyricsOffset = Number(result.lyricsOffset);
+  result.lyricsOffset = Number.isFinite(lyricsOffset) && lyricsOffset >= -2 && lyricsOffset <= 2
+    ? Math.round(lyricsOffset * 10) / 10
+    : DEFAULT_SETTINGS.lyricsOffset;
+  result.lyricsVisible = result.lyricsVisible !== false;
 
   return result;
 }

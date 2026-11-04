@@ -32,7 +32,8 @@ const water = require('./water');
 const schedule = require('./schedule');
 const focusStats = require('./focus-stats');
 const weather = require('./weather');
-const { clipboard } = require('electron');
+const { app, clipboard, shell } = require('electron');
+const config = require('./config');
 
 /** Una lista de textos de la página (ids, rutas...), revisada. */
 function stringList(value, max) {
@@ -42,6 +43,23 @@ function stringList(value, max) {
 function registerIpcHandlers() {
   // Ventana
   onRendererRequest('settings:get', () => state.settings);
+  onRendererRequest('settings:save-key', (key, value) => {
+    config.saveSetting(String(key), value);
+    return { ok: true };
+  });
+  onRendererMessage('casa:open', () => {
+    const casaClawd = require('./casa-clawd');
+    casaClawd.openCasaClawd();
+  });
+  onRendererMessage('app:open-data-folder', () => {
+    try {
+      const dir = typeof app?.getPath === 'function' ? app.getPath('userData') : '';
+      if (dir && typeof shell?.openPath === 'function') shell.openPath(dir);
+    } catch (err) {
+      console.warn('[ipc] Error abriendo carpeta de datos:', err);
+    }
+  });
+  onRendererRequest('app:get-version', () => (typeof app?.getVersion === 'function' ? app.getVersion() : '0.18.0'));
   onRendererRequest('theme:get', () => theme.getEffectiveTheme());
   onRendererMessage('notch:set-mouse-interactive', (interactive) => notchWindow.setMouseInteractive(interactive === true));
   onRendererMessage('notch:expand', () => notchWindow.setExpanded(true));
@@ -73,6 +91,7 @@ function registerIpcHandlers() {
   onRendererMessage('media:set-activity', (enabled) => music.setMusicActivity(enabled === true));
   onRendererRequest('lyrics:get', () => lyrics.getLyricsState());
   onRendererMessage('lyrics:retry', () => lyrics.retryLyrics());
+  onRendererRequest('lyrics:clear-cache', () => lyrics.clearCache());
   onRendererRequest('audio:get', () => audio.getAudioState());
   onRendererMessage('audio:set-output', (id) => audio.setOutputDevice(String(id)));
   onRendererRequest('volume:get', () => volume.getVolumeState());
@@ -98,6 +117,7 @@ function registerIpcHandlers() {
   onRendererMessage('tray:refresh', () => tray.refreshTray());
   onRendererMessage('tray:drag', (ids) => tray.startDragOut(stringList(ids, tray.MAX_ITEMS)));
   onRendererMessage('tray:show', (id) => tray.showInFolder(String(id)));
+  onRendererRequest('tray:open', (id) => tray.openFile(String(id)));
 
   // Centro de avisos
   onRendererRequest('notices:get', () => notices.getNotices());

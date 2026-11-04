@@ -149,7 +149,7 @@ function updateTile(tile, item) {
   setText(meta, item.missing ? 'No está' : [item.isDir ? 'Carpeta' : formatSize(item.size), item.folder].filter(Boolean).join(' · '));
   tile.title = item.missing
     ? `${item.name}: ya no está donde estaba (se movió o se borró)`
-    : `${item.name}${item.folder ? ` · en ${item.folder}` : ''}\nArrástralo para copiarlo · doble clic: mostrar en la carpeta`;
+    : `${item.name}${item.folder ? ` · en ${item.folder}` : ''}\nArrástralo para copiarlo · doble clic: abrir · botón: mostrar en la carpeta`;
   tile.setAttribute('aria-label', `${item.name}${item.missing ? ', no está' : ''}`);
 }
 
@@ -463,7 +463,7 @@ export function initTray() {
   });
   listEl.addEventListener('dblclick', (event) => {
     const tile = event.target.closest('.file');
-    if (tile && !event.target.closest('.file-action') && tile.dataset.missing !== 'true') window.notch.tray.showInFolder(tile.dataset.id);
+    if (tile && !event.target.closest('.file-action') && tile.dataset.missing !== 'true') window.notch.tray.open(tile.dataset.id);
   });
   listEl.addEventListener('keydown', (event) => {
     const tile = event.target;

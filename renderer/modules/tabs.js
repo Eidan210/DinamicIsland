@@ -117,6 +117,34 @@ export function applyTabShortcuts() {
   });
 }
 
+/**
+ * Muestra u oculta un badge de contador sobre una pestaña (ej. pestaña IA con «1»).
+ * @param {string} tabName
+ * @param {number} count
+ * @param {string} [tone]
+ */
+export function setTabBadge(tabName, count, tone = 'warning') {
+  const button = tabbar.querySelector(`.tab[data-tab="${tabName}"]`);
+  if (!button) return;
+  let badge = button.querySelector('.tab-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'tab-badge';
+    button.append(badge);
+  }
+  const num = Number(count) || 0;
+  if (num > 0) {
+    badge.textContent = String(num);
+    badge.dataset.tone = tone;
+    badge.hidden = false;
+  } else {
+    badge.hidden = true;
+  }
+  if (button.classList.contains('is-active')) {
+    moveTabIndicator(false);
+  }
+}
+
 export function initTabs() {
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => showTab(button.dataset.tab));

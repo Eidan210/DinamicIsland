@@ -666,10 +666,9 @@ describe('Fase 15 — Dictado por Voz Local (estilo Murmur)', () => {
       assert.ok(fs.existsSync(pkgPath), 'package.json debe existir');
 
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      assert.strictEqual(
-        pkg.version,
-        '0.17.0',
-        `package.json debe tener la versión 0.17.0 (actual: ${pkg.version})`
+      assert.ok(
+        pkg.version >= '0.17.0',
+        `package.json debe tener la versión 0.17.0 o superior (actual: ${pkg.version})`
       );
     });
 

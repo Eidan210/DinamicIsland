@@ -48,25 +48,62 @@ export function setText(element, text) {
  * Si cambia la longitud (p. ej. "25:00" → "¡Listo!"), se cambia sin más.
  * Usa SIEMPRE esta función para ese elemento (recuerda el texto anterior).
  */
-export function setRollingText(element, text, { countDown = false } = {}) {
+export function setRollingText(element, text, { countDown, align = 'right' } = {}) {
   const previous = element.dataset.rollText;
   if (previous === text) return;
   element.dataset.rollText = text;
   const before = [...(previous ?? '')];
   const after = [...text];
-  if (previous === undefined || before.length !== after.length || isMotionReduced()) {
+  if (previous === undefined || isMotionReduced()) {
     element.textContent = text;
     return;
   }
+
+  let isDown = countDown;
+  if (isDown === undefined) {
+    const numPrev = parseFloat(previous.replace(/[^\d.-]/g, ''));
+    const numNext = parseFloat(text.replace(/[^\d.-]/g, ''));
+    if (!Number.isNaN(numPrev) && !Number.isNaN(numNext)) {
+      isDown = numNext < numPrev;
+    } else {
+      isDown = false;
+    }
+  }
+
+  const hasDigits = /\d/.test(text) && /\d/.test(previous);
+  if (before.length !== after.length && (!hasDigits || align !== 'right')) {
+    element.textContent = text;
+    return;
+  }
+
+  const offset = before.length - after.length;
   element.replaceChildren(
     ...after.map((char, index) => {
-      if (char === before[index]) return char;
+      const beforeIndex = index + offset;
+      const prevChar = beforeIndex >= 0 && beforeIndex < before.length ? before[beforeIndex] : undefined;
+      if (char === prevChar) return char;
       const span = document.createElement('span');
-      span.className = countDown ? 'roll-down' : 'roll-up';
+      span.className = isDown ? 'roll-down' : 'roll-up';
       span.textContent = char;
       return span;
     })
   );
+}
+
+/**
+ * Crea un rodillo numérico reutilizable (estilo cuentakilómetros) para reloj,
+ * porcentajes y temporizadores.
+ */
+export function createNumberRoller(element, options = {}) {
+  if (element) element.style.fontVariantNumeric = 'tabular-nums';
+  return {
+    set(value, opt = {}) {
+      setRollingText(element, String(value), { ...options, ...opt });
+    },
+    getElement() {
+      return element;
+    },
+  };
 }
 
 /** 1499000 ms → "24:59" (cuenta atrás del Pomodoro) */

@@ -49,7 +49,7 @@ import { initTabs, moveTabIndicator, applyTabShortcuts } from './tabs.js';
 import { initClock, applyClockSettings } from './clock.js';
 import { startEyes } from './eyes.js';
 import { initPomodoro, renderPomodoro } from './pomodoro.js';
-import { initMusic, loadInitialMedia, renderMedia, renderIslandToggle } from './music.js';
+import { initMusic, loadInitialMedia, renderMedia, renderIslandToggle, renderLyricsToggle } from './music.js';
 import { initEq } from './eq.js';
 import { initBackdrop } from './backdrop.js';
 import { initLyrics, setLyrics } from './lyrics.js';
@@ -148,6 +148,7 @@ async function init() {
     applyClockSettings();
     applyTabShortcuts();
     renderIslandToggle();
+    renderLyricsToggle();
     applyChatSettings();
     scheduleBye(); // "clawdByeTime" puede haber cambiado
     updateShape(); // (también revisa el glow y a Clawd)
@@ -178,6 +179,7 @@ async function init() {
   applyClockSettings();
   applyTabShortcuts();
   renderIslandToggle();
+  renderLyricsToggle();
   renderPomodoro();
   renderMedia();
   moveTabIndicator(false);

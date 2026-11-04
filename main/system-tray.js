@@ -58,14 +58,9 @@ function setIslandPaused(pause) {
  * Abre o enfoca la Casa de Clawd (ajustes).
  */
 function openCasaDeClawd() {
-  // Si la ventana está minimizada o cerrada, se muestra
-  const { win } = state;
   if (isPaused) setIslandPaused(false);
-  if (win && !win.isDestroyed()) {
-    // Abre el panel en la vista Home o en configuración
-    const windowModule = require('./window');
-    windowModule.openTab('home');
-  }
+  const casaClawd = require('./casa-clawd');
+  casaClawd.openCasaClawd();
 }
 
 /**

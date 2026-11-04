@@ -300,6 +300,13 @@ function showContextMenu() {
       click: (item) => music.setMusicActivity(item.checked),
     },
     { type: 'separator' },
+    {
+      label: 'Casa de Clawd (Ajustes)',
+      click: () => {
+        const casaClawd = require('./casa-clawd');
+        casaClawd.openCasaClawd();
+      },
+    },
     { label: 'Salir de Notch', click: () => app.quit() },
   ]);
 

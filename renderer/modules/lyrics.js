@@ -50,7 +50,7 @@ let enterTimer = null;
 let fillWords = []; // las palabras de la línea que se está iluminando: { element, from, to, fill, lift }
 
 function isVisible() {
-  return state.isExpanded && getCurrentTab() === 'music';
+  return state.isExpanded && getCurrentTab() === 'music' && state.settings?.lyricsVisible !== false;
 }
 
 /** ¿La letra es de la canción que suena? (al cambiar de canción, un instante puede no serlo) */
@@ -185,7 +185,8 @@ function syncLyrics({ animate: withAnimation = true, resync = false } = {}) {
 
   const playing = state.media.status === 'playing';
   lyricsEl.classList.toggle('is-paused', !playing);
-  const position = getMediaPosition() + LEAD;
+  const offset = Number(state.settings?.lyricsOffset || 0);
+  const position = getMediaPosition() + LEAD + offset;
   const index = findLineIndex(position);
   if (index !== currentIndex) showLine(index, withAnimation);
   else if (resync && index >= 0) startLineFill(index); // la misma línea, pero otra posición
@@ -234,7 +235,8 @@ function startLineFill(index) {
   if (!element || !line) return;
   const rate = state.media.rate || 1;
   const gap = lineGap(index);
-  const elapsed = Math.max(0, getMediaPosition() + LEAD - line.time);
+  const offset = Number(state.settings?.lyricsOffset || 0);
+  const elapsed = Math.max(0, getMediaPosition() + LEAD + offset - line.time);
   clearFill();
 
   if (element.classList.contains('is-interlude')) {

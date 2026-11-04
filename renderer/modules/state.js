@@ -19,6 +19,8 @@ export const state = {
     revealOnHover: true,
     pomodoroMinutes: 25,
     musicActivity: true,
+    lyricsOffset: 0,
+    lyricsVisible: true,
     volumeIndicator: true,
     glow: true,
     clawd: true,

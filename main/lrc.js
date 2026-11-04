@@ -55,8 +55,9 @@ function cleanTitle(title) {
   const original = String(title || '').trim();
   const cleaned = original
     .replace(/\s*[([](?:feat|ft|with|con)\.?\s[^)\]]*[)\]]/gi, '')
+    .replace(/\s*[([][^)\]]*(?:official\s+video|official\s+music\s+video|video\s+oficial|videoclip|clip\s+oficial|official\s+audio|audio\s+oficial|lyrics?|letras?|lyric\s+video|visualizer|official\s+visualizer|audio|video)[^)\]]*[)\]]/gi, '')
     .replace(/\s*[([][^)\]]*(?:remaster|version|versión|live|en vivo|edit|mono|stereo|deluxe|bonus)[^)\]]*[)\]]/gi, '')
-    .replace(/\s+-\s+[^-]*(?:remaster|version|versión|live|en vivo|edit|mono|stereo)[^-]*$/i, '')
+    .replace(/\s+-\s+[^-]*(?:remaster|version|versión|live|en vivo|edit|mono|stereo|official\s+video|official\s+audio|lyrics?|audio|visualizer)[^-]*$/i, '')
     .trim();
   return cleaned || original;
 }

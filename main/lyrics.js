@@ -46,9 +46,19 @@ const lyrics = {
 let pendingTrack = null; // la canción que espera su turno para preguntar a LRCLIB
 let fetchTimer = null;
 
+function getUserDataDir() {
+  if (typeof app?.getPath === 'function') {
+    try {
+      return app.getPath('userData');
+    } catch {}
+  }
+  return path.join(process.env.APPDATA || process.cwd(), 'Notch');
+}
+
 /** LRCLIB pide que cada app se presente con su nombre, versión y web. */
 function getUserAgent() {
-  return `Notch/${app.getVersion()} (https://github.com/Eidan210/DinamicIsland)`;
+  const version = typeof app?.getVersion === 'function' ? app.getVersion() : '0.18.0';
+  return `Notch/${version} (https://github.com/Eidan210/DinamicIsland)`;
 }
 
 function trackKey(track) {
@@ -147,17 +157,18 @@ async function findLyrics({ title, artist, album, duration }) {
   // Sin artista (un vídeo cualquiera en el navegador...) no buscamos: con
   // solo el título saldría la letra de otra canción que se llame igual.
   if (!artist) return { status: 'none' };
+  const cleanedTitle = cleanTitle(title);
   if (duration > 0) {
-    const params = new URLSearchParams({ track_name: title, artist_name: artist });
+    const params = new URLSearchParams({ track_name: cleanedTitle, artist_name: artist });
     if (album) params.set('album_name', album);
     params.set('duration', String(Math.round(duration)));
     const record = await requestJson(`/api/get?${params}`);
     if (record) return recordToLyrics(record);
   }
 
-  const params = new URLSearchParams({ track_name: cleanTitle(title), artist_name: artist });
+  const params = new URLSearchParams({ track_name: cleanedTitle, artist_name: artist });
   const results = await requestJson(`/api/search?${params}`);
-  return recordToLyrics(pickBest(results, { title, artist, duration }));
+  return recordToLyrics(pickBest(results, { title: cleanedTitle, artist, duration }));
 }
 
 /** Pide un JSON a LRCLIB. Devuelve null si no lo encuentra (404). */
@@ -184,7 +195,7 @@ async function requestJson(pathAndQuery) {
 
 function cachePath(key) {
   const name = crypto.createHash('sha1').update(key).digest('hex');
-  return path.join(app.getPath('userData'), 'lyrics', `${name}.json`);
+  return path.join(getUserDataDir(), 'lyrics', `${name}.json`);
 }
 
 async function readCache(key) {
@@ -209,7 +220,30 @@ async function writeCache(key, result) {
   }
 }
 
+/**
+ * Borra la caché de letras (archivos JSON en %APPDATA%\Notch\lyrics).
+ */
+async function clearCache() {
+  const dir = path.join(getUserDataDir(), 'lyrics');
+  try {
+    if (fs.existsSync(dir)) {
+      const files = await fs.promises.readdir(dir);
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          await fs.promises.unlink(path.join(dir, file)).catch(() => {});
+        }
+      }
+    }
+    // Si hay una canción sonando, volvemos a buscar
+    onTrackChange(music.getCurrentTrack(), { force: true });
+    return { ok: true };
+  } catch (err) {
+    console.warn(`[letras] Error borrando caché de letras: ${err.message}`);
+    return { ok: false, error: err.message };
+  }
+}
+
 // Nos enteramos de cada cambio de canción.
 music.onTrackChange((track) => onTrackChange(track));
 
-module.exports = { getLyricsState, retryLyrics, onSettingsChanged };
+module.exports = { getLyricsState, retryLyrics, onSettingsChanged, clearCache };

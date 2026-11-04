@@ -50,6 +50,7 @@ const mediaPrev = $('media-prev');
 const mediaToggle = $('media-toggle');
 const mediaNext = $('media-next');
 const mediaIsland = $('media-island');
+const mediaLyrics = $('media-lyrics');
 // ...isla, burbuja y aviso.
 const island = $('island');
 const activityEl = $('activity');
@@ -396,7 +397,31 @@ export function renderIslandToggle() {
   mediaIsland.title = on ? 'Se muestra en la isla (pulsa para ocultarla)' : 'No se muestra en la isla (pulsa para mostrarla)';
 }
 
+/** El botón "Mostrar letra" refleja el ajuste lyricsVisible. */
+export function renderLyricsToggle() {
+  if (!mediaLyrics) return;
+  const on = state.settings.lyricsVisible !== false;
+  mediaLyrics.setAttribute('aria-pressed', String(on));
+  mediaLyrics.title = on ? 'Ocultar letra' : 'Mostrar letra';
+  const lyricsEl = $('lyrics');
+  if (lyricsEl) {
+    lyricsEl.dataset.visible = String(on);
+    lyricsEl.hidden = !on;
+  }
+}
+
 export function initMusic() {
+  renderLyricsToggle();
+  if (mediaLyrics) {
+    mediaLyrics.addEventListener('click', () => {
+      state.settings.lyricsVisible = !(state.settings.lyricsVisible !== false);
+      renderLyricsToggle();
+      if (window.notch?.saveSetting) {
+        window.notch.saveSetting('lyricsVisible', state.settings.lyricsVisible);
+      }
+      notifyMediaChange();
+    });
+  }
   mediaToggle.addEventListener('click', toggleMedia);
   mediaNext.addEventListener('click', () => skipTrack(1));
   mediaPrev.addEventListener('click', () => skipTrack(-1));

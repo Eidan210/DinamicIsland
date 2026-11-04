@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casa de Clawd — Ajustes de Notch</title>
+  <link rel="stylesheet" href="casa-clawd.css">
+</head>
+<body>
+  <div class="casa-app">
+    <!-- Barra lateral de navegación con las 14 secciones -->
+    <aside class="casa-sidebar" role="tablist" aria-label="Secciones de ajustes">
+      <div class="casa-brand">
+        <div class="casa-clawd-icon">
+          <svg viewBox="0 0 18 10">
+            <g fill="currentColor">
+              <rect x="4" y="8" width="1" height="2"/>
+              <rect x="6" y="8" width="1" height="2"/>
+              <rect x="11" y="8" width="1" height="2"/>
+              <rect x="13" y="8" width="1" height="2"/>
+              <rect x="1" y="4" width="2" height="2"/>
+              <rect x="15" y="4" width="2" height="2"/>
+              <rect x="3" y="0" width="12" height="8"/>
+              <rect x="5" y="2" width="1" height="2" fill="#0c0c10"/>
+              <rect x="12" y="2" width="1" height="2" fill="#0c0c10"/>
+            </g>
+          </svg>
+        </div>
+        <div class="casa-title">
+          <h2>Casa de Clawd</h2>
+          <span class="casa-subtitle">Ajustes de Notch</span>
+        </div>
+      </div>
+
+      <nav class="casa-nav">
+        <button class="nav-item is-active" data-section="sec-general" role="tab" aria-selected="true">
+          <span class="nav-num">1</span> <span class="nav-label">General</span>
+        </button>
+        <button class="nav-item" data-section="sec-pantalla" role="tab" aria-selected="false">
+          <span class="nav-num">2</span> <span class="nav-label">Pantalla</span>
+        </button>
+        <button class="nav-item" data-section="sec-apariencia" role="tab" aria-selected="false">
+          <span class="nav-num">3</span> <span class="nav-label">Apariencia y luz</span>
+        </button>
+        <button class="nav-item" data-section="sec-musica" role="tab" aria-selected="false">
+          <span class="nav-num">4</span> <span class="nav-label">Música y letras</span>
+        </button>
+        <button class="nav-item" data-section="sec-widgets" role="tab" aria-selected="false">
+          <span class="nav-num">5</span> <span class="nav-label">Widgets</span>
+        </button>
+        <button class="nav-item" data-section="sec-horario" role="tab" aria-selected="false">
+          <span class="nav-num">6</span> <span class="nav-label">Horario</span>
+        </button>
+        <button class="nav-item" data-section="sec-tareas" role="tab" aria-selected="false">
+          <span class="nav-num">7</span> <span class="nav-label">Tareas</span>
+        </button>
+        <button class="nav-item" data-section="sec-focus" role="tab" aria-selected="false">
+          <span class="nav-num">8</span> <span class="nav-label">Focus</span>
+        </button>
+        <button class="nav-item" data-section="sec-agua" role="tab" aria-selected="false">
+          <span class="nav-num">9</span> <span class="nav-label">Agua</span>
+        </button>
+        <button class="nav-item" data-section="sec-bandeja" role="tab" aria-selected="false">
+          <span class="nav-num">10</span> <span class="nav-label">Bandeja</span>
+        </button>
+        <button class="nav-item" data-section="sec-avisos" role="tab" aria-selected="false">
+          <span class="nav-num">11</span> <span class="nav-label">Avisos</span>
+        </button>
+        <button class="nav-item" data-section="sec-claude-code" role="tab" aria-selected="false">
+          <span class="nav-num">12</span> <span class="nav-label">Claude Code</span>
+        </button>
+        <button class="nav-item" data-section="sec-ia" role="tab" aria-selected="false">
+          <span class="nav-num">13</span> <span class="nav-label">IA</span>
+        </button>
+        <button class="nav-item" data-section="sec-voz-acerca" role="tab" aria-selected="false">
+          <span class="nav-num">14</span> <span class="nav-label">Voz & Acerca de</span>
+        </button>
+      </nav>
+
+      <div class="casa-footer">
+        <span class="casa-version-pill" id="sidebar-version">v0.18.0</span>
+      </div>
+    </aside>
+
+    <!-- Contenido principal con las 14 secciones -->
+    <main class="casa-content">
+
+      <!-- 1. General -->
+      <section class="casa-section is-active" id="sec-general" role="tabpanel">
+        <header class="section-head">
+          <h3>1. General</h3>
+          <p>Preferencias básicas del comportamiento de Notch.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-shortcut">Atajo global del panel</label>
+          <input type="text" id="setting-shortcut" data-key="shortcut" class="input-text" placeholder="Control+Alt+T">
+        </div>
+        <div class="form-group">
+          <label for="setting-theme">Tema de color</label>
+          <select id="setting-theme" data-key="theme" class="select-field">
+            <option value="auto">Automático (según Windows)</option>
+            <option value="dark">Oscuro</option>
+            <option value="light">Claro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="setting-scale">Escala de la isla: <span id="val-scale">100%</span></label>
+          <input type="range" id="setting-scale" data-key="scale" min="80" max="130" step="5" class="range-slider">
+        </div>
+        <div class="form-group">
+          <label for="setting-locale">Idioma regional (fecha y hora)</label>
+          <input type="text" id="setting-locale" data-key="locale" class="input-text" placeholder="es-ES">
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-hour12" data-key="hour12" class="toggle-cb">
+          <label for="setting-hour12">Usar formato de 12 horas (a. m. / p. m.)</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-animations">Animaciones</label>
+          <select id="setting-animations" data-key="animations" class="select-field">
+            <option value="always">Siempre activas</option>
+            <option value="system">Respetar accesibilidad de Windows</option>
+            <option value="off">Desactivadas</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 2. Pantalla -->
+      <section class="casa-section" id="sec-pantalla" role="tabpanel">
+        <header class="section-head">
+          <h3>2. Pantalla</h3>
+          <p>Ubicación y comportamiento sobre la pantalla.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-monitor">Monitor de la isla</label>
+          <input type="text" id="setting-monitor" data-key="monitor" class="input-text" placeholder="primary">
+        </div>
+        <div class="form-group">
+          <label for="setting-topGap">Separación superior: <span id="val-topGap">8 px</span></label>
+          <input type="range" id="setting-topGap" data-key="topGap" min="0" max="12" step="1" class="range-slider">
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-autoHide" data-key="autoHide" class="toggle-cb">
+          <label for="setting-autoHide">Auto-ocultar a muesca pequeña cuando no esté en uso</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-revealOnHover" data-key="revealOnHover" class="toggle-cb">
+          <label for="setting-revealOnHover">Despertar a píldora al pasar el ratón por la muesca</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-autoHideIdle" data-key="autoHideIdle" class="toggle-cb">
+          <label for="setting-autoHideIdle">Auto-ocultar a rayita tras inactividad prolongada</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-autoHideIdleSeconds">Segundos para auto-ocultar por inactividad</label>
+          <input type="number" id="setting-autoHideIdleSeconds" data-key="autoHideIdleSeconds" min="5" max="300" class="input-number">
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-hoverToOpen" data-key="hoverToOpen" class="toggle-cb">
+          <label for="setting-hoverToOpen">Abrir panel completo al mantener el ratón sobre la isla</label>
+        </div>
+      </section>
+
+      <!-- 3. Apariencia y luz -->
+      <section class="casa-section" id="sec-apariencia" role="tabpanel">
+        <header class="section-head">
+          <h3>3. Apariencia y luz</h3>
+          <p>Efectos visuales, Motor de luz y personalidad de Clawd.</p>
+        </header>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-glow" data-key="glow" class="toggle-cb">
+          <label for="setting-glow">Resplandor ambiental alrededor de la isla</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-light" data-key="light" class="toggle-cb">
+          <label for="setting-light">Motor de luz reactivo («Light Engine»)</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-lightIntensity">Intensidad de la luz</label>
+          <select id="setting-lightIntensity" data-key="lightIntensity" class="select-field">
+            <option value="60">60% — Sutil</option>
+            <option value="100">100% — Normal</option>
+            <option value="140">140% — Intenso</option>
+          </select>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-lightSpill" data-key="lightSpill" class="toggle-cb">
+          <label for="setting-lightSpill">Derrame difuso de luz bajo la muesca</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-clawd" data-key="clawd" class="toggle-cb">
+          <label for="setting-clawd">Activar a Clawd en la isla (en vez de los ojos clásicos)</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-clawdSleepMinutes">Minutos sin tocar el PC para que Clawd se duerma</label>
+          <input type="number" id="setting-clawdSleepMinutes" data-key="clawdSleepMinutes" min="1" max="60" class="input-number">
+        </div>
+        <div class="form-group">
+          <label for="setting-clawdByeTime">Hora de despedida de Clawd (HH:mm)</label>
+          <input type="text" id="setting-clawdByeTime" data-key="clawdByeTime" class="input-text" placeholder="18:00">
+        </div>
+        <div class="form-group">
+          <label for="setting-clawdCostume">Disfraz de Clawd</label>
+          <select id="setting-clawdCostume" data-key="clawdCostume" class="select-field">
+            <option value="auto">Automático según festividades</option>
+            <option value="none">Sin disfraz</option>
+            <option value="halloween">Sombrero de bruja (Halloween)</option>
+            <option value="christmas">Gorro navideño (Navidad)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 4. Música y letras -->
+      <section class="casa-section" id="sec-musica" role="tabpanel">
+        <header class="section-head">
+          <h3>4. Música y letras</h3>
+          <p>Integración multimedia con Windows y letras sincronizadas (LRCLIB).</p>
+        </header>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-musicActivity" data-key="musicActivity" class="toggle-cb">
+          <label for="setting-musicActivity">Mostrar música activa en la isla y avisos de cambio de pista</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-lyrics" data-key="lyrics" class="toggle-cb">
+          <label for="setting-lyrics">Buscar letras automáticamente en LRCLIB</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-lyricsVisible" data-key="lyricsVisible" class="toggle-cb">
+          <label for="setting-lyricsVisible">Mostrar letra sincronizada en la pestaña Música</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-lyricsOffset">Desfase de la letra sincronizada: <span id="val-lyricsOffset">0.0 s</span></label>
+          <div class="offset-slider-row">
+            <input type="range" id="setting-lyricsOffset" data-key="lyricsOffset" min="-2.0" max="2.0" step="0.1" value="0.0" class="range-slider">
+            <button type="button" class="btn-secondary" id="btn-reset-offset" title="Restablecer a 0 s">0 s</button>
+          </div>
+          <span class="field-hint">Ajusta entre −2 s y +2 s si la letra aparece antes o después de la voz.</span>
+        </div>
+        <div class="form-actions-box">
+          <h4>Caché local de letras</h4>
+          <p>Las letras descargadas se guardan en tu equipo para no volver a consultarlas.</p>
+          <button type="button" class="btn-danger" id="btn-clear-lyrics-cache">Borrar caché de letras</button>
+          <span class="cache-status" id="lyrics-cache-feedback" hidden></span>
+        </div>
+      </section>
+
+      <!-- 5. Widgets -->
+      <section class="casa-section" id="sec-widgets" role="tabpanel">
+        <header class="section-head">
+          <h3>5. Widgets</h3>
+          <p>Widgets configurables en la vista Home.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-countdownTitle">Título de la cuenta atrás</label>
+          <input type="text" id="setting-countdownTitle" data-key="countdownTitle" class="input-text" placeholder="Fin de Campuslands">
+        </div>
+        <div class="form-group">
+          <label for="setting-countdownDate">Fecha de la cuenta atrás (AAAA-MM-DD)</label>
+          <input type="date" id="setting-countdownDate" data-key="countdownDate" class="input-text">
+        </div>
+        <div class="form-group">
+          <label for="setting-worldClockCities">Relojes mundiales (zonas IANA separadas por coma)</label>
+          <input type="text" id="setting-worldClockCities" class="input-text" placeholder="America/Bogota, Europe/Madrid">
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-weather" data-key="weather" class="toggle-cb">
+          <label for="setting-weather">Activar widget del clima</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-weatherCity">Ciudad del clima</label>
+          <input type="text" id="setting-weatherCity" data-key="weatherCity" class="input-text" placeholder="Bucaramanga">
+        </div>
+      </section>
+
+      <!-- 6. Horario -->
+      <section class="casa-section" id="sec-horario" role="tabpanel">
+        <header class="section-head">
+          <h3>6. Horario</h3>
+          <p>Organización de bloques de clases y actividades de Campuslands.</p>
+        </header>
+        <div class="info-card">
+          <h4>Calendario integrado</h4>
+          <p>Muestra tu jornada diaria, descansos y tiempo restante en la vista Home y el widget de horario.</p>
+        </div>
+      </section>
+
+      <!-- 7. Tareas -->
+      <section class="casa-section" id="sec-tareas" role="tabpanel">
+        <header class="section-head">
+          <h3>7. Tareas</h3>
+          <p>Lista de tareas rápidas y sincronización local.</p>
+        </header>
+        <div class="info-card">
+          <h4>Gestor de tareas</h4>
+          <p>Las tareas se guardan de forma instantánea en tu equipo y se sincronizan con la vista de notas y widgets.</p>
+        </div>
+      </section>
+
+      <!-- 8. Focus -->
+      <section class="casa-section" id="sec-focus" role="tabpanel">
+        <header class="section-head">
+          <h3>8. Focus</h3>
+          <p>Temporizador Pomodoro y objetivos de concentración diaria.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-pomodoroMinutes">Duración de la sesión de trabajo (minutos)</label>
+          <input type="number" id="setting-pomodoroMinutes" data-key="pomodoroMinutes" min="1" max="180" class="input-number">
+        </div>
+        <div class="form-group">
+          <label for="setting-focusTargetMinutes">Meta diaria de concentración (minutos)</label>
+          <input type="number" id="setting-focusTargetMinutes" data-key="focusTargetMinutes" min="15" max="600" class="input-number">
+        </div>
+        <div class="form-group">
+          <label for="setting-focusLongBreakMinutes">Duración del descanso largo (minutos)</label>
+          <input type="number" id="setting-focusLongBreakMinutes" data-key="focusLongBreakMinutes" min="5" max="60" class="input-number">
+        </div>
+      </section>
+
+      <!-- 9. Agua -->
+      <section class="casa-section" id="sec-agua" role="tabpanel">
+        <header class="section-head">
+          <h3>9. Agua</h3>
+          <p>Seguimiento de hidratación y recordatorios regulares.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-waterTargetMl">Meta diaria de hidratación (ml)</label>
+          <input type="number" id="setting-waterTargetMl" data-key="waterTargetMl" min="500" max="5000" step="100" class="input-number">
+        </div>
+        <div class="form-group">
+          <label for="setting-waterCupMl">Capacidad de cada vaso (ml)</label>
+          <input type="number" id="setting-waterCupMl" data-key="waterCupMl" min="50" max="1000" step="50" class="input-number">
+        </div>
+        <div class="form-group">
+          <label for="setting-waterReminderMinutes">Intervalo entre recordatorios (minutos)</label>
+          <input type="number" id="setting-waterReminderMinutes" data-key="waterReminderMinutes" min="15" max="240" step="15" class="input-number">
+        </div>
+      </section>
+
+      <!-- 10. Bandeja -->
+      <section class="casa-section" id="sec-bandeja" role="tabpanel">
+        <header class="section-head">
+          <h3>10. Bandeja</h3>
+          <p>Bandeja de archivos soltados (Drop Tray).</p>
+        </header>
+        <div class="info-card">
+          <h4>Bandeja temporal de arrastre</h4>
+          <p>Permite almacenar hasta 8 archivos temporales arrastrándolos sobre la isla. Arrastra hacia fuera para copiarlos a otra app o haz <strong>doble clic</strong> sobre cualquier archivo para abrirlo con su programa predeterminado.</p>
+        </div>
+      </section>
+
+      <!-- 11. Avisos -->
+      <section class="casa-section" id="sec-avisos" role="tabpanel">
+        <header class="section-head">
+          <h3>11. Avisos</h3>
+          <p>Centro de avisos, alertas de batería y notificaciones en isla.</p>
+        </header>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-volumeIndicator" data-key="volumeIndicator" class="toggle-cb">
+          <label for="setting-volumeIndicator">Mostrar barra de volumen en la isla al cambiarlo</label>
+        </div>
+      </section>
+
+      <!-- 12. Claude Code -->
+      <section class="casa-section" id="sec-claude-code" role="tabpanel">
+        <header class="section-head">
+          <h3>12. Claude Code</h3>
+          <p>Conexión local con Claude Code y el asistente de terminal.</p>
+        </header>
+        <div class="server-status-card">
+          <div class="status-indicator">
+            <span class="status-dot" id="server-status-dot"></span>
+            <span class="status-label" id="server-status-label">Comprobando servidor local…</span>
+          </div>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-ai" data-key="ai" class="toggle-cb">
+          <label for="setting-ai">Habilitar servidor local de eventos de IA (127.0.0.1)</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-aiPort">Puerto del servidor local</label>
+          <input type="number" id="setting-aiPort" data-key="aiPort" class="input-number" placeholder="47823">
+        </div>
+        <div class="claude-setup-box">
+          <h4>Configuración para Claude Code</h4>
+          <p>Bloque para pegar en <code>~/.claude/settings.json</code>:</p>
+          <pre class="code-preview" id="claude-config-preview"><code>{
+  "hooks": {
+    "http": {
+      "url": "http://127.0.0.1:47823/claude"
+    }
+  }
+}</code></pre>
+          <div class="setup-actions">
+            <button type="button" class="btn-secondary" id="btn-copy-claude-setup">Copiar</button>
+            <span class="copy-feedback" id="claude-copy-feedback" hidden>✓ Copiado</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13. IA -->
+      <section class="casa-section" id="sec-ia" role="tabpanel">
+        <header class="section-head">
+          <h3>13. IA</h3>
+          <p>Modelos de lenguaje, proveedores y ventana flotante de IA rápida.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-chatProvider">Proveedor de chat principal</label>
+          <select id="setting-chatProvider" data-key="chatProvider" class="select-field">
+            <option value="gemini">Google Gemini</option>
+            <option value="claude">Anthropic Claude</option>
+            <option value="both">Ambos en paralelo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="setting-claudeModel">Modelo de Claude</label>
+          <select id="setting-claudeModel" data-key="claudeModel" class="select-field">
+            <option value="sonnet">Claude 3.7 Sonnet</option>
+            <option value="opus">Claude 3 Opus</option>
+            <option value="haiku">Claude 3.5 Haiku</option>
+            <option value="fable">Claude Fable</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="setting-geminiModel">Modelo de Gemini</label>
+          <input type="text" id="setting-geminiModel" data-key="geminiModel" class="input-text" placeholder="gemini-3.8-flash-high">
+        </div>
+        <div class="form-group">
+          <label for="setting-aiShortcut">Atajo para IA rápida</label>
+          <input type="text" id="setting-aiShortcut" data-key="aiShortcut" class="input-text" placeholder="Control+Alt+I">
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-aiActiveAppChip" data-key="aiActiveAppChip" class="toggle-cb">
+          <label for="setting-aiActiveAppChip">Mostrar chip contextual con la ventana activa</label>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-aiQuickReplyRightCtrl" data-key="aiQuickReplyRightCtrl" class="toggle-cb">
+          <label for="setting-aiQuickReplyRightCtrl">Permitir responder rápido con la tecla Ctrl derecha</label>
+        </div>
+      </section>
+
+      <!-- 14. Voz & Acerca de -->
+      <section class="casa-section" id="sec-voz-acerca" role="tabpanel">
+        <header class="section-head">
+          <h3>14. Voz & Acerca de</h3>
+          <p>Dictado por voz con Whisper y detalles del sistema Notch.</p>
+        </header>
+        <div class="form-group">
+          <label for="setting-voiceShortcut">Atajo para dictado por voz</label>
+          <input type="text" id="setting-voiceShortcut" data-key="voiceShortcut" class="input-text" placeholder="Control+Alt+D">
+        </div>
+        <div class="form-group">
+          <label for="setting-voiceLanguage">Idioma de dictado</label>
+          <input type="text" id="setting-voiceLanguage" data-key="voiceLanguage" class="input-text" placeholder="es">
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-voicePasteOnFinish" data-key="voicePasteOnFinish" class="toggle-cb">
+          <label for="setting-voicePasteOnFinish">Pegar automáticamente el texto al terminar de dictar</label>
+        </div>
+        <div class="about-card">
+          <h4>Notch Dynamic Island para Windows</h4>
+          <p>Versión instalada: <strong id="about-app-version">0.18.0</strong></p>
+          <p>Toda la configuración, notas, tareas y letras se guardan de forma privada en tu perfil de usuario.</p>
+          <button type="button" class="btn-primary" id="btn-open-appdata">Abrir carpeta de datos (%APPDATA%\Notch)</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="casa-clawd.js"></script>
+</body>
+</html>

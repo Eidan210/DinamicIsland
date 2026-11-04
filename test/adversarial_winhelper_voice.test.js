@@ -113,8 +113,12 @@ class WinHelperClient {
       this.eventListeners = [];
     });
 
-    // Wait for initial ready event
-    await new Promise((r) => setTimeout(r, 600));
+    // Wait for initial ready event with polling up to 4000ms
+    const startWait = Date.now();
+    while (Date.now() - startWait < 4000) {
+      if (this.stdoutLines.some((l) => l.includes('"type":"ready"'))) break;
+      await new Promise((r) => setTimeout(r, 40));
+    }
   }
 
   async ensureAlive() {
@@ -611,7 +615,7 @@ async function runAllSuites() {
 
 if (require.main === module) {
   runAllSuites().then((success) => {
-    process.exit(success ? 0 : 1);
+    process.exitCode = success ? 0 : 1;
   });
 }
 
