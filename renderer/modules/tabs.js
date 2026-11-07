@@ -2,8 +2,8 @@
 //  renderer/modules/tabs.js — Las páginas del panel
 // -----------------------------------------------------------------------------
 //  Home, Música, IA, Focus, Portapapeles y Nota (Ctrl+Alt+1…6).
-//  El fondo de la pestaña activa se desliza de una a otra, y la vista nueva
-//  entra por el lado hacia el que avanzas (como pasar páginas).
+//  El fondo de la pestaña activa se desliza de una a otra, y las vistas se
+//  cruzan con un fundido suave (la vieja sale, la nueva entra con un leve zoom).
 //  Cada cambio se le cuenta a main.js: así sabe que, si pulsas el atajo de la
 //  página que ya se ve, debe cerrar el panel.
 // =============================================================================
@@ -67,29 +67,40 @@ export function showTab(name) {
   syncTallState();
 
   if (state.isExpanded) {
-    // Fase B4: cambio de página en 220 ms.
-    // La página que se va sale hacia el lado opuesto (-16px * direction, 120ms, --ease-in).
-    // La que llega entra desde +16px * direction en 220ms (--ease-out) con 60ms de desfase.
-    const direction = TAB_ORDER.indexOf(name) > TAB_ORDER.indexOf(previousTab) ? 1 : -1;
+    // Cambio de página tipo Dynamic Island (~400 ms en total), con un leve zoom y un
+    // deslizamiento corto en vertical, sin movimiento lateral brusco.
+    // Sale la vieja (140 ms, --ease-in) y SOLO cuando termina entra la nueva (260 ms,
+    // --ease-out): si se solapan, los textos de las dos páginas se pisan y se ve sucio.
     const scale = getMotionScale();
-    const exitDuration = Math.round(120 * scale);
-    const enterDuration = Math.round(220 * scale);
-    const enterDelay = Math.round(60 * scale);
+    const exitDuration = Math.round(140 * scale);
+    const enterDuration = Math.round(260 * scale);
+    const enterDelay = exitDuration;
+
+    // Si cambias de página muy rápido, se corta lo anterior en vez de apilar animaciones.
+    oldView.getAnimations().forEach((a) => a.cancel());
+    newView.getAnimations().forEach((a) => a.cancel());
 
     animate(
       newView,
       [
-        { opacity: 0, transform: `translateX(${16 * direction}px)` },
-        { opacity: 1, transform: 'translateX(0)' },
+        { opacity: 0, transform: 'translateY(6px) scale(0.97)' },
+        { opacity: 1, transform: 'translateY(0) scale(1)' },
       ],
-      { duration: enterDuration, delay: enterDelay, easing: cssEasing('--ease-out') }
+      {
+        duration: enterDuration,
+        delay: enterDelay,
+        easing: cssEasing('--ease-out'),
+        // 'backwards': durante el retraso la página nueva sigue invisible.
+        // Sin esto se pintaba completa 80 ms y luego "saltaba" a 0: el parpadeo brusco.
+        fill: 'backwards',
+      }
     );
     animate(
       oldView,
       [
         // visibility: 'visible' mantiene la vista vieja a la vista mientras se va
-        { opacity: 1, transform: 'translateX(0)', visibility: 'visible' },
-        { opacity: 0, transform: `translateX(${-16 * direction}px)`, visibility: 'visible' },
+        { opacity: 1, transform: 'translateY(0) scale(1)', visibility: 'visible' },
+        { opacity: 0, transform: 'translateY(-4px) scale(0.985)', visibility: 'visible' },
       ],
       { duration: exitDuration, easing: cssEasing('--ease-in') }
     );

@@ -92,8 +92,9 @@ describe('Fase B: El morph de la isla (la animación más importante)', () => {
   // B4. Cambiar de página en el panel · 220 ms
   // ---------------------------------------------------------------------------
   describe('B4: Cambiar de página en el panel', () => {
-    it('tabs.js coordina la salida a -16px (120ms, --ease-in) y la entrada desde +16px (220ms, --ease-out, delay 60ms)', () => {
-      assert.ok(tabsCode.includes('16 * direction'), 'debe desplazar 16px en dirección de navegación');
+    it('tabs.js cruza las páginas: sale en 140ms (--ease-in) y entra en 260ms (--ease-out, tras la salida, fill backwards)', () => {
+      assert.ok(!tabsCode.includes('translateX'), 'ya no hay deslizamiento lateral brusco');
+      assert.ok(tabsCode.includes("fill: 'backwards'"), 'la página nueva no debe pintarse durante el retraso (evita el parpadeo)');
       assert.ok(tabsCode.includes('exitDuration'), 'debe calcular exitDuration con motionScale');
       assert.ok(tabsCode.includes('enterDuration'), 'debe calcular enterDuration con motionScale');
       assert.ok(tabsCode.includes('enterDelay'), 'debe calcular enterDelay con motionScale');
