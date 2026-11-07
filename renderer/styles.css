@@ -9684,9 +9684,11 @@ code {
   background: color-mix(in srgb, var(--accent) 62%, #000);
 }
 
-/* Sobre cristal o degradado, el selector de pestañas es translúcido (el grafito sólido pesaría) */
+/* Sobre cristal o degradado, pestañas y tarjetas son translúcidas (el grafito sólido pesaría) */
 :root[data-island-glass="true"],
 :root[data-island-style="floating"]:not([data-theme="light"]) {
   --tab-track: rgba(0, 0, 0, 0.28);
   --tab-thumb: rgba(255, 255, 255, 0.2);
+  --surface-1: rgba(0, 0, 0, 0.26);
+  --surface-1-hover: rgba(0, 0, 0, 0.34);
 }
