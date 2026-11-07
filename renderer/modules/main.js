@@ -47,6 +47,7 @@ import { initIsland, keepAwakeFor, updateShape } from './island.js';
 import { initPanel } from './panel.js';
 import { initTabs, moveTabIndicator, applyTabShortcuts } from './tabs.js';
 import { initTopbarActions, applyTopbarShortcuts } from './topbar-actions.js';
+import { applyIslandStyle } from './island-style.js';
 import { initClock, applyClockSettings } from './clock.js';
 import { startEyes } from './eyes.js';
 import { initPomodoro, renderPomodoro } from './pomodoro.js';
@@ -150,6 +151,7 @@ async function init() {
     applyClockSettings();
     applyTabShortcuts();
     applyTopbarShortcuts();
+    applyIslandStyle();
     renderIslandToggle();
     renderLyricsToggle();
     applyChatSettings();
@@ -182,6 +184,7 @@ async function init() {
   applyClockSettings();
   applyTabShortcuts();
   applyTopbarShortcuts();
+  applyIslandStyle();
   renderIslandToggle();
   renderLyricsToggle();
   renderPomodoro();

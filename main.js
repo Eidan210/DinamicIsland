@@ -84,7 +84,7 @@ function onConfigChanged(changedFiles) {
     // Si el Pomodoro está parado, la nueva duración se aplica ya; si está en
     // marcha, se aplicará al reiniciarlo.
     pomodoro.onSettingsChanged();
-    if (previous.scale !== state.settings.scale || previous.topGap !== state.settings.topGap || previous.monitor !== state.settings.monitor) {
+    if (previous.scale !== state.settings.scale || previous.topGap !== state.settings.topGap || previous.islandStyle !== state.settings.islandStyle || previous.monitor !== state.settings.monitor) {
       notchWindow.repositionWindow();
     }
     systemTray.updateTrayMenu();

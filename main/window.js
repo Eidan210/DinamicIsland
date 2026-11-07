@@ -23,6 +23,7 @@ const music = require('./music');
 const PANEL_WIDTH = 720;
 const PANEL_HEIGHT = 360;
 const TOP_GAP = 8; // separación entre el borde de arriba de la pantalla y el notch
+const FLOAT_OFFSET = 14; // cuánto baja la isla en el estilo 'floating' (igual que --float-offset en styles.css)
 const SHADOW_MARGIN = 50; // espacio extra alrededor para que la sombra no se corte
 const WINDOW_WIDTH = PANEL_WIDTH + SHADOW_MARGIN * 2; // 820 px
 const WINDOW_HEIGHT = TOP_GAP + PANEL_HEIGHT + SHADOW_MARGIN; // 418 px
@@ -43,7 +44,9 @@ function getWindowBounds() {
   const zoomFactor = ((state.settings && state.settings.scale) || 100) / 100;
   const topGap = state.settings && Number.isFinite(state.settings.topGap) ? state.settings.topGap : TOP_GAP;
   const scaledWidth = Math.round(WINDOW_WIDTH * zoomFactor);
-  const scaledHeight = Math.round((WINDOW_HEIGHT + (topGap - TOP_GAP)) * zoomFactor);
+  // En estilo flotante la isla baja FLOAT_OFFSET: la ventana crece lo mismo para no cortar la sombra.
+  const floatGap = state.settings && state.settings.islandStyle === 'floating' ? FLOAT_OFFSET : 0;
+  const scaledHeight = Math.round((WINDOW_HEIGHT + (topGap - TOP_GAP) + floatGap) * zoomFactor);
   // bounds = el monitor completo → centramos: display.bounds.width - WINDOW_WIDTH escalado
   return {
     x: Math.round(display.bounds.x + (display.bounds.width - scaledWidth) / 2),

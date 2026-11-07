@@ -96,6 +96,10 @@ const DEFAULT_SETTINGS = {
   voicePasteOnFinish: false,
   voiceMicDevice: 'default',
   // Fase 16: Pulido y ajustes
+  // Fase E: acabado visual
+  islandStyle: 'notch', // 'notch' (pegada al borde) o 'floating' (flota 14 px más abajo)
+  glass: false, // cristal simulado (translúcido, con brillo en el borde)
+  glassTint: '#101014', // tinte del cristal, #rrggbb
   lyricsOffset: 0, // desfase de la letra sincronizada en segundos (-2 a +2 s)
   lyricsVisible: true, // mostrar u ocultar la letra en la página Música (botón 💬)
 };
@@ -291,6 +295,13 @@ function validateSettings(data) {
   result.aiShortcut = result.aiShortcut.trim();
   result.aiActiveAppChip = result.aiActiveAppChip === true;
   result.aiQuickReplyRightCtrl = result.aiQuickReplyRightCtrl === true;
+
+  // Fase E: acabado visual
+  result.islandStyle = result.islandStyle === 'floating' ? 'floating' : DEFAULT_SETTINGS.islandStyle;
+  result.glass = result.glass === true;
+  result.glassTint = typeof result.glassTint === 'string' && /^#[0-9a-fA-F]{6}$/.test(result.glassTint.trim())
+    ? result.glassTint.trim().toLowerCase()
+    : DEFAULT_SETTINGS.glassTint;
 
   // Fase 15: Dictado por voz local (estilo «Murmur»)
   if (typeof result.voiceShortcut !== 'string' || !result.voiceShortcut.trim()) {

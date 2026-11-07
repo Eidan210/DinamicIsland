@@ -469,7 +469,8 @@ export function initIsland() {
 
     if (state.shape === 'bar') {
       const rect = island.getBoundingClientRect();
-      if (y <= 24 && x >= rect.left - 40 && x <= rect.right + 40) {
+      const floatY = document.documentElement.dataset.islandStyle === 'floating' ? 14 : 0; // la barra también baja
+      if (y <= 24 + floatY && x >= rect.left - 40 && x <= rect.right + 40) {
         wake();
       }
     }

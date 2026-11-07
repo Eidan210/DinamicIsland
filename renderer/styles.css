@@ -9478,3 +9478,66 @@ code {
 .roll-down {
   font-variant-numeric: tabular-nums;
 }
+
+
+/* =============================================================================
+   Fase E · Acabado visual: estilo flotante (E1) y cristal simulado (E2)
+   Se activan con atributos de <html> que pone renderer/modules/island-style.js.
+   Solo se animan transform/opacity/background-color: sin filter ni backdrop-filter.
+   ============================================================================= */
+:root {
+  --float-from: #121a3f; /* degradado del estilo flotante: azul marino → violeta */
+  --float-to: #3b2a78;
+  --glass-alpha: 80%; /* con menos, el texto atenuado no llega a contraste AA sobre un escritorio blanco */
+}
+
+/* E1 · Flotante: baja TODA la escena (isla + burbujas + derrame de luz) con un solo
+   translate, así ninguna capa se desincroniza. 420 ms con muelle. El valor 14px debe
+   coincidir con FLOAT_OFFSET de main/window.js (la ventana crece lo mismo). */
+.stage {
+  --float-offset: 14px;
+  transition: translate calc(420ms * var(--motion-scale)) var(--ease-spring);
+}
+
+:root[data-island-style="floating"] .stage {
+  translate: 0 var(--float-offset);
+}
+
+/* Capa del degradado: cruza con opacity (nunca se anima el degradado en sí). z-index -1
+   la deja detrás del contenido: .island ya es un contexto de apilamiento. */
+.island::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--float-from), var(--float-to));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity calc(420ms * var(--motion-scale)) ease;
+}
+
+/* shortcut: en tema claro el flotante solo baja (el panel claro lleva texto oscuro y
+   no se lee sobre el degradado oscuro); con cristal gana el cristal. Revisar si se pide. */
+:root[data-island-style="floating"]:not([data-theme="light"]):not([data-island-glass="true"]) .island::after {
+  opacity: 1;
+}
+
+/* E2 · Cristal simulado: relleno translúcido con tinte + brillo de luz arriba + borde
+   interior de 1 px. El fondo cruza con la transición de background-color que ya tiene
+   .island. La ventana es transparente, así que backdrop-filter no difuminaría el escritorio. */
+:root[data-island-glass="true"] .island[data-shape] {
+  background-color: color-mix(in srgb, var(--glass-tint, #101014) var(--glass-alpha), transparent);
+}
+
+:root[data-island-glass="true"][data-theme="light"] .island[data-shape="expanded"] {
+  background-color: color-mix(in srgb, var(--glass) var(--glass-alpha), transparent);
+}
+
+:root[data-island-glass="true"] .island::before {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
