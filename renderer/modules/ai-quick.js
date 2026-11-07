@@ -5,7 +5,7 @@
 //  el envío al chat de IA, el botón de copia y el pegado nativo en la app anterior.
 // =============================================================================
 
-import { $ } from './utils.js';
+import { $, shortModel } from './utils.js';
 import { state } from './state.js';
 import { updateShape } from './island.js';
 import { testLight, stopLight } from './light.js';
@@ -212,7 +212,7 @@ function updateModelBadge() {
   } else if (provider === 'both') {
     modelBadgeEl.textContent = 'Gemini + Claude';
   } else {
-    modelBadgeEl.textContent = state.settings.geminiModel ? `Gemini (${state.settings.geminiModel})` : 'Gemini';
+    modelBadgeEl.textContent = shortModel(state.settings.geminiModel) || 'Gemini';
   }
 }
 

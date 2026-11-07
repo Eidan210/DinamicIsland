@@ -180,7 +180,7 @@ export function renderMedia({ trackChanged = false } = {}) {
   mediaNext.disabled = !media.canNext;
 
   // Aviso "Ahora suena"
-  setText(bannerLabel, media.appName ? `Ahora suena · ${media.appName}` : 'Ahora suena');
+  setText(bannerLabel, media.appName ? `Ahora suena en ${media.appName}` : 'Ahora suena');
   setText(bannerTitle, media.title);
   setText(bannerArtist, media.artist);
 

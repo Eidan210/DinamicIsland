@@ -13,7 +13,7 @@
 //  solo damos formato a los bloques de código, al `código` y a la **negrita**.
 // =============================================================================
 
-import { $, setText } from './utils.js';
+import { $, setText, shortModel } from './utils.js';
 import { state } from './state.js';
 import { getCurrentTab } from './tabs.js';
 import { runOnBeat, stopOnBeat } from './beat.js';
@@ -29,9 +29,9 @@ const PLACEHOLDERS = {
   both: 'Escribe a los dos… (va a Google y a Anthropic)',
 };
 const EMPTY_COPIES = {
-  gemini: 'Directo a Google · Sin guardar la conversación',
-  claude: 'Directo a Anthropic · Sin guardar la conversación',
-  both: 'Gemini y Claude lado a lado · Sin guardar la conversación',
+  gemini: 'Habla directo con Google. No se guarda la conversación.',
+  claude: 'Habla directo con Anthropic. No se guarda la conversación.',
+  both: 'Gemini y Claude, lado a lado. No se guarda la conversación.',
 };
 const ERRORS = {
   busy: 'Espera a que termine la respuesta (o párala).',
@@ -64,20 +64,6 @@ function createSvgIcon(href, className) {
   use.setAttribute('href', href);
   svg.append(use);
   return svg;
-}
-
-/** Resume nombres largos de modelo ("claude-sonnet-4-6[1m]" → "Sonnet 4.6"). */
-function shortModel(raw) {
-  const text = String(raw || '').trim();
-  if (!text || text === 'auto') return '';
-  const clean = text.replace(/\[.*?\]/g, '').replace(/-\d{8}$/, '');
-  const claude = /^claude-(opus|sonnet|haiku|fable)-(\d+)(?:-(\d+))?/i.exec(clean);
-  if (claude) {
-    const name = claude[1].charAt(0).toUpperCase() + claude[1].slice(1).toLowerCase();
-    const ver = claude[3] ? `${claude[2]}.${claude[3]}` : claude[2];
-    return `${name} ${ver}`;
-  }
-  return clean;
 }
 
 // -----------------------------------------------------------------------------

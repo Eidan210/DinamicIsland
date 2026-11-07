@@ -163,3 +163,23 @@ export function trackScrollEdges(element) {
 export function prettyAccelerator(accelerator) {
   return String(accelerator).replace(/\b(CommandOrControl|CmdOrCtrl|Control)\b/gi, 'Ctrl');
 }
+
+/** Resume ids de modelo: "claude-sonnet-4-6[1m]" → "Sonnet 4.6", "gemini-3.8-flash-high" → "Gemini 3.8 Flash". */
+export function shortModel(raw) {
+  const text = String(raw || '').trim();
+  if (!text || text === 'auto') return '';
+  const clean = text.replace(/\[.*?\]/g, '').replace(/-\d{8}$/, '');
+  const claude = /^claude-(opus|sonnet|haiku|fable)-(\d+)(?:-(\d+))?/i.exec(clean);
+  if (claude) {
+    const name = capitalize(claude[1].toLowerCase());
+    const ver = claude[3] ? `${claude[2]}.${claude[3]}` : claude[2];
+    return `${name} ${ver}`;
+  }
+  const gemini = /^gemini-(.+)$/i.exec(clean);
+  if (gemini) {
+    // el último trozo "high/medium/low" es el nivel de esfuerzo, no parte del nombre
+    const parts = gemini[1].split('-').filter((w, i, all) => !(i === all.length - 1 && all.length > 1 && /^(low|medium|high|xhigh)$/i.test(w)));
+    return `Gemini ${parts.map(capitalize).join(' ')}`;
+  }
+  return clean;
+}

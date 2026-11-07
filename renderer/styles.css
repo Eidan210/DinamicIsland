@@ -4755,7 +4755,8 @@ code {
   overflow: hidden;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   font-size: 19px;
-  font-weight: 650;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -5772,8 +5773,7 @@ code {
   border: 0;
   border-radius: 16px;
   outline: none;
-  background: rgba(var(--ink), 0.045);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  background: var(--surface-1);
   color: var(--text);
   font: inherit;
   font-size: 13.5px;
@@ -5792,7 +5792,7 @@ code {
 }
 
 .note-text:focus {
-  background: rgba(var(--ink), 0.06);
+  background: var(--surface-1-hover);
   box-shadow:
     inset 0 0 0 1.5px color-mix(in srgb, var(--info) 80%, transparent),
     0 0 0 3px color-mix(in srgb, var(--info) 22%, transparent);
@@ -7010,7 +7010,7 @@ code {
 .msg-name {
   color: var(--msg-color);
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .msg-meta {
@@ -7170,8 +7170,7 @@ code {
   max-height: 84px;
   padding: 4px 5px 4px 13px;
   border-radius: 19px;
-  background: rgba(var(--ink), 0.055);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.08);
+  background: var(--surface-1);
   transition:
     box-shadow 180ms ease,
     background-color 180ms ease;
@@ -7186,10 +7185,10 @@ code {
 }
 
 .composer:focus-within {
-  background: rgba(var(--ink), 0.075);
+  background: var(--surface-1-hover);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--composer-accent) 55%, transparent),
-    0 0 0 3px color-mix(in srgb, var(--composer-accent) 15%, transparent);
+    inset 0 0 0 1.5px color-mix(in srgb, var(--composer-accent) 80%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--composer-accent) 22%, transparent);
 }
 
 .composer-input {
@@ -7294,7 +7293,7 @@ code {
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
-  background: rgba(var(--ink), 0.06);
+  background: var(--tab-track);
 }
 
 .segmented-indicator {
@@ -7304,13 +7303,15 @@ code {
   width: var(--indicator-width, 0px);
   height: 24px;
   border-radius: 999px;
-  background: var(--selected);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  background: var(--tab-thumb);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
   translate: var(--indicator-x, 0px) 0;
   pointer-events: none;
   transition:
-    translate 440ms var(--spring-bounce),
-    width 440ms var(--spring-bounce);
+    translate calc(260ms * var(--motion-scale)) var(--ease-drawer),
+    width calc(260ms * var(--motion-scale)) var(--ease-drawer);
 }
 
 .segmented-indicator.no-animation {
@@ -7329,8 +7330,9 @@ code {
   border-radius: 999px;
   background: transparent;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
+  letter-spacing: -0.01em;
   cursor: pointer;
   transition: color 150ms ease;
 }
@@ -7350,7 +7352,7 @@ code {
 }
 
 .segment.is-active svg {
-  scale: 1.1;
+  scale: 1;
 }
 
 .segment-count {
@@ -7361,7 +7363,7 @@ code {
   background: rgba(var(--ink), 0.1);
   color: var(--text-dim);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 16px;
   text-align: center;
@@ -7961,17 +7963,14 @@ code {
 .clip-empty-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  margin-bottom: 2px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--empty-tone, var(--info)) 14%, transparent);
-  color: var(--empty-tone, var(--info));
+  margin-bottom: 4px;
+  color: var(--empty-tone, var(--text-faint)); /* gris; solo los avisos (pausa, error) llevan color */
 }
 
 .clip-empty-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.5;
 }
 
 .clip-empty[data-status="paused"] {
@@ -7983,15 +7982,16 @@ code {
 }
 
 .clip-empty-title {
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .clip-empty-text {
   max-width: 440px;
   color: var(--text-dim);
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* La bandeja vacía es una "zona para soltar" con borde discontinuo */
@@ -8092,7 +8092,7 @@ code {
   background: var(--info);
   color: #fff;
   font-size: 8.5px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -8344,11 +8344,10 @@ code {
   background: #f59e0b;
   color: #0c0c10;
   font-size: 10px;
-  font-weight: 750;
+  font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   margin-left: 2px;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
   animation: pop-in calc(220ms * var(--motion-scale)) var(--ease-pop);
 }
 
@@ -8489,32 +8488,16 @@ code {
     inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-/* La nota, como una hoja blanca */
-:root[data-theme="light"] .note-text {
-  background: rgba(255, 255, 255, 0.72);
-}
-
-:root[data-theme="light"] .note-text:focus {
-  background: #fff;
-}
-
 :root[data-theme="light"] .big-ring .ring-progress {
   filter: none;
 }
 
 /* El chat y las sesiones, sobre el panel claro */
-:root[data-theme="light"] :is(.composer, .session, .ai-setup) {
+:root[data-theme="light"] :is(.session, .ai-setup) {
   background-color: rgba(255, 255, 255, 0.76);
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.07),
     0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-:root[data-theme="light"] .composer:focus-within {
-  background-color: #fff;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--composer-accent, var(--accent)) 55%, transparent),
-    0 0 0 3px color-mix(in srgb, var(--composer-accent, var(--accent)) 16%, transparent);
 }
 
 :root[data-theme="light"] .msg-ai {
@@ -9691,4 +9674,18 @@ code {
   --tab-thumb: rgba(255, 255, 255, 0.2);
   --surface-1: rgba(0, 0, 0, 0.26);
   --surface-1-hover: rgba(0, 0, 0, 0.34);
+}
+
+/* =============================================================================
+   Estilo Apple · Bloque 3 (páginas)
+   ============================================================================= */
+:root[data-theme="light"] .segmented-indicator {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* :not(...): sin foco; así no pisa el anillo de foco de arriba */
+:root[data-theme="light"] :is(.composer:not(:focus-within), .note-text:not(:focus)) {
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }

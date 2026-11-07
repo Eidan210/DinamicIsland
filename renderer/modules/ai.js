@@ -343,7 +343,7 @@ function renderSessions(sessions) {
     setText(modelEl, modelLabel);
     setText(timeEl, elapsedText(session));
 
-    setText(taskEl, session.task || (session.status === 'idle' ? 'Sesión abierta · esperando tarea' : ''));
+    setText(taskEl, session.task || (session.status === 'idle' ? 'Sesión abierta, esperando tarea' : ''));
 
     if (session.status === 'done') {
       setText(verbEl, 'Hecho');
@@ -737,8 +737,8 @@ async function copySetup(kind, buttonEl, defaultLabel) {
     setupStatus,
     copied
       ? kind === 'agy'
-        ? 'Copiado · pégalo en ~/.gemini/config/hooks.json'
-        : 'Copiado · pégalo en ~/.claude/settings.json'
+        ? 'Copiado. Pégalo en ~/.gemini/config/hooks.json'
+        : 'Copiado. Pégalo en ~/.claude/settings.json'
       : 'No se pudo copiar'
   );
   setupStatus.dataset.state = copied ? 'ok' : 'error';

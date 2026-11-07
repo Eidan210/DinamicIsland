@@ -106,7 +106,7 @@ export function renderTasks() {
   if (tasksUrgentChip) {
     if (urgentCount > 0) {
       tasksUrgentChip.hidden = false;
-      setText(tasksUrgentChip, `Urgente · ${plural(urgentCount, 'pendiente', 'pendientes')}`);
+      setText(tasksUrgentChip, plural(urgentCount, 'urgente', 'urgentes'));
     } else {
       tasksUrgentChip.hidden = true;
     }
