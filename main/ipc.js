@@ -42,11 +42,13 @@ function stringList(value, max) {
 
 function registerIpcHandlers() {
   // Ventana
-  onRendererRequest('settings:get', () => state.settings);
+  onRendererRequest('settings:get', () => state.settings, { casa: true });
   onRendererRequest('settings:save-key', (key, value) => {
+    // Solo claves conocidas: la Casa (otra ventana) no puede escribir claves arbitrarias.
+    if (!Object.prototype.hasOwnProperty.call(config.DEFAULT_SETTINGS, String(key))) return { ok: false };
     config.saveSetting(String(key), value);
     return { ok: true };
-  });
+  }, { casa: true });
   onRendererMessage('casa:open', () => {
     const casaClawd = require('./casa-clawd');
     casaClawd.openCasaClawd();
@@ -58,8 +60,8 @@ function registerIpcHandlers() {
     } catch (err) {
       console.warn('[ipc] Error abriendo carpeta de datos:', err);
     }
-  });
-  onRendererRequest('app:get-version', () => (typeof app?.getVersion === 'function' ? app.getVersion() : '0.18.0'));
+  }, { casa: true });
+  onRendererRequest('app:get-version', () => (typeof app?.getVersion === 'function' ? app.getVersion() : '0.18.0'), { casa: true });
   onRendererRequest('theme:get', () => theme.getEffectiveTheme());
   onRendererMessage('notch:set-mouse-interactive', (interactive) => notchWindow.setMouseInteractive(interactive === true));
   onRendererMessage('notch:expand', () => notchWindow.setExpanded(true));
@@ -91,7 +93,7 @@ function registerIpcHandlers() {
   onRendererMessage('media:set-activity', (enabled) => music.setMusicActivity(enabled === true));
   onRendererRequest('lyrics:get', () => lyrics.getLyricsState());
   onRendererMessage('lyrics:retry', () => lyrics.retryLyrics());
-  onRendererRequest('lyrics:clear-cache', () => lyrics.clearCache());
+  onRendererRequest('lyrics:clear-cache', () => lyrics.clearCache(), { casa: true });
   onRendererRequest('audio:get', () => audio.getAudioState());
   onRendererMessage('audio:set-output', (id) => audio.setOutputDevice(String(id)));
   onRendererRequest('volume:get', () => volume.getVolumeState());
@@ -124,13 +126,13 @@ function registerIpcHandlers() {
   onRendererMessage('notices:clear', () => notices.clearAllNotices());
 
   // IA: sesiones de Claude Code / Antigravity y sus decisiones
-  onRendererRequest('ai:get', () => aiSessions.getAiState());
+  onRendererRequest('ai:get', () => aiSessions.getAiState(), { casa: true });
   onRendererRequest('ai:decide', (id, decision, data) => aiSessions.decide(String(id), String(decision), data));
   // Copia la configuración para pegar (Notch no toca tus archivos): 'claude' o 'agy'
   onRendererRequest('ai:copy-setup', (kind) => {
     clipboard.writeText(aiServer.getSetupText(kind === 'agy' ? 'agy' : 'claude'));
     return true;
-  });
+  }, { casa: true });
 
   // Clawd: ¿está dormido? (llevas un rato sin tocar el PC o está bloqueado)
   onRendererRequest('clawd:get', () => ({ sleeping: idle.isSleeping() }));

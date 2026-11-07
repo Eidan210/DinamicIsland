@@ -36,7 +36,7 @@ function openCasaClawd() {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true, // igual que la isla: el preload solo usa contextBridge/ipcRenderer
     },
   });
 
