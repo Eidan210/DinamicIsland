@@ -26,7 +26,7 @@ const { addNotice, clearNotice } = require('./notices');
 const MODEL_FILENAME = 'ggml-base.bin';
 const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
 
-let voiceState = 'idle'; // 'idle' | 'recording' | 'transcribing' | 'error'
+let voiceState = 'idle'; // 'idle' | 'recording' | 'transcribing' | 'done' | 'error'
 let lastTranscript = '';
 let downloadRequest = null;
 let errorTimer = null; // Temporizador para auto-recuperación de estado 'error' -> 'idle'
@@ -271,18 +271,25 @@ function initVoice() {
 
       case 'transcript':
         lastTranscript = String(msg.text || '').trim();
-        setVoiceState('idle', { lastTranscript });
+        // El texto va antes que el estado: cuando el renderer recibe 'done' ya lo tiene.
         sendToRenderer('voice:onTranscript', {
           text: lastTranscript,
           durationMs: Number(msg.durationMs || 0),
         });
 
-        if (state.settings?.voicePasteOnFinish && lastTranscript) {
+        if (lastTranscript && state.settings?.voicePasteOnFinish) {
+          setVoiceState('idle', { lastTranscript });
           pasteToApp(lastTranscript);
+        } else {
+          // 'done' deja la tarjeta con el resultado hasta que se elija una acción o se pulse Esc.
+          // Antes se mandaba 'idle': el renderer lo toma por "descartar" y la tarjeta nunca se veía.
+          setVoiceState(lastTranscript ? 'done' : 'idle', { lastTranscript });
         }
         break;
 
       case 'status':
+        // Tras transcribir, el ayudante vuelve a 'idle' por su cuenta: la tarjeta no debe cerrarse por eso.
+        if (msg.status === 'idle' && voiceState === 'done') break;
         if (msg.status === 'recording' || msg.status === 'transcribing' || msg.status === 'idle') {
           setVoiceState(msg.status);
         }
@@ -310,14 +317,14 @@ function initVoice() {
 function toggleVoice() {
   if (voiceState === 'recording') {
     stopVoice();
-  } else if (voiceState === 'idle' || voiceState === 'error') {
+  } else if (voiceState === 'idle' || voiceState === 'error' || voiceState === 'done') {
     startVoice();
   }
 }
 
 /** Inicia la grabación del micrófono tras validar permisos y modelo. */
 function startVoice() {
-  if (voiceState === 'error') {
+  if (voiceState === 'error' || voiceState === 'done') {
     setVoiceState('idle');
   }
   if (voiceState !== 'idle') return false;
@@ -391,7 +398,7 @@ function cancelVoice() {
     setVoiceState('idle');
     return true;
   }
-  if (voiceState === 'error') {
+  if (voiceState === 'error' || voiceState === 'done') {
     setVoiceState('idle');
     return true;
   }

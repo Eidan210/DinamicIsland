@@ -493,7 +493,7 @@ describe('Milestone 2 Adversarial Timer & State Machine Challenge Suite', () => 
       assert.strictEqual(voice.getVoiceStatus().state, 'transcribing');
       assert.ok(helperCommands.includes('voice stop'));
 
-      // Step 6: WinHelper emits transcript -> enters 'idle'
+      // Step 6: WinHelper emits transcript -> enters 'done' (result card stays until an action)
       assert.strictEqual(typeof registeredHelperHandler, 'function');
       registeredHelperHandler({
         type: 'voice',
@@ -502,11 +502,42 @@ describe('Milestone 2 Adversarial Timer & State Machine Challenge Suite', () => 
         durationMs: 1450,
       });
 
-      assert.strictEqual(voice.getVoiceStatus().state, 'idle');
+      assert.strictEqual(voice.getVoiceStatus().state, 'done');
       assert.strictEqual(voice.getVoiceStatus().lastTranscript, 'Prueba de ciclo completo exitosa');
 
-      // Step 7: Advance timer by 10s to ensure no lingering side effects
+      // Step 7: Advance timer by 10s: the card does not time out on its own
       t.mock.timers.tick(10000);
+      assert.strictEqual(voice.getVoiceStatus().state, 'done');
+    });
+
+    it("the 'done' card survives the helper's own idle and allows dictating again", () => {
+      state.settings.voiceModelPath = dummyModelPath;
+      assert.strictEqual(voice.startVoice(), true);
+      voice.stopVoice();
+      registeredHelperHandler({ type: 'voice', event: 'transcript', text: 'Texto de prueba' });
+      assert.strictEqual(voice.getVoiceStatus().state, 'done');
+
+      // After transcribing, WinHelper returns to 'idle' by itself: the card must not close because of that
+      const emittedBefore = emittedEvents.length;
+      registeredHelperHandler({ type: 'voice', event: 'status', status: 'idle' });
+      assert.strictEqual(voice.getVoiceStatus().state, 'done');
+      assert.strictEqual(emittedEvents.length, emittedBefore, 'nothing is emitted: the renderer would dismiss the card');
+
+      // Dismissing the card (renderer -> cancel) returns to idle
+      assert.strictEqual(voice.cancelVoice(), true);
+      assert.strictEqual(voice.getVoiceStatus().state, 'idle');
+
+      // The shortcut works straight from the card (done -> new recording)
+      voice.startVoice();
+      voice.stopVoice();
+      registeredHelperHandler({ type: 'voice', event: 'transcript', text: 'Otro texto' });
+      assert.strictEqual(voice.getVoiceStatus().state, 'done');
+      voice.toggleVoice();
+      assert.strictEqual(voice.getVoiceStatus().state, 'recording');
+
+      // An empty transcript shows no card
+      voice.stopVoice();
+      registeredHelperHandler({ type: 'voice', event: 'transcript', text: '   ' });
       assert.strictEqual(voice.getVoiceStatus().state, 'idle');
     });
   });

@@ -70,3 +70,23 @@ describe('estilo Apple: Casa de Clawd', () => {
     assert.ok(!/#22c55e|#ef4444|boxShadow/.test(js));
   });
 });
+
+describe('tarjeta del dictado', () => {
+  const css = read('renderer/styles.css');
+  const voice = read('renderer/modules/voice.js');
+
+  it('el resultado es una tarjeta cuya altura sale del texto (--voice-card-h)', () => {
+    assert.match(css, /data-voice-state="done"\][^{}]*\{[^}]*height: var\(--voice-card-h/);
+    assert.match(voice, /setProperty\('--voice-card-h'/);
+  });
+
+  it('el texto completo se lee: sin tope de 2 líneas y con scroll a partir de 6 filas', () => {
+    const rule = /\.voice-banner\[data-state="done"\] \.voice-transcript \{[^}]*\}/.exec(css)[0];
+    assert.ok(/max-height: calc\(6 \* 1\.4em\)/.test(rule) && /overflow-y: auto/.test(rule), rule);
+  });
+
+  it('descartar la tarjeta le dice a main que vuelva a idle', () => {
+    const fn = voice.slice(voice.indexOf('export function dismissVoice'), voice.indexOf('/** Manejo de cambios de estado'));
+    assert.match(fn, /status === 'done'\) window\.notch\.voice\?\.cancel\(\)/);
+  });
+});

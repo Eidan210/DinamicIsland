@@ -369,7 +369,7 @@ describe('Milestone 2 Adversarial & Empirical Challenge Suite', () => {
       assert.strictEqual(capturedRendererEvents[2].data.rms, 0);
     });
 
-    it('processes "transcript" event, updates state to idle, and forwards to renderer', () => {
+    it('processes "transcript" event, updates state to done (result card), and forwards to renderer', () => {
       registeredHelperHandler({
         type: 'voice',
         event: 'transcript',
@@ -377,10 +377,10 @@ describe('Milestone 2 Adversarial & Empirical Challenge Suite', () => {
         durationMs: 2500,
       });
 
-      // 1. sendToRenderer called for voice:status (idle)
+      // 1. sendToRenderer called for voice:status (done: the renderer shows the result card, not "dismiss")
       const statusEvt = capturedRendererEvents.find((e) => e.channel === 'voice:status');
       assert.ok(statusEvt, 'voice:status event must be emitted');
-      assert.strictEqual(statusEvt.data.state, 'idle');
+      assert.strictEqual(statusEvt.data.state, 'done');
       assert.strictEqual(statusEvt.data.lastTranscript, 'Hola desde el dictado local');
 
       // 2. sendToRenderer called for voice:onTranscript
@@ -389,10 +389,13 @@ describe('Milestone 2 Adversarial & Empirical Challenge Suite', () => {
       assert.strictEqual(transcriptEvt.data.text, 'Hola desde el dictado local');
       assert.strictEqual(transcriptEvt.data.durationMs, 2500);
 
+      // The text goes first so the renderer already has it when 'done' arrives
+      assert.ok(capturedRendererEvents.indexOf(transcriptEvt) < capturedRendererEvents.indexOf(statusEvt));
+
       // 3. getVoiceStatus() reflects latest transcript
       const currentStatus = voice.getVoiceStatus();
       assert.strictEqual(currentStatus.lastTranscript, 'Hola desde el dictado local');
-      assert.strictEqual(currentStatus.state, 'idle');
+      assert.strictEqual(currentStatus.state, 'done');
     });
 
     it('triggers pasteToApp automatically on transcript only if voicePasteOnFinish is true', () => {

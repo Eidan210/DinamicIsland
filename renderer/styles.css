@@ -9158,10 +9158,13 @@ code {
   cursor: default;
 }
 
+/* Tarjeta del resultado: el texto completo se lee cómodo (antes se cortaba a 2 líneas).
+   --voice-card-h la calcula voice.js según el largo del texto. */
 .island[data-shape="voice"][data-voice-state="done"],
 .island[data-shape="voice"][data-voice-state="transcribed"] {
-  height: 84px;
-  border-radius: 42px;
+  width: 520px;
+  height: var(--voice-card-h, 140px);
+  border-radius: 30px;
 }
 
 .island[data-shape="voice"] :is(.face, .status, .activity, .panel, .charging-alert, .volume, .volume-bar, .banner, .alert, .drop, .decision, .ai-input-view) {
@@ -9675,4 +9678,39 @@ code {
    escuchaba (y el texto quedaba en "Escuch…"), y la IA rápida enseñaba su respuesta vacía y el chip de app sin app. */
 :is(.voice-waveform, .voice-result-wrap, .voice-actions, .ai-input-response-wrap, .ai-input-app-chip)[hidden] {
   display: none;
+}
+
+/* Tarjeta del dictado: cabecera arriba, texto en medio y acciones abajo a la derecha. */
+.island[data-shape="voice"][data-voice-state="done"] .voice-banner {
+  flex-wrap: wrap;
+  align-content: center;
+  row-gap: 8px;
+  padding: 12px 22px;
+}
+
+.voice-banner[data-state="done"] .voice-banner-left {
+  order: 1;
+  flex: 1 1 100%;
+}
+
+.voice-banner[data-state="done"] .voice-result-wrap {
+  order: 2;
+  flex: 1 1 100%;
+}
+
+.voice-banner[data-state="done"] .voice-actions {
+  order: 3;
+  margin-left: auto;
+}
+
+.voice-banner[data-state="done"] .voice-transcript {
+  display: block;
+  max-width: none;
+  max-height: calc(6 * 1.4em);
+  overflow-y: auto;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+  white-space: pre-wrap;
+  user-select: text;
+  scrollbar-width: thin;
 }

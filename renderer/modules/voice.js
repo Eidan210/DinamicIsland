@@ -36,6 +36,11 @@ let currentTranscript = '';
 let isRecording = false;
 
 /** Inicializa los listeners y enlaces de la interfaz de voz. */
+// Altura de la tarjeta del resultado: cabecera + botones + filas de texto (hasta 6, luego hay scroll).
+const CARD_BASE_PX = 110;
+const CARD_ROW_PX = 21;
+const CARD_MAX_ROWS = 6;
+
 export function initVoice() {
   bannerEl = $('voice-banner');
   if (!bannerEl) return;
@@ -90,6 +95,8 @@ export function initVoice() {
 
 /** Descarta la vista de voz y devuelve la isla a su estado anterior. */
 export function dismissVoice() {
+  // Si había una tarjeta de resultado, main sigue en 'done': se lo decimos para que vuelva a 'idle'.
+  if (state.voice?.status === 'done') window.notch.voice?.cancel();
   stopWaveformAnimation();
   stopListenHalo();
   if (state.voice) {
@@ -169,7 +176,11 @@ function handleVoiceStatus(payload) {
     if (spinnerEl) spinnerEl.hidden = true;
     if (waveformEl) waveformEl.hidden = true;
     if (resultWrapEl) resultWrapEl.hidden = false;
-    if (transcriptEl) transcriptEl.textContent = currentTranscript || payload.text || 'Sin texto';
+    const text = currentTranscript || payload.lastTranscript || payload.text || 'Sin texto';
+    if (transcriptEl) transcriptEl.textContent = text;
+    // shortcut: filas estimadas por nº de caracteres (≈52 por línea a 14,5 px), no medidas; ajustar si cambia la fuente o el ancho.
+    const rows = Math.min(CARD_MAX_ROWS, Math.max(1, Math.ceil(text.length / 52)));
+    if (island) island.style.setProperty('--voice-card-h', `${CARD_BASE_PX + rows * CARD_ROW_PX}px`);
     if (actionsEl) actionsEl.hidden = false;
   } else if (status === 'error') {
     isRecording = false;
