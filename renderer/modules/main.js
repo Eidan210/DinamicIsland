@@ -46,6 +46,7 @@ import { state } from './state.js';
 import { initIsland, keepAwakeFor, updateShape } from './island.js';
 import { initPanel } from './panel.js';
 import { initTabs, moveTabIndicator, applyTabShortcuts } from './tabs.js';
+import { initTopbarActions, applyTopbarShortcuts } from './topbar-actions.js';
 import { initClock, applyClockSettings } from './clock.js';
 import { startEyes } from './eyes.js';
 import { initPomodoro, renderPomodoro } from './pomodoro.js';
@@ -131,6 +132,7 @@ async function init() {
   initChat();
   initAiQuick();
   initVoice();
+  initTopbarActions();
   initAi();
   initGlow();
   initClawd({ keepAwakeFor });
@@ -147,6 +149,7 @@ async function init() {
     if (typeof state.settings.topGap === "number") document.documentElement.style.setProperty("--top-gap", `${state.settings.topGap}px`);
     applyClockSettings();
     applyTabShortcuts();
+    applyTopbarShortcuts();
     renderIslandToggle();
     renderLyricsToggle();
     applyChatSettings();
@@ -178,6 +181,7 @@ async function init() {
   // 3. Lo dibujamos todo.
   applyClockSettings();
   applyTabShortcuts();
+  applyTopbarShortcuts();
   renderIslandToggle();
   renderLyricsToggle();
   renderPomodoro();

@@ -26,6 +26,12 @@
     <symbol id="i-bell" viewBox="0 0 24 24">
       <path class="bell-body" d="M5.4 17.2h13.2c.9 0 1.4-1 .85-1.7l-1.25-1.62V10.4a6.2 6.2 0 0 0-12.4 0v3.48L4.55 15.5c-.55.7-.05 1.7.85 1.7z" /><path d="M12 4.2V2.9" /><path d="M10 19.7a2.2 2.2 0 0 0 4 0" />
     </symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24">
+      <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0" /><path d="M12 18v3" />
+    </symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24">
+      <path d="M9.6 3.9c.1-.5.56-.9 1.1-.9h2.6c.55 0 1.02.4 1.1.9l.22 1.3c.06.37.31.69.65.87.07.04.15.08.22.13.33.2.72.26 1.08.12l1.22-.46c.5-.2 1.1 0 1.37.49l1.3 2.25c.28.5.17 1.1-.26 1.43l-1 .83c-.3.24-.44.61-.43.99a7.7 7.7 0 0 1 0 .26c-.01.38.13.75.43.99l1 .83c.43.35.54.95.26 1.43l-1.3 2.25c-.27.5-.87.69-1.37.49l-1.22-.46c-.36-.13-.75-.07-1.08.12-.07.05-.15.09-.22.13-.33.18-.58.5-.65.87l-.22 1.28c-.08.54-.55.94-1.1.94h-2.6c-.55 0-1.02-.4-1.1-.94l-.22-1.28c-.06-.37-.31-.69-.64-.87a6.5 6.5 0 0 1-.22-.13c-.33-.2-.72-.26-1.08-.12l-1.22.46c-.5.2-1.1 0-1.37-.49l-1.3-2.25c-.27-.5-.17-1.1.26-1.43l1-.83c.3-.24.44-.61.43-.99a6.9 6.9 0 0 1 0-.26c.01-.38-.14-.75-.43-.99l-1-.83a1.13 1.13 0 0 1-.26-1.43l1.3-2.25c.27-.5.87-.69 1.37-.49l1.22.46c.36.13.75.07 1.08-.12.07-.05.15-.09.22-.13.33-.18.58-.5.64-.87l.22-1.3z" /><circle cx="12" cy="12" r="3" />
+    </symbol>
     <symbol id="i-battery" viewBox="0 0 24 24">
       <rect x="2" y="7" width="17.5" height="10" rx="3" /><path class="icon-solid" d="M21.2 10.2v3.6c.75-.27 1.3-1 1.3-1.8s-.55-1.53-1.3-1.8z" /><rect class="icon-solid" x="4" y="9" width="4" height="6" rx="1.2" />
     </symbol>
@@ -549,6 +555,16 @@
             </span>
           </div>
           <div class="topbar-end">
+            <!-- Accesos visibles a lo que antes solo tenía atajo (los atajos siguen igual) -->
+            <button class="bell" id="topbar-voice" type="button" aria-label="Dictado por voz">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mic"></use></svg>
+            </button>
+            <button class="bell" id="topbar-ai-quick" type="button" aria-label="IA rápida">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-w-ai"></use></svg>
+            </button>
+            <button class="bell" id="topbar-casa" type="button" aria-label="Casa de Clawd (ajustes)" title="Casa de Clawd (ajustes)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear"></use></svg>
+            </button>
             <button class="bell" id="notices-button" type="button" aria-label="Avisos" aria-expanded="false" aria-controls="notices">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bell"></use></svg>
               <span class="bell-count" id="notices-count" hidden>0</span>
