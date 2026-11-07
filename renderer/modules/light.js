@@ -16,7 +16,8 @@
 //    testLight(nombreEvento)
 // =============================================================================
 
-import { $ } from './utils.js';
+import { $, isMotionReduced } from './utils.js';
+import { runOnFrames, stopOnBeat } from './beat.js';
 import { state } from './state.js';
 
 const PRIORITIES = {
@@ -30,6 +31,9 @@ let lightEl = null;
 let spillEl = null;
 let sweepEl = null;
 let fillEl = null;
+let haloEl = null; // halo de escucha (F1): fuera de la isla, sigue el nivel del micrófono
+let haloCoreEl = null;
+let agentSweepTimer = null; // barrido opcional (F2) mientras un agente trabaja
 
 let currentLight = null; // { id, name, effect, priority, priorityNum, color, timer }
 let savedAmbient = null; // para restaurar la música o la IA tras un aviso de más prioridad
@@ -43,6 +47,8 @@ export function initLight() {
   spillEl = $('island-spill');
   sweepEl = lightEl ? lightEl.querySelector('.light-sweep') : null;
   fillEl = lightEl ? lightEl.querySelector('.light-fill') : null;
+  haloEl = $('island-halo');
+  haloCoreEl = haloEl ? haloEl.querySelector('.halo-core') : null;
 
   applyLightSettings();
 }
@@ -55,6 +61,7 @@ export function applyLightSettings() {
   const factor = Math.min(1.4, Math.max(0.6, intensity / 100));
   if (lightEl) lightEl.style.setProperty('--light-intensity', String(factor));
   if (spillEl) spillEl.style.setProperty('--light-intensity', String(factor));
+  if (haloEl) haloEl.style.setProperty('--light-intensity', String(factor));
 }
 
 /**
@@ -108,6 +115,7 @@ export function playLight(effect, options = {}) {
     priority: priorityName,
     priorityNum,
     color,
+    breaths: Number(options.breaths) || 0,
     timer: null,
   };
 
@@ -119,6 +127,12 @@ export function playLight(effect, options = {}) {
   lightEl.dataset.effect = effect;
   lightEl.dataset.direction = direction;
   lightEl.dataset.active = 'true';
+  // Regla de consumo: unas pocas respiraciones y luego quieto. N respiraciones = 2N-1
+  // medios ciclos (empieza bajo y acaba en la intensidad plena, sin salto).
+  lightEl.dataset.breaths = effectRecord.breaths > 0 ? String(effectRecord.breaths) : '';
+  if (effectRecord.breaths > 0) lightEl.style.setProperty('--breath-halves', String(2 * effectRecord.breaths - 1));
+  if (effect === 'agent') scheduleAgentSweep();
+  else clearAgentSweep();
 
   if (spillAllowed) {
     spillEl.style.setProperty('--spill-color', color);
@@ -147,6 +161,7 @@ export function stopLight(id) {
 
   clearTimeout(currentLight.timer);
   currentLight = null;
+  clearAgentSweep();
 
   // Si teníamos un efecto de ambiente pausado (música o IA), lo reanudamos
   if (savedAmbient) {
@@ -156,6 +171,7 @@ export function stopLight(id) {
       name: ambient.name,
       color: ambient.color,
       priority: ambient.priority,
+      breaths: ambient.breaths,
       durationMs: Infinity,
     });
     return;
@@ -180,6 +196,7 @@ export const LIGHT_EVENTS = {
     color: '#F59E0B',
     priority: 'critical',
     durationMs: Infinity,
+    breaths: 4, // 4 respiraciones y se queda fijo hasta que respondas
     spill: true,
   },
   autoApproved: {
@@ -201,6 +218,23 @@ export const LIGHT_EVENTS = {
     color: '#a98bff',
     priority: 'ambient',
     durationMs: Infinity,
+    breaths: 3,
+    spill: false,
+  },
+  // F2: borde de degradado (naranja → rosa → violeta) mientras Claude Code o Antigravity trabajan
+  agentWorking: {
+    effect: 'agent',
+    color: '#EC4899',
+    priority: 'ambient',
+    durationMs: Infinity,
+    spill: false,
+  },
+  // F2: al terminar, borde verde agua + un barrido y se apaga (~1,2 s)
+  agentDone: {
+    effect: 'finish',
+    color: '#2DD4BF',
+    priority: 'high',
+    durationMs: 1200,
     spill: false,
   },
   chargerConnected: {
@@ -319,4 +353,81 @@ export function testLight(eventName) {
  */
 export function getCurrentLight() {
   return currentLight ? { ...currentLight } : null;
+}
+
+/** Quita un efecto por nombre, esté activo o guardado como ambiente a restaurar. */
+export function stopLightByName(name) {
+  if (savedAmbient && savedAmbient.name === name) savedAmbient = null;
+  if (currentLight && currentLight.name === name) stopLight();
+}
+
+// -----------------------------------------------------------------------------
+// F2 · Barrido opcional cada ~15 s mientras trabaja un agente (ajuste "agentSweep").
+// Un solo temporizador encadenado; solo existe mientras el efecto 'agent' está activo.
+// -----------------------------------------------------------------------------
+const AGENT_SWEEP_EVERY_MS = 15000;
+const AGENT_SWEEP_DURATION_MS = 1300;
+
+function scheduleAgentSweep() {
+  clearAgentSweep();
+  if (!(state.settings && state.settings.agentSweep === true) || isMotionReduced()) return;
+  agentSweepTimer = setTimeout(() => {
+    if (!lightEl || !currentLight || currentLight.effect !== 'agent') return;
+    lightEl.dataset.sweep = 'true';
+    agentSweepTimer = setTimeout(() => {
+      if (lightEl) delete lightEl.dataset.sweep;
+      if (currentLight && currentLight.effect === 'agent') scheduleAgentSweep();
+    }, AGENT_SWEEP_DURATION_MS);
+  }, AGENT_SWEEP_EVERY_MS);
+}
+
+function clearAgentSweep() {
+  clearTimeout(agentSweepTimer);
+  agentSweepTimer = null;
+  if (lightEl) delete lightEl.dataset.sweep;
+}
+
+// -----------------------------------------------------------------------------
+// F1 · Halo de escucha: azul y blanco, su intensidad sigue el nivel del micrófono.
+// voice.js llama a startListenHalo() al empezar a grabar, setListenLevel() con cada
+// nivel (~10 por segundo) y stopListenHalo() al terminar. Solo corre mientras se graba
+// y solo anima opacity y scale de una capa ya dibujada.
+// -----------------------------------------------------------------------------
+const HALO_ATTACK_MS = 60; // sube rápido...
+const HALO_RELEASE_MS = 220; // ...y baja despacio
+let haloTarget = 0;
+let haloLevel = 0;
+let haloLastFrame = 0;
+
+export function startListenHalo() {
+  if (!haloEl || !haloCoreEl || (state.settings && state.settings.light === false)) return;
+  haloEl.dataset.active = 'true';
+  haloTarget = 0;
+  haloLevel = 0;
+  if (isMotionReduced()) {
+    haloCoreEl.style.opacity = '0.55'; // sin animaciones: halo fijo
+    haloCoreEl.style.scale = '1';
+    return;
+  }
+  haloLastFrame = performance.now();
+  runOnFrames('listen-halo', () => {
+    const now = performance.now();
+    const dt = now - haloLastFrame;
+    haloLastFrame = now;
+    const tau = haloTarget > haloLevel ? HALO_ATTACK_MS : HALO_RELEASE_MS;
+    haloLevel += (haloTarget - haloLevel) * (1 - Math.exp(-dt / tau));
+    haloCoreEl.style.opacity = String(0.18 + 0.82 * haloLevel);
+    haloCoreEl.style.scale = String(0.9 + 0.2 * haloLevel);
+  });
+}
+
+/** level: 0 (silencio) a 1 (voz fuerte). El habla normal llega baja, así que se amplifica. */
+export function setListenLevel(level) {
+  haloTarget = Math.min(1, Math.max(0, (Number(level) || 0) * 1.6));
+}
+
+export function stopListenHalo() {
+  stopOnBeat('listen-halo');
+  haloTarget = 0;
+  if (haloEl) haloEl.dataset.active = 'false'; // se apaga con el fundido de 300 ms del CSS
 }

@@ -12,6 +12,7 @@ import { $ } from './utils.js';
 import { state } from './state.js';
 import { updateShape } from './island.js';
 import { runOnFrames, stopOnBeat } from './beat.js';
+import { startListenHalo, setListenLevel, stopListenHalo } from './light.js';
 
 // Envolvente de habla para distribución armónica de las 7 barras
 const ENVELOPE = [0.4, 0.7, 1.0, 1.2, 1.0, 0.7, 0.4];
@@ -90,6 +91,7 @@ export function initVoice() {
 /** Descarta la vista de voz y devuelve la isla a su estado anterior. */
 export function dismissVoice() {
   stopWaveformAnimation();
+  stopListenHalo();
   if (state.voice) {
     state.voice.status = 'idle';
     state.voice.level = 0;
@@ -137,9 +139,11 @@ function handleVoiceStatus(payload) {
     if (resultWrapEl) resultWrapEl.hidden = true;
     if (actionsEl) actionsEl.hidden = true;
     startWaveformAnimation();
+    startListenHalo();
   } else if (status === 'transcribing') {
     isRecording = false;
     stopWaveformAnimation();
+    stopListenHalo();
     if (bannerEl) {
       bannerEl.hidden = false;
       bannerEl.dataset.state = 'transcribing';
@@ -154,6 +158,7 @@ function handleVoiceStatus(payload) {
   } else if (status === 'done' || status === 'transcribed') {
     isRecording = false;
     stopWaveformAnimation();
+    stopListenHalo();
     if (bannerEl) {
       bannerEl.hidden = false;
       bannerEl.dataset.state = 'done';
@@ -169,6 +174,7 @@ function handleVoiceStatus(payload) {
   } else if (status === 'error') {
     isRecording = false;
     stopWaveformAnimation();
+    stopListenHalo();
     if (bannerEl) {
       bannerEl.hidden = false;
       bannerEl.dataset.state = 'error';
@@ -195,6 +201,7 @@ function handleVoiceStatus(payload) {
 function handleVoiceLevel(payload) {
   if (!payload || !isRecording) return;
   currentLevel = typeof payload.level === 'number' ? payload.level : 0;
+  setListenLevel(currentLevel);
   if (state.voice) state.voice.level = currentLevel;
 }
 

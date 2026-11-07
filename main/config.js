@@ -100,6 +100,7 @@ const DEFAULT_SETTINGS = {
   islandStyle: 'notch', // 'notch' (pegada al borde) o 'floating' (flota 14 px más abajo)
   glass: false, // cristal simulado (translúcido, con brillo en el borde)
   glassTint: '#101014', // tinte del cristal, #rrggbb
+  agentSweep: false, // barrido de luz cada ~15 s mientras Claude Code/Antigravity trabajan
   lyricsOffset: 0, // desfase de la letra sincronizada en segundos (-2 a +2 s)
   lyricsVisible: true, // mostrar u ocultar la letra en la página Música (botón 💬)
 };
@@ -299,6 +300,7 @@ function validateSettings(data) {
   // Fase E: acabado visual
   result.islandStyle = result.islandStyle === 'floating' ? 'floating' : DEFAULT_SETTINGS.islandStyle;
   result.glass = result.glass === true;
+  result.agentSweep = result.agentSweep === true;
   result.glassTint = typeof result.glassTint === 'string' && /^#[0-9a-fA-F]{6}$/.test(result.glassTint.trim())
     ? result.glassTint.trim().toLowerCase()
     : DEFAULT_SETTINGS.glassTint;

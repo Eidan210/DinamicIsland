@@ -21,7 +21,7 @@ import { makeBeatSpinner } from './beat.js';
 import { onPanelChange } from './panel.js';
 import { getCurrentTab, onTabChange, setTabBadge, syncTallState } from './tabs.js';
 import { focusChatInput, syncChatVisibility } from './chat.js';
-import { testLight, stopLight, getCurrentLight } from './light.js';
+import { testLight, stopLightByName } from './light.js';
 
 const DONE_MS = 6000; // al terminar, la isla enseña "Hecho" estos milisegundos
 const MODES = ['sessions', 'chat'];
@@ -101,12 +101,26 @@ export function setAiState(next) {
     pending: Array.isArray(next.pending) ? next.pending : [],
   };
   // Una sesión acaba de terminar: la isla enseña "Hecho" unos segundos.
+  let finishedOk = false;
   for (const session of state.ai.sessions) {
     const before = previous.get(session.id);
     if (before && before !== session.status && (session.status === 'done' || session.status === 'error')) {
       state.aiDoneUntil = Date.now() + DONE_MS;
       state.aiDoneId = session.id;
+      if (session.status === 'done') finishedOk = true;
     }
+  }
+  // Luz de agente (F2): borde mientras trabaja; al terminar, verde agua y se apaga.
+  const wasWorking = [...previous.values()].includes('working');
+  const isWorking = state.ai.sessions.some((session) => session.status === 'working');
+  // Sin decisiones pendientes, la luz de "pide permiso" ya no tiene sentido (antes nunca se apagaba).
+  // Va ANTES que la de agente: mientras el permiso está encendido (prioridad crítica) la de agente se ignora.
+  if (state.ai.pending.length === 0) stopLightByName('permission');
+  // testLight('agentWorking') es idempotente: si ya está encendida no reinicia la animación.
+  if (isWorking) testLight('agentWorking');
+  else if (wasWorking) {
+    stopLightByName('agentWorking');
+    if (finishedOk) testLight('agentDone');
   }
   renderAll();
   setTabBadge('ai', state.ai.pending.length, 'warning');

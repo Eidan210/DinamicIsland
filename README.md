@@ -346,6 +346,7 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `islandStyle` | `"notch"` | `"notch"`: la isla va pegada al borde de arriba. `"floating"`: flota 14 px más abajo, con degradado azul marino → violeta. En tema claro solo baja (sin degradado). |
 | `glass` | `false` | Cristal simulado: relleno translúcido con brillo de luz en el borde. Si está activo, gana al degradado del estilo flotante. |
 | `glassTint` | `"#101014"` | Tinte del cristal, en formato `#rrggbb` (cualquier otro valor se ignora). |
+| `agentSweep` | `false` | Barrido de luz por el borde de abajo cada ~15 s mientras Claude Code o Antigravity trabajan. Medido: +0,3 puntos de CPU. |
 
 ### `config/links.json`
 
@@ -641,4 +642,22 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 - **Cambié algo en la Casa y no pasa nada.** Mira la terminal de `npm run dev`: debe aparecer `[config] settings.json recargado.` Si el archivo tiene un error de JSON, Notch no lo sobrescribe y lo avisa.
 - **El estilo flotante no tiene degradado.** En tema claro (`"theme": "light"` o Windows en claro con `"auto"`) solo baja la isla. También se oculta el degradado si activas `glass`.
 - **El cristal se lee mal sobre mi escritorio.** Prueba un `glassTint` más oscuro o desactiva `glass`.
+
+---
+
+## Fase F: Luz de escucha y borde de agente (v0.22.0)
+
+- **Luz de escucha (F1):** al dictar con voz, un halo azul y blanco aparece alrededor de la isla (200 ms) y su intensidad **sigue el nivel de tu micrófono** (sube en 60 ms, baja en 220 ms). Solo corre mientras grabas, solo anima `opacity` y `scale`, y se apaga en 300 ms. Con `"animations": "off"` queda fijo.
+- **Borde de agente (F2):** mientras Claude Code o Antigravity trabajan, la isla lleva un borde de 1,5 px en degradado naranja → rosa → violeta. Al empezar da **una sola vuelta** (1,6 s) con 3 respiraciones y luego queda fijo (nunca gira sin parar). Al terminar pasa a verde agua con un barrido y se apaga (~1,2 s). Si pide permiso: ámbar, 4 respiraciones y fijo hasta que respondas; esa luz gana a la de "trabajando".
+- **Barrido opcional (`agentSweep`):** una pasada de luz cada ~15 s mientras trabaja. Apagado por defecto; se activa en la Casa de Clawd (Apariencia y luz).
+- **Arreglos de paso:** la luz de "pide permiso" ya se apaga al responder (antes se quedaba encendida), la IA rápida usaba un evento de luz inexistente (`aiDone`) y las respiraciones de aviso eran infinitas (ahora son 3 o 4 y luego quedan fijas).
+
+**Consumo medido** (panel cerrado, música sonando, referencia ~2 %): borde de agente fijo ≈ +0,6 puntos de media (mediana sin diferencia), halo de escucha ≈ +0,06, barrido ≈ +0,3 (sin `filter`; con la sombra `drop-shadow` heredada costaba ~+1).
+
+**Privacidad:** el nivel del micrófono solo se usa para dibujar el halo; no se guarda ni sale del PC.
+
+**Solución de problemas**
+
+- **No veo el borde de agente.** Comprueba que `"light": true` y que Notch recibe eventos de Claude Code (Casa de Clawd → Claude Code: servidor en verde).
+- **El halo no aparece al dictar.** Necesita `"light": true`; si el micrófono está bloqueado por Windows, el dictado no empieza (ver la sección de voz).
 

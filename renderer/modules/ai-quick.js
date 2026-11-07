@@ -275,6 +275,6 @@ function finishWorking(cancelled = false, errorMessage = null) {
     const island = $('island');
     if (island) island.dataset.aiExpanded = 'true';
   } else {
-    testLight('aiDone');
+    testLight('claudeDone');
   }
 }

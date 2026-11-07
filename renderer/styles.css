@@ -9541,3 +9541,153 @@ code {
     inset 0 0 0 1px rgba(255, 255, 255, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
+
+
+/* =============================================================================
+   Fase F · Luz de escucha (F1) y borde de agente activo (F2)
+   Solo se animan opacity, scale y background-position (esta última, finita y solo en la
+   vuelta inicial). Nada de filter ni backdrop-filter.
+   ============================================================================= */
+
+/* F1 · Halo de escucha: fuera de la isla, azul y blanco. Entra en 200 ms y sale en 300 ms
+   (opacity del contenedor); light.js anima el núcleo (.halo-core) con el nivel del micrófono.
+   Está dentro de .stage: en estilo flotante baja con la isla. Cabe en el margen de 50 px de
+   la ventana (isla de voz 460x76 → halo 560x120). */
+.island-halo {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--top-gap) + 38px - 60px); /* centrado en la isla de voz (76 px de alto) */
+  translate: -50% 0;
+  width: 560px;
+  height: 120px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.island-halo[data-active="true"] {
+  opacity: var(--light-intensity, 1);
+  transition-duration: 200ms;
+}
+
+.halo-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    rgba(255, 255, 255, 0.55) 0,
+    rgba(96, 165, 250, 0.55) 30%,
+    rgba(59, 130, 246, 0.22) 58%,
+    transparent 74%
+  );
+  opacity: 0.18;
+  scale: 0.9;
+  will-change: opacity, transform;
+}
+
+/* Respiraciones finitas (regla de consumo): N respiraciones = 2N-1 medios ciclos en
+   alternate; acaba en la intensidad plena y se queda fijo. light.js pone --breath-halves. */
+.island-light[data-effect="breathe"][data-breaths]:not([data-breaths=""]) {
+  animation: light-breathe-half 800ms ease-in-out alternate;
+  animation-iteration-count: var(--breath-halves, 1);
+}
+
+@keyframes light-breathe-half {
+  from {
+    opacity: calc(var(--light-intensity, 1) * 0.35);
+  }
+  to {
+    opacity: var(--light-intensity, 1);
+  }
+}
+
+/* F2 · Borde de agente: degradado naranja → rosa → violeta de 1,5 px, recortado con máscara.
+   Al empezar: UNA vuelta del degradado (1,6 s) y 3 respiraciones; luego borde fijo. */
+:root {
+  --agent-from: #f97316;
+  --agent-mid: #ec4899;
+  --agent-to: #8b5cf6;
+}
+
+.light-agent {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    90deg,
+    var(--agent-from),
+    var(--agent-mid),
+    var(--agent-to),
+    var(--agent-from),
+    var(--agent-mid),
+    var(--agent-to)
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+}
+
+.island-light[data-effect="agent"] .light-agent {
+  opacity: 0.85;
+  animation:
+    light-agent-lap 1600ms cubic-bezier(0.25, 1, 0.5, 1) both,
+    light-agent-breath 4800ms ease-in-out both;
+}
+
+@keyframes light-agent-lap {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes light-agent-breath {
+  0% {
+    opacity: 0.35;
+  }
+  17% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  67% {
+    opacity: 0.5;
+  }
+  83% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.85;
+  }
+}
+
+/* Barrido opcional (ajuste agentSweep): una pasada por el borde de abajo cada ~15 s */
+.island-light[data-effect="agent"][data-sweep="true"] .light-sweep {
+  opacity: 1;
+  animation: light-sweep-ltr 1200ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* F2 · Al terminar: borde verde agua + un barrido de 700 ms (empieza a los 300 ms) y se apaga */
+.island-light[data-effect="finish"] .light-edge {
+  opacity: 1;
+}
+
+.island-light[data-effect="finish"] .light-sweep {
+  opacity: 1;
+  animation: light-sweep-ltr 700ms cubic-bezier(0.25, 1, 0.5, 1) 300ms both;
+}
+
+/* El barrido del agente no lleva filter (regla de consumo): se mide aparte de la sombra heredada de .light-sweep */
+.island-light[data-effect="agent"] .light-sweep {
+  filter: none;
+}
