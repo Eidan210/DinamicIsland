@@ -27,9 +27,11 @@ export function initTopbarActions() {
   const quickBtn = $('topbar-ai-quick');
   const casaBtn = $('topbar-casa');
 
-  // Micrófono: si ya graba, para; si no, empieza. main.js cierra el panel al grabar.
+  // Micrófono: si ya graba, para; si no, empieza. Con el panel abierto la forma 'expanded'
+  // tapa a 'voice' (se grababa sin verse nada), así que se cierra primero, como en la IA rápida.
   voiceBtn?.addEventListener('click', () => {
     if (!window.notch.voice) return;
+    window.notch.collapse();
     if (state.voice?.status === 'recording') window.notch.voice.stop();
     else window.notch.voice.start();
   });
