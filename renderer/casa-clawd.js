@@ -44,8 +44,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('[casa-clawd] Error cargando settings:', err);
   }
 
+  // La Casa sigue el tema de Notch: "auto" = el de Windows, "light" o "dark" lo fijan.
+  const systemLight = window.matchMedia('(prefers-color-scheme: light)');
+  function applyTheme(data) {
+    const choice = data && data.theme;
+    const light = choice === 'light' || (choice !== 'dark' && systemLight.matches);
+    document.documentElement.dataset.theme = light ? 'light' : 'dark';
+  }
+
   function applySettingsToUI(data) {
     if (!data) return;
+    applyTheme(data);
 
     // Campos con data-key directo
     document.querySelectorAll('[data-key]').forEach((input) => {
@@ -81,6 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   applySettingsToUI(settings);
+  systemLight.addEventListener('change', () => applyTheme(settings));
 
   // Guardar configuración al cambiar campos
   document.querySelectorAll('[data-key]').forEach((input) => {

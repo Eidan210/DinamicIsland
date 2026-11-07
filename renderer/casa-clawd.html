@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Misma política que la isla: solo archivos propios, sin red ni scripts externos -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'"
+  />
   <title>Casa de Clawd — Ajustes de Notch</title>
   <link rel="stylesheet" href="casa-clawd.css">
 </head>
@@ -167,6 +172,22 @@
           <h3>3. Apariencia y luz</h3>
           <p>Efectos visuales, Motor de luz y personalidad de Clawd.</p>
         </header>
+        <div class="form-group">
+          <label for="setting-islandStyle">Estilo de la isla</label>
+          <select id="setting-islandStyle" data-key="islandStyle" class="select-field">
+            <option value="notch">Muesca — pegada al borde superior</option>
+            <option value="floating">Flotante — 14 px más abajo, con degradado</option>
+          </select>
+          <span class="field-hint">En tema claro, el estilo flotante solo baja la isla (sin degradado).</span>
+        </div>
+        <div class="form-group-toggle">
+          <input type="checkbox" id="setting-glass" data-key="glass" class="toggle-cb">
+          <label for="setting-glass">Cristal simulado (translúcido, con brillo en el borde)</label>
+        </div>
+        <div class="form-group">
+          <label for="setting-glassTint">Tinte del cristal</label>
+          <input type="color" id="setting-glassTint" data-key="glassTint" class="input-color">
+        </div>
         <div class="form-group-toggle">
           <input type="checkbox" id="setting-glow" data-key="glow" class="toggle-cb">
           <label for="setting-glow">Resplandor ambiental alrededor de la isla</label>

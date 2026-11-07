@@ -343,6 +343,9 @@ No hace falta copiar todo: basta con las claves que quieras cambiar.
 | `claudeModel` | `"sonnet"` | Modelo de Claude en el chat: `"opus"`, `"sonnet"`, `"haiku"` o `"fable"`. |
 | `geminiModel` | `""` | Modelo de Gemini en el chat (`""` = el que use por defecto agy o Gemini CLI), p. ej. `"gemini-2.5-flash"`. |
 | `geminiCli` | `"auto"` | `"auto"`: Antigravity y, si falla, Gemini CLI. `"agy"`: solo Antigravity. `"gemini"`: solo Gemini CLI. |
+| `islandStyle` | `"notch"` | `"notch"`: la isla va pegada al borde de arriba. `"floating"`: flota 14 px más abajo, con degradado azul marino → violeta. En tema claro solo baja (sin degradado). |
+| `glass` | `false` | Cristal simulado: relleno translúcido con brillo de luz en el borde. Si está activo, gana al degradado del estilo flotante. |
+| `glassTint` | `"#101014"` | Tinte del cristal, en formato `#rrggbb` (cualquier otro valor se ignora). |
 
 ### `config/links.json`
 
@@ -620,4 +623,22 @@ El corrector ortográfico que trae Electron descargaba diccionarios de Google al
 
 - **Animación de batería limpia (estilo Apple Dynamic Island):** Al conectar el cargador, la isla se expande ágilmente mostrando el rayo verde, porcentaje y nivel de carga sin anillos externos sobrecargados.
 - **Temporizador de enfoque:** Concluir un bloque de concentración emite el aviso C1 («🍅 ¡Bloque terminado!») y preserva el diseño limpio de la cápsula.
+
+---
+
+## Fase E: Acabado visual y Casa de Clawd renovada (v0.21.0)
+
+- **Estilo flotante (`islandStyle`):** la isla, sus burbujas y el derrame de luz bajan 14 px juntos (un solo `translate` de 420 ms con muelle). La ventana fija crece 14 px solo en ese estilo para no cortar la sombra; sin clics perdidos fuera de la isla.
+- **Cristal simulado (`glass`, `glassTint`):** relleno translúcido (80 %) con brillo en el borde superior. La ventana es transparente, así que `backdrop-filter` no difuminaría el escritorio: es cristal *simulado*, no real. Contraste AA comprobado sobre un escritorio blanco.
+- **Casa de Clawd:** ahora **guarda y aplica** los ajustes. La causa era que `main/bridge.js` solo atendía a la ventana de la isla y descartaba en silencio lo que mandaba la Casa. Desde ahora la Casa solo puede usar 7 canales: `settings:get`, `settings:save-key`, `app:get-version`, `app:open-data-folder`, `lyrics:clear-cache`, `ai:get` y `ai:copy-setup`. Además, `settings:save-key` solo acepta claves que existan en los ajustes por defecto, la Casa lleva la misma CSP que la isla y corre con `sandbox: true`.
+- **Interfaz de la Casa:** interruptores tipo iOS, selectores y deslizadores propios, y tema claro/oscuro (sigue `"theme"`).
+- **Botones en la barra del panel:** micrófono (dictado), IA rápida y engranaje (Casa de Clawd). Los atajos siguen funcionando igual.
+
+**Privacidad:** esta fase no añade ninguna conexión de red. La Casa sigue sin acceso a Internet (CSP `default-src 'none'`).
+
+**Solución de problemas**
+
+- **Cambié algo en la Casa y no pasa nada.** Mira la terminal de `npm run dev`: debe aparecer `[config] settings.json recargado.` Si el archivo tiene un error de JSON, Notch no lo sobrescribe y lo avisa.
+- **El estilo flotante no tiene degradado.** En tema claro (`"theme": "light"` o Windows en claro con `"auto"`) solo baja la isla. También se oculta el degradado si activas `glass`.
+- **El cristal se lee mal sobre mi escritorio.** Prueba un `glassTint` más oscuro o desactiva `glass`.
 
