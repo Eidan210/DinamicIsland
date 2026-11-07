@@ -1663,17 +1663,15 @@ img {
   flex: none;
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--tone) 18%, transparent);
-  color: var(--tone);
+  width: 36px;
+  height: 36px;
+  color: var(--tone); /* el glifo ya es un círculo: sin segundo círculo detrás */
   --glyph-cut: #000;
 }
 
 .alert-icon svg {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
 }
 
 .island[data-shape="alert"] .alert-icon {
@@ -1708,7 +1706,7 @@ img {
 .alert-title {
   overflow: hidden;
   font-size: 14.5px;
-  font-weight: 650;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1902,7 +1900,7 @@ img {
 .drop-title {
   overflow: hidden;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2023,7 +2021,7 @@ img {
 
 .decision-title {
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -2199,7 +2197,7 @@ img {
 
 .decision-plan .plan-heading {
   margin-top: 4px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .decision-plan .plan-heading:first-child {
@@ -2255,7 +2253,7 @@ img {
   border: 0;
   border-radius: 999px;
   font-size: 12.5px;
-  font-weight: 650;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
@@ -2281,12 +2279,8 @@ img {
   color: #05240f;
 }
 
-.decision-btn.is-allow:not(:disabled):hover {
-  box-shadow: 0 0 0 4px var(--accent-soft);
-}
-
 .decision-btn.is-always {
-  background: rgba(61, 255, 143, 0.14);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent);
 }
 
@@ -8783,8 +8777,7 @@ code {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(34, 197, 94, 0.16);
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 /* Solo late mientras el aviso se ve (opacity:0 no detiene las animaciones). */
@@ -8812,8 +8805,8 @@ code {
 
 .charging-percent {
   font-size: 14px;
-  font-weight: 700;
-  color: #22c55e;
+  font-weight: 600;
+  color: var(--accent);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
@@ -8835,7 +8828,7 @@ code {
 }
 
 .charging-battery-svg .battery-level {
-  fill: #22c55e;
+  fill: var(--accent);
   transition: width 240ms ease;
 }
 
@@ -8900,10 +8893,9 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  padding: 2px 8px 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 3px 9px 3px 7px;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.9);
   max-width: 220px;
@@ -8938,10 +8930,10 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
@@ -8962,22 +8954,21 @@ code {
 
 .ai-input-model-badge {
   font-size: 11px;
-  font-weight: 600;
-  background: rgba(169, 139, 255, 0.2);
-  color: #c4b5fd;
-  border: 1px solid rgba(169, 139, 255, 0.3);
-  border-radius: 8px;
-  padding: 2px 7px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 3px 9px;
 }
 
 .ai-input-close-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 999px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 3px 8px;
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
 }
@@ -9049,7 +9040,7 @@ code {
   gap: 8px;
   margin-top: 8px;
   font-size: 12px;
-  color: #c4b5fd;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* display:flex le ganaba al atributo hidden: el estado se veía siempre y los puntos rebotaban sin parar. */
@@ -9065,7 +9056,7 @@ code {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #a98bff;
+  background: rgba(255, 255, 255, 0.8);
   animation: ai-dot-bounce 1s infinite ease-in-out;
 }
 .ai-spinner i:nth-child(2) { animation-delay: 150ms; }
@@ -9129,18 +9120,18 @@ code {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 120ms ease;
 }
 .ai-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.08);
 }
 .ai-btn:active {
   transform: scale(0.96);
@@ -9151,13 +9142,8 @@ code {
 }
 
 .ai-btn.is-primary {
-  background: #3b82f6;
-  border-color: #60a5fa;
+  background: var(--info);
   color: #fff;
-}
-.ai-btn.is-primary:hover {
-  background: #2563eb;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 
@@ -9217,12 +9203,11 @@ code {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.16);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f87171;
+  color: var(--danger);
   flex-shrink: 0;
 }
 
@@ -9235,7 +9220,7 @@ code {
   position: absolute;
   inset: -2px;
   border: 2px solid transparent;
-  border-top-color: #38bdf8;
+  border-top-color: var(--info);
   border-radius: 50%;
   animation: voice-spin 0.8s linear infinite;
 }
@@ -9270,17 +9255,17 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   height: 36px;
   flex-shrink: 0;
 }
 
 .voice-bar {
-  width: 4px;
+  width: 3px;
   height: 6px;
   min-height: 4px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #38bdf8, #818cf8);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
   transform-origin: center;
   transition: transform 60ms ease-out, height 60ms ease-out, background 150ms ease;
 }
@@ -9315,19 +9300,19 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
   color: rgba(255, 255, 255, 0.9);
-  border-radius: 14px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 500;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
 
 .voice-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
@@ -9337,15 +9322,8 @@ code {
 }
 
 .voice-btn.is-primary {
-  background: #38bdf8;
-  border-color: #38bdf8;
-  color: #000;
-  font-weight: 600;
-}
-
-.voice-btn.is-primary:hover {
-  background: #7dd3fc;
-  border-color: #7dd3fc;
+  background: var(--accent);
+  color: #05240f;
 }
 
 .voice-btn.is-close {
@@ -9355,8 +9333,8 @@ code {
 }
 
 .voice-btn.is-close:hover {
-  background: rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: color-mix(in srgb, var(--danger) 25%, transparent);
+  color: var(--danger);
 }
 
 /* Reducción de movimiento */
@@ -9688,4 +9666,13 @@ code {
 /* :not(...): sin foco; así no pisa el anillo de foco de arriba */
 :root[data-theme="light"] :is(.composer:not(:focus-within), .note-text:not(:focus)) {
   box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+/* =============================================================================
+   Estilo Apple · Bloque 4 (formas temporales)
+   ============================================================================= */
+/* display:flex de la clase le ganaba al atributo hidden: la voz enseñaba Copiar/IA/Pegar mientras
+   escuchaba (y el texto quedaba en "Escuch…"), y la IA rápida enseñaba su respuesta vacía y el chip de app sin app. */
+:is(.voice-waveform, .voice-result-wrap, .voice-actions, .ai-input-response-wrap, .ai-input-app-chip)[hidden] {
+  display: none;
 }
