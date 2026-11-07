@@ -64,6 +64,7 @@
   --surface-1: #1c1c1e;
   --surface-2: #2c2c2e;
   --surface-3: #3a3a3c;
+  --surface-1-hover: #242426;
   --tab-track: var(--surface-1);
   --tab-thumb: var(--surface-3);
   --r-card: 20px; /* tarjetas */
@@ -3036,15 +3037,11 @@ code {
   gap: 10px;
   min-width: 0;
   min-height: 0;
-  padding: 10px 12px;
-  border-radius: 16px;
-  /* Un halo de su color en la esquina y elevación acrílica */
-  background-color: rgba(var(--ink), 0.045);
-  background-image: radial-gradient(130px 100px at 100% 100%, color-mix(in srgb, var(--widget-accent) 20%, transparent), transparent 72%);
-  box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(var(--ink), 0.08),
-    0 4px 14px rgba(0, 0, 0, 0.25);
+  padding: 10px 14px;
+  border-radius: var(--r-card);
+  /* Relleno plano de grafito: sin borde, sin halo de color y sin sombra */
+  background-color: var(--surface-1);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.07);
   cursor: pointer;
   transition:
     transform 280ms var(--spring-bounce),
@@ -3060,20 +3057,11 @@ code {
 }
 
 .home:not([data-editing="true"]) .widget:hover {
-  transform: translateY(-2px);
-  background-color: rgba(var(--ink), 0.08);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--widget-accent) 45%, rgba(var(--ink), 0.15)),
-    0 10px 24px rgba(0, 0, 0, 0.32),
-    0 0 22px -2px color-mix(in srgb, var(--widget-accent) 40%, transparent);
+  background-color: var(--surface-1-hover);
 }
 
 .home:not([data-editing="true"]) .widget:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--widget-accent) 55%, rgba(var(--ink), 0.2)),
-    0 4px 12px rgba(0, 0, 0, 0.25),
-    0 0 16px -2px color-mix(in srgb, var(--widget-accent) 30%, transparent);
+  transform: scale(0.975);
 }
 
 /* Mientras mantienes pulsado, se hunde un poco: va a pasar algo */
@@ -3114,6 +3102,7 @@ code {
   overflow: hidden;
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: -0.012em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3128,15 +3117,15 @@ code {
   font-size: 21px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
   line-height: 1.12;
   white-space: nowrap;
 }
 
 .widget-sub {
   overflow: hidden;
-  color: var(--text-faint);
-  font-size: 11px;
+  color: var(--text-dim);
+  font-size: 11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3305,23 +3294,12 @@ code {
 .widget-music[data-has-art="true"] {
   --widget-accent: var(--music-accent);
 
-  background-image:
-    radial-gradient(130px 100px at 100% 100%, color-mix(in srgb, var(--widget-accent) 20%, transparent), transparent 72%),
-    linear-gradient(
-      140deg,
-      color-mix(in srgb, var(--art-1) 30%, transparent),
-      color-mix(in srgb, var(--art-2) 16%, transparent) 70%,
-      color-mix(in srgb, var(--art-3) 22%, transparent)
-    );
-}
-
-/* Mientras reproduce, añade un halo ambiental de su color */
-.widget-music[data-playing="true"] {
-  box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(var(--ink), 0.08),
-    0 4px 14px rgba(0, 0, 0, 0.25),
-    0 0 24px -4px color-mix(in srgb, var(--widget-accent) 35%, transparent);
+  background-image: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--art-1) 30%, transparent),
+    color-mix(in srgb, var(--art-2) 16%, transparent) 70%,
+    color-mix(in srgb, var(--art-3) 22%, transparent)
+  );
 }
 
 .widget-art-wrap,
@@ -3459,18 +3437,6 @@ code {
 .widget-focus .ring-progress {
   stroke: var(--accent);
   transition: filter 240ms ease;
-}
-
-.widget-focus[data-status="running"] {
-  box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(var(--ink), 0.08),
-    0 4px 14px rgba(0, 0, 0, 0.25),
-    0 0 20px -3px color-mix(in srgb, var(--widget-accent) 30%, transparent);
-}
-
-.widget-focus[data-status="running"] .ring-progress {
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--widget-accent) 50%, transparent));
 }
 
 .widget-focus .ring-icon {
@@ -3617,7 +3583,7 @@ code {
   background: var(--link-color);
   color: var(--link-text);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow:
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 0 0 1px rgba(255, 255, 255, 0.16),
@@ -3916,7 +3882,7 @@ code {
 .week-col.is-today .week-num {
   background: var(--info);
   color: #000;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 0 10px color-mix(in srgb, var(--info) 60%, transparent);
 }
 
@@ -4000,7 +3966,7 @@ code {
   border: 1px solid rgba(6, 182, 212, 0.35);
   color: #22D3EE;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: scale 180ms ease, background 180ms ease;
 }
@@ -4042,7 +4008,7 @@ code {
   background: rgba(244, 63, 94, 0.2);
   color: #FB7185;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .tasks-widget-list {
@@ -4140,7 +4106,7 @@ code {
 
 .world-city-time {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
@@ -4176,7 +4142,7 @@ code {
   border-radius: inherit;
   box-shadow:
     0 0 0 1.5px color-mix(in srgb, var(--widget-news) 85%, transparent),
-    0 0 16px 1px color-mix(in srgb, var(--widget-news) 45%, transparent);
+    0 0 10px 0 color-mix(in srgb, var(--widget-news) 30%, transparent);
   opacity: 0;
   pointer-events: none;
   transition: opacity 900ms ease; /* al verlo, se desvanece despacio */
@@ -8452,6 +8418,10 @@ code {
   --text-strong: #000;
   --hover: rgba(0, 0, 0, 0.05);
   --selected: #fff;
+  --surface-1: #fff;
+  --surface-1-hover: #f7f7fa;
+  --surface-2: #ececf1;
+  --surface-3: #dcdce2;
   --tab-track: rgba(0, 0, 0, 0.05);
   --tab-thumb: #fff;
   --scrollbar-thumb: rgba(0, 0, 0, 0.22);
@@ -8487,20 +8457,15 @@ code {
 
 /* Widgets blancos con un borde finito y elevación cerámica acrílica */
 :root[data-theme="light"] .widget {
-  background-color: rgba(255, 255, 255, 0.78);
   box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 4px 12px rgba(0, 0, 0, 0.05);
+    0 0 0 0.5px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 :root[data-theme="light"] .home:not([data-editing="true"]) .widget:hover {
-  background-color: #ffffff;
   box-shadow:
-    inset 0 1px 1px 0 #ffffff,
-    inset 0 0 0 1px color-mix(in srgb, var(--widget-accent) 40%, rgba(0, 0, 0, 0.08)),
-    0 10px 24px rgba(0, 0, 0, 0.08),
-    0 0 20px -2px color-mix(in srgb, var(--widget-accent) 35%, transparent);
+    0 0 0 0.5px rgba(0, 0, 0, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.07);
 }
 
 :root[data-theme="light"] .widget-slot {
