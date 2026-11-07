@@ -118,9 +118,9 @@ describe('Fase B: El morph de la isla (la animación más importante)', () => {
   // B5. Micro-respuestas
   // ---------------------------------------------------------------------------
   describe('B5: Micro-respuestas', () => {
-    it('hover sobre botones y tarjetas escala a 1.03 en 120 ms con --ease-out', () => {
-      assert.ok(styles.includes('transform: scale(1.03)'), 'hover debe escalar a 1.03');
-      assert.ok(styles.includes('transform calc(120ms * var(--motion-scale)) var(--ease-out)'), 'debe durar 120ms con --ease-out');
+    it('hover sobre botones y tarjetas aclara el fondo en 120 ms con --ease-out, sin agrandar', () => {
+      assert.ok(!styles.includes('transform: scale(1.03)'), 'el hover ya no agranda');
+      assert.ok(styles.includes('box-shadow calc(120ms * var(--motion-scale)) var(--ease-out)'), 'debe durar 120ms con --ease-out');
     });
 
     it('clic (:active) en botones y tarjetas escala a 0.97 en 80 ms y regresa con --ease-pop', () => {

@@ -274,9 +274,9 @@ describe('Fase 16 — Pulido y Ajustes', () => {
       assert.ok(tabsModule.includes('export function setTabBadge'), 'tabs.js debe exportar setTabBadge');
     });
 
-    it('styles.css define hover escala 1.03 + brillo sutil y active escala 0.97 para botones y tarjetas', () => {
-      assert.ok(styles.includes('scale(1.03)'), 'hover debe escalar a 1.03');
-      assert.ok(styles.includes('rgba(255, 255, 255, 0.18)'), 'debe incluir brillo sutil en el borde');
+    it('styles.css: el hover aclara el fondo sin agrandar y active comprime a 0.97 (estilo Apple)', () => {
+      assert.ok(!/:not\(:disabled\):hover\s*\{[^}]*scale\(1\.03\)/.test(styles), 'el hover ya no agranda');
+      assert.ok(styles.includes('inset 0 0 0 999px rgba(var(--ink), 0.07)'), 'el hover aclara el fondo');
       assert.ok(styles.includes('scale(0.97)'), 'active debe comprimir a 0.97');
     });
 

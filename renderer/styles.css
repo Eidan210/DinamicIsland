@@ -48,18 +48,26 @@
   /* Colores */
   --eye-color: #3dff8f;
   --eye-glow: rgba(61, 255, 143, 0.55);
-  --accent: #3dff8f;
-  --accent-soft: rgba(61, 255, 143, 0.16);
-  --warning: #ffc94d;
-  --danger: #ff5f57;
-  --info: #4dabf7;
-  --text: rgba(255, 255, 255, 0.94);
-  --text-dim: rgba(255, 255, 255, 0.6);
-  --text-faint: rgba(255, 255, 255, 0.38);
+  --accent: #30d158; /* verde del sistema; los ojos de Clawd siguen con --eye-color */
+  --accent-soft: rgba(48, 209, 88, 0.16);
+  --warning: #ff9f0a;
+  --danger: #ff453a;
+  --info: #0a84ff;
+  --text: rgba(255, 255, 255, 0.92);
+  --text-dim: rgba(235, 235, 245, 0.6);
+  --text-faint: rgba(235, 235, 245, 0.45); /* ≈3,9:1 sobre negro: solo para pistas y placeholders */
   --text-strong: #fff;
-  --glass: rgba(16, 16, 20, 0.9); /* fondo del panel: oscuro y algo translúcido */
+  --glass: #000; /* negro opaco, el mismo de la isla cerrada: no cambia de color al abrir. El cristal es opcional (E2) */
   --stroke: rgba(255, 255, 255, 0.1); /* borde fino tipo vidrio */
   --hover: rgba(255, 255, 255, 0.05);
+  /* Superficies: negro del panel > grafito de tarjetas > control elevado > pulgar del selector */
+  --surface-1: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --tab-track: var(--surface-1);
+  --tab-thumb: var(--surface-3);
+  --r-card: 20px; /* tarjetas */
+  --r-control: 12px; /* campos y botones no redondos */
   --selected: rgba(255, 255, 255, 0.14);
   --scrollbar-thumb: rgba(255, 255, 255, 0.22);
   --scrollbar-track: transparent;
@@ -70,9 +78,9 @@
   --music-text: var(--music-accent); /* textos con el color de la carátula */
   --ctrl-main-bg: #fff; /* botón grande de reproducir */
   --ctrl-main-fg: #000;
-  --popover-bg: #232328; /* fondo de la lista de avisos */
-  --ctrl-cut: #15151a; /* el "recorte" dentro de un icono relleno (fondo del panel) */
-  --panel-shadow: rgba(0, 0, 0, 0.45);
+  --popover-bg: #1c1c1e; /* fondo de la lista de avisos */
+  --ctrl-cut: #000; /* el "recorte" dentro de un icono relleno (fondo del panel) */
+  --panel-shadow: rgba(0, 0, 0, 0.55);
   --ai-color: #a98bff;
   --claude-color: #e8866a;
   --music-color: #fa586a;
@@ -212,7 +220,7 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--info);
   outline-offset: 2px;
 }
 
@@ -1293,10 +1301,9 @@ img {
 
 .banner-label {
   color: var(--music-accent);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .banner-title,
@@ -2944,11 +2951,10 @@ img {
 }
 
 .section-title {
-  color: var(--text-faint);
-  font-size: 11px;
+  color: var(--text-dim);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 code {
@@ -4774,10 +4780,9 @@ code {
   gap: 7px;
   height: 14px;
   color: var(--music-text);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .player-title {
@@ -5481,10 +5486,9 @@ code {
 .ring-label {
   margin-top: 1px;
   color: var(--text-dim);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0;
   transition: color 300ms ease;
 }
 
@@ -5536,12 +5540,11 @@ code {
 }
 
 .step-btn:hover {
-  transform: scale(1.12);
   background: rgba(var(--ink), 0.16);
 }
 
 .step-btn:active {
-  transform: scale(0.88);
+  transform: scale(0.92);
 }
 
 .pomo-actions {
@@ -5573,19 +5576,17 @@ code {
 }
 
 .btn:active {
-  transform: scale(0.93);
+  transform: scale(0.96);
 }
 
 .btn-primary {
   min-width: 112px;
-  background: var(--accent);
-  color: #05240f;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
 }
 
 .btn-primary:hover {
-  box-shadow:
-    0 0 0 4px var(--accent-soft),
-    0 6px 18px rgba(61, 255, 143, 0.25);
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 /* En marcha, el botón pasa a ser "Pausar" en gris */
@@ -5812,7 +5813,7 @@ code {
   font-size: 13.5px;
   line-height: 1.5;
   resize: none;
-  caret-color: var(--accent);
+  caret-color: var(--info);
   user-select: text;
   scrollbar-width: thin;
   transition:
@@ -5827,8 +5828,8 @@ code {
 .note-text:focus {
   background: rgba(var(--ink), 0.06);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
-    0 0 0 3px var(--accent-soft);
+    inset 0 0 0 1.5px color-mix(in srgb, var(--info) 80%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--info) 22%, transparent);
 }
 
 .note-text:read-only {
@@ -7459,7 +7460,7 @@ code {
   color: var(--text);
   font: inherit;
   font-size: 12px;
-  caret-color: var(--accent);
+  caret-color: var(--info);
   user-select: text;
 }
 
@@ -8296,23 +8297,25 @@ code {
   position: relative;
   flex: none;
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin: 0 auto;
-  padding: 4px;
+  padding: 3px;
   border-radius: 999px;
-  background: rgba(var(--ink), 0.05);
+  background: var(--tab-track);
 }
 
 /* B4: El fondo de la pestaña activa se desliza hasta la nueva en 220 ms con --ease-drawer */
 .tab-indicator {
   position: absolute;
-  top: 4px;
+  top: 3px;
   left: 0;
   width: var(--indicator-width, 0px);
-  height: 32px;
+  height: 34px;
   border-radius: 999px;
-  background: var(--selected);
-  box-shadow: inset 0 0 0 1px rgba(var(--ink), 0.06);
+  background: var(--tab-thumb);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
   translate: var(--indicator-x, 0px) 0;
   pointer-events: none;
   transition:
@@ -8330,13 +8333,15 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 32px;
+  height: 34px;
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--text-dim);
+  font-size: 13px;
   font-weight: 500;
+  letter-spacing: -0.01em;
   cursor: pointer;
   transition:
     background-color 150ms ease,
@@ -8358,10 +8363,7 @@ code {
 .tab.is-active {
   background: transparent;
   color: var(--text-strong);
-}
-
-.tab.is-active svg {
-  scale: 1.12; /* el icono "salta" un poco al activarse */
+  font-weight: 600;
 }
 
 /* Badges de contador en pestañas (ej. círculo naranja con «1» en IA) */
@@ -8450,6 +8452,8 @@ code {
   --text-strong: #000;
   --hover: rgba(0, 0, 0, 0.05);
   --selected: #fff;
+  --tab-track: rgba(0, 0, 0, 0.05);
+  --tab-thumb: #fff;
   --scrollbar-thumb: rgba(0, 0, 0, 0.22);
   --scrollbar-track: transparent;
   --accent: #12b85b; /* el verde claro no se lee sobre blanco */
@@ -9009,10 +9013,8 @@ code {
 }
 
 .ai-input-model-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   background: rgba(169, 139, 255, 0.2);
   color: #c4b5fd;
   border: 1px solid rgba(169, 139, 255, 0.3);
@@ -9447,11 +9449,14 @@ code {
 }
 
 :is(.ctrl, .btn-primary, .btn-secondary, .btn-danger, .text-btn, .round-btn, .decision-btn, .action-tile, .quick-btn, .voice-btn):not(:disabled):hover {
-  transform: scale(1.03);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 4px 12px rgba(0, 0, 0, 0.22);
+  /* Aclara el fondo sea cual sea (el inset sigue el radio del elemento); sin agrandar ni aro.
+     transform: none anula cualquier elevación de reglas más flojas; el transform se mantiene en
+     la transición para que soltar un clic (:active) vuelva con --ease-pop y no de golpe. */
+  transform: none;
+  box-shadow: inset 0 0 0 999px rgba(var(--ink), 0.07);
   transition:
-    transform calc(120ms * var(--motion-scale)) var(--ease-out),
-    box-shadow calc(120ms * var(--motion-scale)) ease;
+    transform calc(150ms * var(--motion-scale)) var(--ease-pop),
+    box-shadow calc(120ms * var(--motion-scale)) var(--ease-out);
 }
 
 :is(.ctrl, .btn-primary, .btn-secondary, .btn-danger, .text-btn, .round-btn, .decision-btn, .action-tile, .quick-btn, .voice-btn):not(:disabled):active {
@@ -9468,11 +9473,11 @@ code {
 }
 
 :is(.file, .session, .clip, .notice-item):not([data-missing="true"]):hover {
-  transform: scale(1.03);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 18px rgba(0, 0, 0, 0.25);
+  transform: none;
+  box-shadow: inset 0 0 0 999px rgba(var(--ink), 0.06);
   transition:
-    transform calc(120ms * var(--motion-scale)) var(--ease-out),
-    box-shadow calc(120ms * var(--motion-scale)) ease;
+    transform calc(150ms * var(--motion-scale)) var(--ease-pop),
+    box-shadow calc(120ms * var(--motion-scale)) var(--ease-out);
 }
 
 :is(.file, .session, .clip, .notice-item):not([data-missing="true"]):active {
@@ -9699,4 +9704,24 @@ code {
 /* El barrido del agente no lleva filter (regla de consumo): se mide aparte de la sombra heredada de .light-sweep */
 .island-light[data-effect="agent"] .light-sweep {
   filter: none;
+}
+
+/* =============================================================================
+   Estilo Apple · Bloque 1 (base)
+   ============================================================================= */
+/* :not(.is-running): "Pausar" sigue siendo el botón gris de siempre */
+:root[data-theme="light"] .btn-primary:not(.is-running) {
+  background: color-mix(in srgb, var(--accent) 72%, #000); /* texto blanco ≥ 4,5:1 */
+  color: #fff;
+}
+
+:root[data-theme="light"] .btn-primary:not(.is-running):hover {
+  background: color-mix(in srgb, var(--accent) 62%, #000);
+}
+
+/* Sobre cristal o degradado, el selector de pestañas es translúcido (el grafito sólido pesaría) */
+:root[data-island-glass="true"],
+:root[data-island-style="floating"]:not([data-theme="light"]) {
+  --tab-track: rgba(0, 0, 0, 0.28);
+  --tab-thumb: rgba(255, 255, 255, 0.2);
 }
