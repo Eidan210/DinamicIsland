@@ -199,16 +199,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const listening = aiState?.server?.listening === true;
       const port = aiState?.server?.port || settings.aiPort || 47823;
       if (listening) {
-        dot.style.background = '#22c55e';
-        dot.style.boxShadow = '0 0 8px rgba(34, 197, 94, 0.5)';
+        dot.style.background = 'var(--accent)';
         label.textContent = `Servidor activo en http://127.0.0.1:${port}`;
       } else {
-        dot.style.background = '#ef4444';
-        dot.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.5)';
+        dot.style.background = 'var(--danger)';
         label.textContent = `Servidor inactivo o detenido (puerto ${port})`;
       }
     } catch {
-      dot.style.background = '#ef4444';
+      dot.style.background = 'var(--danger)';
       label.textContent = 'Servidor inactivo';
     }
   }

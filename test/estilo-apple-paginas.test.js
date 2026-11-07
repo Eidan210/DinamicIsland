@@ -47,3 +47,26 @@ describe('estilo Apple: textos y estados vacíos', () => {
     assert.match(css, /\.segmented-indicator \{[^}]*background: var\(--tab-thumb\)/);
   });
 });
+
+describe('estilo Apple: Casa de Clawd', () => {
+  const css = read('renderer/casa-clawd.css');
+  const html = read('renderer/casa-clawd.html');
+  const js = read('renderer/casa-clawd.js');
+
+  it('usa el verde de la isla como acento y deja el naranja solo para el logo', () => {
+    assert.match(css, /--accent: #30d158;/);
+    assert.match(css, /--clawd-orange: #f59e0b;/);
+    assert.match(css, /data-theme="light"\] \{[^}]*--accent: #1f7a35;/); // AA con texto blanco en el botón primario
+    assert.match(css, /\.casa-clawd-icon \{[^}]*background: var\(--clawd-orange\)/);
+    assert.ok(!/radial-gradient/.test(css), 'sin degradado decorativo de fondo');
+  });
+
+  it('la navegación y los títulos no están numerados', () => {
+    assert.ok(!html.includes('nav-num') && !css.includes('nav-num'));
+    assert.ok(!/<h3>\d+\./.test(html));
+  });
+
+  it('el estado del servidor usa los tokens y no colores sueltos ni brillos', () => {
+    assert.ok(!/#22c55e|#ef4444|boxShadow/.test(js));
+  });
+});

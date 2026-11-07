@@ -160,24 +160,26 @@ describe('Fase 16 — Pulido y Ajustes', () => {
       const html = fs.readFileSync(htmlPath, 'utf8');
 
       const expectedSections = [
-        '1. General',
-        '2. Pantalla',
-        '3. Apariencia y luz',
-        '4. Música y letras',
-        '5. Widgets',
-        '6. Horario',
-        '7. Tareas',
-        '8. Focus',
-        '9. Agua',
-        '10. Bandeja',
-        '11. Avisos',
-        '12. Claude Code',
-        '13. IA',
-        '14. Voz & Acerca de',
+        'General',
+        'Pantalla',
+        'Apariencia y luz',
+        'Música y letras',
+        'Widgets',
+        'Horario',
+        'Tareas',
+        'Focus',
+        'Agua',
+        'Bandeja',
+        'Avisos',
+        'Claude Code',
+        'IA',
+        'Voz & Acerca de',
       ];
 
+      assert.ok(!/<h3>\d+\./.test(html), 'los títulos de sección no llevan número');
+
       for (const sec of expectedSections) {
-        assert.ok(html.includes(sec), `casa-clawd.html debe contener la sección "${sec}"`);
+        assert.ok(html.includes(`<h3>${sec}</h3>`), `casa-clawd.html debe contener la sección "${sec}"`);
       }
     });
 
